@@ -4,7 +4,7 @@ mod cli;
 pub use cli::*;
 
 mod cmd;
-use cmd::*;
+pub use cmd::*;
 
 fn main() {
     CshCli::main();
