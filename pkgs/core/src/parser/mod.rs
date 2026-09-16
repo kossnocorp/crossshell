@@ -26,6 +26,373 @@ mod tests {
     use super::*;
 
     #[test]
+    fn structures_parameter_expansions_in_tests() {
+        let ast = CshParser::parse("[[ ${running_kernel,,} == *-t2* ]]").unwrap();
+        assert_debug_snapshot!(ast, @r#"
+        CshAst {
+            commands: [
+                Test(
+                    Concat(
+                        [
+                            Literal(
+                                " ",
+                            ),
+                            Parameter {
+                                prefix: "",
+                                name: "running_kernel",
+                                suffix: Literal(
+                                    ",,",
+                                ),
+                            },
+                            Literal(
+                                " == *-t2* ",
+                            ),
+                        ],
+                    ),
+                ),
+            ],
+        }
+        "#);
+    }
+
+    #[test]
+    fn retains_substitutions_and_quote_boundaries_in_tests() {
+        let ast = CshParser::parse(
+            r#"[[ "$(printf '%s' "$ROOT")" == '${literal}' && $name =~ ^(a|b)$ ]]"#,
+        )
+        .unwrap();
+        let CshAstExpression::Test(CshAstWord::Concat(parts)) = &ast[ast.commands[0]] else {
+            panic!("expected test");
+        };
+        let CshAstWord::DoubleQuoted(word) = &parts[1] else {
+            panic!("expected quoted operand");
+        };
+        let CshAstWord::CommandSubstitution { commands, .. } = &**word else {
+            panic!("expected substitution");
+        };
+        let CshAstExpression::Command(command) = &ast[commands[0]] else {
+            panic!("expected printf");
+        };
+        assert_eq!(
+            command.args[1],
+            CshAstWord::DoubleQuoted(Box::new(CshAstWord::Variable("ROOT".into())))
+        );
+        assert!(parts.contains(&CshAstWord::SingleQuoted("${literal}".into())));
+        assert!(parts.contains(&CshAstWord::Variable("name".into())));
+        for source in [
+            "[[ $(echo |) == x ]]",
+            "[[ ${kernel,,} == x",
+            "[[ \"$ROOT == x ]]",
+        ] {
+            assert!(CshParser::parse(source).is_err(), "accepted {source:?}");
+        }
+    }
+
+    #[test]
+    fn structures_migration_assignment() {
+        let ast = {
+            let source = String::from(
+                r#"migration=$(grep -l "dell-xps13-sidecar-amps" "$ROOT"/migrations/*.sh | head -1)"#,
+            );
+            CshParser::parse(&source).unwrap()
+        };
+        let CshAstExpression::Command(assignment) = &ast[ast.commands[0]] else {
+            panic!("expected assignment");
+        };
+        assert!(assignment.name.is_none());
+        let CshAstWord::CommandSubstitution { commands, .. } = &assignment.assignments[0].value
+        else {
+            panic!("expected substitution");
+        };
+        let CshAstExpression::Binary {
+            left,
+            operator,
+            right,
+        } = &ast[commands[0]]
+        else {
+            panic!("expected pipeline");
+        };
+        assert_eq!(*operator, CshAstOperator::Pipe);
+        let CshAstExpression::Command(grep) = &ast[*left] else {
+            panic!("expected grep");
+        };
+        assert_eq!(
+            grep.args[2],
+            CshAstWord::Concat(vec![
+                CshAstWord::DoubleQuoted(Box::new(CshAstWord::Variable("ROOT".into()))),
+                CshAstWord::Pattern("/migrations/*.sh".into()),
+            ])
+        );
+        let CshAstExpression::Command(head) = &ast[*right] else {
+            panic!("expected head");
+        };
+        assert_eq!(head.name, Some(CshAstWord::Literal("head".into())));
+        assert_debug_snapshot!(ast, @r#"
+        CshAst {
+            commands: [
+                Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "migration",
+                                value: CommandSubstitution {
+                                    commands: [
+                                        Binary {
+                                            left: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: Some(
+                                                        Literal(
+                                                            "grep",
+                                                        ),
+                                                    ),
+                                                    args: [
+                                                        Literal(
+                                                            "-l",
+                                                        ),
+                                                        DoubleQuoted(
+                                                            Literal(
+                                                                "dell-xps13-sidecar-amps",
+                                                            ),
+                                                        ),
+                                                        Concat(
+                                                            [
+                                                                DoubleQuoted(
+                                                                    Variable(
+                                                                        "ROOT",
+                                                                    ),
+                                                                ),
+                                                                Pattern(
+                                                                    "/migrations/*.sh",
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                },
+                                            ),
+                                            operator: Pipe,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: Some(
+                                                        Literal(
+                                                            "head",
+                                                        ),
+                                                    ),
+                                                    args: [
+                                                        Literal(
+                                                            "-1",
+                                                        ),
+                                                    ],
+                                                },
+                                            ),
+                                        },
+                                    ],
+                                    backticks: false,
+                                },
+                            },
+                        ],
+                        name: None,
+                        args: [],
+                    },
+                ),
+            ],
+        }
+        "#);
+    }
+
+    #[test]
+    fn structures_quoted_words_and_expansion_operands() {
+        let ast = CshParser::parse(r#""$RUN" '$ROOT' "$ROOT" \$ROOT "" $1 $10 $@ $? $$ ${x:-$(printf '%s' "$HOME")} $((1 + $N)) $'a\'b\n' $"hello $USER" >"$OUT"/log"#).unwrap();
+        assert_debug_snapshot!(ast, @r#"
+        CshAst {
+            commands: [
+                Redirected {
+                    expression: Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: Some(
+                                DoubleQuoted(
+                                    Variable(
+                                        "RUN",
+                                    ),
+                                ),
+                            ),
+                            args: [
+                                SingleQuoted(
+                                    "$ROOT",
+                                ),
+                                DoubleQuoted(
+                                    Variable(
+                                        "ROOT",
+                                    ),
+                                ),
+                                Concat(
+                                    [
+                                        Escaped(
+                                            "$",
+                                        ),
+                                        Literal(
+                                            "ROOT",
+                                        ),
+                                    ],
+                                ),
+                                DoubleQuoted(
+                                    Literal(
+                                        "",
+                                    ),
+                                ),
+                                Variable(
+                                    "1",
+                                ),
+                                Concat(
+                                    [
+                                        Variable(
+                                            "1",
+                                        ),
+                                        Literal(
+                                            "0",
+                                        ),
+                                    ],
+                                ),
+                                Variable(
+                                    "@",
+                                ),
+                                Variable(
+                                    "?",
+                                ),
+                                Variable(
+                                    "$",
+                                ),
+                                Parameter {
+                                    prefix: "",
+                                    name: "x",
+                                    suffix: Concat(
+                                        [
+                                            Literal(
+                                                ":-",
+                                            ),
+                                            CommandSubstitution {
+                                                commands: [
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: Some(
+                                                                Literal(
+                                                                    "printf",
+                                                                ),
+                                                            ),
+                                                            args: [
+                                                                SingleQuoted(
+                                                                    "%s",
+                                                                ),
+                                                                DoubleQuoted(
+                                                                    Variable(
+                                                                        "HOME",
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                        },
+                                                    ),
+                                                ],
+                                                backticks: false,
+                                            },
+                                        ],
+                                    ),
+                                },
+                                ArithmeticExpansion(
+                                    Concat(
+                                        [
+                                            Literal(
+                                                "1 + ",
+                                            ),
+                                            Variable(
+                                                "N",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                AnsiCQuoted(
+                                    "a\\'b\\n",
+                                ),
+                                LocaleQuoted(
+                                    Concat(
+                                        [
+                                            Literal(
+                                                "hello ",
+                                            ),
+                                            Variable(
+                                                "USER",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ],
+                        },
+                    ),
+                    redirects: [
+                        CshAstRedirect {
+                            descriptor: None,
+                            operator: ">",
+                            target: Concat(
+                                [
+                                    DoubleQuoted(
+                                        Variable(
+                                            "OUT",
+                                        ),
+                                    ),
+                                    Literal(
+                                        "/log",
+                                    ),
+                                ],
+                            ),
+                        },
+                    ],
+                },
+            ],
+        }
+        "#);
+    }
+
+    #[test]
+    fn bounds_nested_word_expansions() {
+        for source in [
+            format!("echo {}x{}", "${x:-".repeat(200), "}".repeat(200)),
+            format!("echo {}pwd{}", "$(echo ".repeat(200), ")".repeat(200)),
+            format!("a={}x{}", "(a=".repeat(200), ")".repeat(200)),
+        ] {
+            assert!(CshParser::parse(&source).is_err());
+        }
+    }
+
+    #[test]
+    fn keeps_assignment_word_boundaries() {
+        let ast = CshParser::parse("X=#tag Y= Z='' echo \"\" '' # comment").unwrap();
+        let CshAstExpression::Command(command) = &ast[ast.commands[0]] else {
+            panic!("expected command");
+        };
+        assert_eq!(
+            command
+                .assignments
+                .iter()
+                .map(|a| &a.value)
+                .collect::<Vec<_>>(),
+            vec![
+                &CshAstWord::Literal("#tag".into()),
+                &CshAstWord::Literal(String::new()),
+                &CshAstWord::SingleQuoted(String::new()),
+            ]
+        );
+        assert_eq!(
+            command.args,
+            vec![
+                CshAstWord::DoubleQuoted(Box::new(CshAstWord::Literal(String::new()))),
+                CshAstWord::SingleQuoted(String::new()),
+            ]
+        );
+    }
+
+    #[test]
     fn preserves_operator_precedence() {
         let ast = CshParser::parse("a || b && c | d & e |& f").unwrap();
         assert_debug_snapshot!(ast, @r#"
@@ -37,7 +404,11 @@ mod tests {
                             left: Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "a",
+                                    name: Some(
+                                        Literal(
+                                            "a",
+                                        ),
+                                    ),
                                     args: [],
                                 },
                             ),
@@ -45,7 +416,11 @@ mod tests {
                             right: Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "b",
+                                    name: Some(
+                                        Literal(
+                                            "b",
+                                        ),
+                                    ),
                                     args: [],
                                 },
                             ),
@@ -55,7 +430,11 @@ mod tests {
                             left: Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "c",
+                                    name: Some(
+                                        Literal(
+                                            "c",
+                                        ),
+                                    ),
                                     args: [],
                                 },
                             ),
@@ -63,7 +442,11 @@ mod tests {
                             right: Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "d",
+                                    name: Some(
+                                        Literal(
+                                            "d",
+                                        ),
+                                    ),
                                     args: [],
                                 },
                             ),
@@ -74,7 +457,11 @@ mod tests {
                     left: Command(
                         CshAstCommand {
                             assignments: [],
-                            name: "e",
+                            name: Some(
+                                Literal(
+                                    "e",
+                                ),
+                            ),
                             args: [],
                         },
                     ),
@@ -82,7 +469,11 @@ mod tests {
                     right: Command(
                         CshAstCommand {
                             assignments: [],
-                            name: "f",
+                            name: Some(
+                                Literal(
+                                    "f",
+                                ),
+                            ),
                             args: [],
                         },
                     ),
@@ -107,12 +498,20 @@ mod tests {
                             assignments: [
                                 CshAstAssignment {
                                     name: "MODE",
-                                    value: "test",
+                                    value: Literal(
+                                        "test",
+                                    ),
                                 },
                             ],
-                            name: "cmd",
+                            name: Some(
+                                Literal(
+                                    "cmd",
+                                ),
+                            ),
                             args: [
-                                "arg",
+                                Literal(
+                                    "arg",
+                                ),
                             ],
                         },
                     ),
@@ -120,14 +519,18 @@ mod tests {
                         CshAstRedirect {
                             descriptor: None,
                             operator: ">",
-                            target: "out",
+                            target: Literal(
+                                "out",
+                            ),
                         },
                         CshAstRedirect {
                             descriptor: Some(
                                 "2",
                             ),
                             operator: ">&",
-                            target: "1",
+                            target: Literal(
+                                "1",
+                            ),
                         },
                     ],
                 },
@@ -138,9 +541,15 @@ mod tests {
                                 Command(
                                     CshAstCommand {
                                         assignments: [],
-                                        name: "echo",
+                                        name: Some(
+                                            Literal(
+                                                "echo",
+                                            ),
+                                        ),
                                         args: [
-                                            "hi",
+                                            Literal(
+                                                "hi",
+                                            ),
                                         ],
                                     },
                                 ),
@@ -148,7 +557,11 @@ mod tests {
                                     expression: Command(
                                         CshAstCommand {
                                             assignments: [],
-                                            name: "cat",
+                                            name: Some(
+                                                Literal(
+                                                    "cat",
+                                                ),
+                                            ),
                                             args: [],
                                         },
                                     ),
@@ -156,7 +569,9 @@ mod tests {
                                         CshAstRedirect {
                                             descriptor: None,
                                             operator: "<",
-                                            target: "out",
+                                            target: Literal(
+                                                "out",
+                                            ),
                                         },
                                     ],
                                 },
@@ -167,7 +582,9 @@ mod tests {
                         CshAstRedirect {
                             descriptor: None,
                             operator: ">>",
-                            target: "log",
+                            target: Literal(
+                                "log",
+                            ),
                         },
                     ],
                 },
@@ -187,30 +604,196 @@ b # comment"#).unwrap();
                 Command(
                     CshAstCommand {
                         assignments: [],
-                        name: "echo",
+                        name: Some(
+                            Literal(
+                                "echo",
+                            ),
+                        ),
                         args: [
-                            "prefix",
-                            "a b",
-                            "\"x\"",
-                            "\\literal",
-                            "\\q\"",
-                            "${v:-\"a)b\"}",
-                            "$(echo \"nested\")",
-                            "$((1 + (2)))",
-                            "`pwd`",
-                            "<(cat x)",
-                            "./{cjs,esm}/!(package.json)",
-                            "foo#bar",
-                            "${x}",
+                            Concat(
+                                [
+                                    Literal(
+                                        "pre",
+                                    ),
+                                    DoubleQuoted(
+                                        Literal(
+                                            "fix",
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            Concat(
+                                [
+                                    Literal(
+                                        "a",
+                                    ),
+                                    Escaped(
+                                        " ",
+                                    ),
+                                    Literal(
+                                        "b",
+                                    ),
+                                ],
+                            ),
+                            Concat(
+                                [
+                                    Escaped(
+                                        "\"",
+                                    ),
+                                    Literal(
+                                        "x",
+                                    ),
+                                    Escaped(
+                                        "\"",
+                                    ),
+                                ],
+                            ),
+                            SingleQuoted(
+                                "\\literal",
+                            ),
+                            DoubleQuoted(
+                                Concat(
+                                    [
+                                        Escaped(
+                                            "\\q",
+                                        ),
+                                        Escaped(
+                                            "\"",
+                                        ),
+                                    ],
+                                ),
+                            ),
+                            Parameter {
+                                prefix: "",
+                                name: "v",
+                                suffix: Concat(
+                                    [
+                                        Literal(
+                                            ":-",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "a)b",
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            },
+                            DoubleQuoted(
+                                CommandSubstitution {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: Some(
+                                                    Literal(
+                                                        "echo",
+                                                    ),
+                                                ),
+                                                args: [
+                                                    DoubleQuoted(
+                                                        Literal(
+                                                            "nested",
+                                                        ),
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                    backticks: false,
+                                },
+                            ),
+                            ArithmeticExpansion(
+                                Literal(
+                                    "1 + (2)",
+                                ),
+                            ),
+                            CommandSubstitution {
+                                commands: [
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "pwd",
+                                                ),
+                                            ),
+                                            args: [],
+                                        },
+                                    ),
+                                ],
+                                backticks: true,
+                            },
+                            ProcessSubstitution {
+                                operator: "<",
+                                commands: [
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "cat",
+                                                ),
+                                            ),
+                                            args: [
+                                                Literal(
+                                                    "x",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                ],
+                            },
+                            Concat(
+                                [
+                                    Literal(
+                                        "./{cjs,esm}/",
+                                    ),
+                                    ExtendedGlob {
+                                        operator: '!',
+                                        pattern: Literal(
+                                            "package.json",
+                                        ),
+                                    },
+                                ],
+                            ),
+                            Literal(
+                                "foo#bar",
+                            ),
+                            DoubleQuoted(
+                                Parameter {
+                                    prefix: "",
+                                    name: "x",
+                                    suffix: Literal(
+                                        "",
+                                    ),
+                                },
+                            ),
                         ],
                     },
                 ),
                 Command(
                     CshAstCommand {
                         assignments: [],
-                        name: "echo",
+                        name: Some(
+                            Literal(
+                                "echo",
+                            ),
+                        ),
                         args: [
-                            "ab",
+                            Concat(
+                                [
+                                    Literal(
+                                        "a",
+                                    ),
+                                    Escaped(
+                                        "",
+                                    ),
+                                    Literal(
+                                        "b",
+                                    ),
+                                ],
+                            ),
                         ],
                     },
                 ),
@@ -229,7 +812,9 @@ b # comment"#).unwrap();
                     variable: "f",
                     words: Some(
                         [
-                            "*.js",
+                            Pattern(
+                                "*.js",
+                            ),
                         ],
                     ),
                     body: CshAst {
@@ -242,10 +827,20 @@ b # comment"#).unwrap();
                                                 Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "test",
+                                                        name: Some(
+                                                            Literal(
+                                                                "test",
+                                                            ),
+                                                        ),
                                                         args: [
-                                                            "-f",
-                                                            "$f",
+                                                            Literal(
+                                                                "-f",
+                                                            ),
+                                                            DoubleQuoted(
+                                                                Variable(
+                                                                    "f",
+                                                                ),
+                                                            ),
                                                         ],
                                                     },
                                                 ),
@@ -256,9 +851,17 @@ b # comment"#).unwrap();
                                                 Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "echo",
+                                                        name: Some(
+                                                            Literal(
+                                                                "echo",
+                                                            ),
+                                                        ),
                                                         args: [
-                                                            "$f",
+                                                            DoubleQuoted(
+                                                                Variable(
+                                                                    "f",
+                                                                ),
+                                                            ),
                                                         ],
                                                     },
                                                 ),
@@ -271,7 +874,11 @@ b # comment"#).unwrap();
                                                 Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "false",
+                                                        name: Some(
+                                                            Literal(
+                                                                "false",
+                                                            ),
+                                                        ),
                                                         args: [],
                                                     },
                                                 ),
@@ -282,7 +889,11 @@ b # comment"#).unwrap();
                                                 Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "break",
+                                                        name: Some(
+                                                            Literal(
+                                                                "break",
+                                                            ),
+                                                        ),
                                                         args: [],
                                                     },
                                                 ),
@@ -296,7 +907,11 @@ b # comment"#).unwrap();
                                             Command(
                                                 CshAstCommand {
                                                     assignments: [],
-                                                    name: "continue",
+                                                    name: Some(
+                                                        Literal(
+                                                            "continue",
+                                                        ),
+                                                    ),
                                                     args: [],
                                                 },
                                             ),
@@ -314,7 +929,11 @@ b # comment"#).unwrap();
                             Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "ready",
+                                    name: Some(
+                                        Literal(
+                                            "ready",
+                                        ),
+                                    ),
                                     args: [],
                                 },
                             ),
@@ -325,9 +944,15 @@ b # comment"#).unwrap();
                             Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "sleep",
+                                    name: Some(
+                                        Literal(
+                                            "sleep",
+                                        ),
+                                    ),
                                     args: [
-                                        "1",
+                                        Literal(
+                                            "1",
+                                        ),
                                     ],
                                 },
                             ),
@@ -342,7 +967,11 @@ b # comment"#).unwrap();
                                 Command(
                                     CshAstCommand {
                                         assignments: [],
-                                        name: "ready",
+                                        name: Some(
+                                            Literal(
+                                                "ready",
+                                            ),
+                                        ),
                                         args: [],
                                     },
                                 ),
@@ -354,9 +983,15 @@ b # comment"#).unwrap();
                             Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "sleep",
+                                    name: Some(
+                                        Literal(
+                                            "sleep",
+                                        ),
+                                    ),
                                     args: [
-                                        "1",
+                                        Literal(
+                                            "1",
+                                        ),
                                     ],
                                 },
                             ),
@@ -378,12 +1013,20 @@ b # comment"#).unwrap();
         CshAst {
             commands: [
                 Case {
-                    word: "$choice",
+                    word: DoubleQuoted(
+                        Variable(
+                            "choice",
+                        ),
+                    ),
                     arms: [
                         CshAstCaseArm {
                             patterns: [
-                                "y",
-                                "Y",
+                                Literal(
+                                    "y",
+                                ),
+                                Literal(
+                                    "Y",
+                                ),
                             ],
                             body: CshAst {
                                 commands: [
@@ -393,14 +1036,22 @@ b # comment"#).unwrap();
                                                 Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "build",
+                                                        name: Some(
+                                                            Literal(
+                                                                "build",
+                                                            ),
+                                                        ),
                                                         args: [],
                                                     },
                                                 ),
                                                 Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "test",
+                                                        name: Some(
+                                                            Literal(
+                                                                "test",
+                                                            ),
+                                                        ),
                                                         args: [],
                                                     },
                                                 ),
@@ -413,25 +1064,39 @@ b # comment"#).unwrap();
                         },
                         CshAstCaseArm {
                             patterns: [
-                                "*",
+                                Pattern(
+                                    "*",
+                                ),
                             ],
                             body: CshAst {
                                 commands: [
                                     Command(
                                         CshAstCommand {
                                             assignments: [],
-                                            name: "echo",
+                                            name: Some(
+                                                Literal(
+                                                    "echo",
+                                                ),
+                                            ),
                                             args: [
-                                                "abort",
+                                                Literal(
+                                                    "abort",
+                                                ),
                                             ],
                                         },
                                     ),
                                     Command(
                                         CshAstCommand {
                                             assignments: [],
-                                            name: "exit",
+                                            name: Some(
+                                                Literal(
+                                                    "exit",
+                                                ),
+                                            ),
                                             args: [
-                                                "1",
+                                                Literal(
+                                                    "1",
+                                                ),
                                             ],
                                         },
                                     ),
@@ -500,24 +1165,29 @@ b # comment"#).unwrap();
             let CshAstExpression::Command(command) = &ast[*right] else {
                 panic!("expected a command");
             };
-            assert_eq!(command.args, [expected.to_string()]);
+            assert_eq!(command.args, [CshAstWord::Literal(expected.to_string())]);
             id = *left;
         }
         let CshAstExpression::Command(command) = &ast[id] else {
             panic!("expected the first command");
         };
-        assert_eq!(command.args, ["0"]);
+        assert_eq!(command.args, [CshAstWord::Literal("0".into())]);
     }
 
     #[test]
-    fn validates_substitutions_and_reclaims_temporary_nodes() {
+    fn validates_and_retains_substitution_nodes() {
         let ast = CshParser::parse("echo $(printf '%s' $(pwd)) <(cat file) && done_cmd").unwrap();
-        assert_eq!(ast.nodes.len(), 3);
-        assert_eq!(ast.commands, [CshAstNodeId(2)]);
-        let CshAstExpression::Command(command) = &ast[CshAstNodeId(0)] else {
+        assert_eq!(ast.nodes.len(), 6);
+        assert_eq!(ast.commands, [CshAstNodeId(5)]);
+        let CshAstExpression::Command(command) = &ast[CshAstNodeId(3)] else {
             panic!("expected echo");
         };
-        assert_eq!(command.args, ["$(printf '%s' $(pwd))", "<(cat file)"]);
+        assert!(
+            matches!(&command.args[0], CshAstWord::CommandSubstitution { commands, .. } if commands == &[CshAstNodeId(1)])
+        );
+        assert!(
+            matches!(&command.args[1], CshAstWord::ProcessSubstitution { commands, .. } if commands == &[CshAstNodeId(2)])
+        );
         for source in [
             "echo $(echo |)",
             "echo <(if true; then fi)",
@@ -561,12 +1231,31 @@ b # comment"#).unwrap();
             panic!("expected redirect");
         };
         assert_eq!(redirects[0].descriptor.as_deref(), Some("2"));
-        assert_eq!(redirects[0].target, "out");
+        assert_eq!(redirects[0].target, CshAstWord::Literal("out".into()));
         let CshAstExpression::Command(command) = &ast[*expression] else {
             panic!("expected command");
         };
-        assert_eq!(command.name, "ifconfig");
-        assert_eq!(command.args, ["if", "a#b", "2file", "<(pwd)", "prehéllo🌍"]);
+        assert_eq!(command.name, Some(CshAstWord::Literal("ifconfig".into())));
+        assert_eq!(
+            &command.args[..3],
+            &[
+                CshAstWord::SingleQuoted("if".into()),
+                CshAstWord::Literal("a#b".into()),
+                CshAstWord::Literal("2file".into())
+            ]
+        );
+        assert!(matches!(
+            &command.args[3],
+            CshAstWord::ProcessSubstitution { .. }
+        ));
+        assert_eq!(
+            command.args[4],
+            CshAstWord::Concat(vec![
+                CshAstWord::Literal("pre".into()),
+                CshAstWord::DoubleQuoted(Box::new(CshAstWord::Literal("héllo".into()))),
+                CshAstWord::SingleQuoted("🌍".into())
+            ])
+        );
     }
 
     #[test]
@@ -578,9 +1267,17 @@ b # comment"#).unwrap();
                 Command(
                     CshAstCommand {
                         assignments: [],
-                        name: "echo",
+                        name: Some(
+                            Literal(
+                                "echo",
+                            ),
+                        ),
                         args: [
-                            "Hello, cruel world!",
+                            DoubleQuoted(
+                                Literal(
+                                    "Hello, cruel world!",
+                                ),
+                            ),
                         ],
                     },
                 ),
@@ -617,7 +1314,11 @@ b # comment"#).unwrap();
                             Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "bump",
+                                    name: Some(
+                                        Literal(
+                                            "bump",
+                                        ),
+                                    ),
                                     args: [],
                                 },
                             ),
@@ -642,7 +1343,11 @@ b # comment"#).unwrap();
                     expression: Command(
                         CshAstCommand {
                             assignments: [],
-                            name: "cat",
+                            name: Some(
+                                Literal(
+                                    "cat",
+                                ),
+                            ),
                             args: [],
                         },
                     ),
@@ -650,7 +1355,9 @@ b # comment"#).unwrap();
                         CshAstRedirect {
                             descriptor: None,
                             operator: "<<",
-                            target: "EOF",
+                            target: Literal(
+                                "EOF",
+                            ),
                             here_document: 0,
                         },
                         CshAstRedirect {
@@ -658,7 +1365,9 @@ b # comment"#).unwrap();
                                 "3",
                             ),
                             operator: "<<-",
-                            target: "END",
+                            target: Literal(
+                                "END",
+                            ),
                             here_document: 1,
                         },
                     ],
@@ -666,9 +1375,15 @@ b # comment"#).unwrap();
                 Command(
                     CshAstCommand {
                         assignments: [],
-                        name: "echo",
+                        name: Some(
+                            Literal(
+                                "echo",
+                            ),
+                        ),
                         args: [
-                            "done",
+                            Literal(
+                                "done",
+                            ),
                         ],
                     },
                 ),
@@ -695,10 +1410,11 @@ b # comment"#).unwrap();
     fn scopes_heredocs_inside_substitutions() {
         let source = "cat <<OUT \"$(cat <<'IN'\ninner\nIN\n)\"\nouter\nOUT\n";
         let ast = CshParser::parse(source).unwrap();
-        assert_eq!(ast.here_documents.len(), 1);
+        assert_eq!(ast.here_documents.len(), 2);
         assert_eq!(ast.here_documents[0].delimiter, "OUT");
         assert_eq!(ast.here_documents[0].body, "outer\n");
-        assert_eq!(ast.nodes.len(), 2);
+        assert_eq!(ast.here_documents[1].body, "inner\n");
+        assert_eq!(ast.nodes.len(), 4);
     }
 
     #[test]
@@ -707,12 +1423,24 @@ b # comment"#).unwrap();
         let CshAstExpression::Command(command) = &ast[ast.commands[0]] else {
             panic!("expected assignment");
         };
-        assert_eq!(
-            command.assignments[0].value,
-            "('one two' $(pwd)\n# comment\nthree)"
-        );
+        let CshAstWord::Array(elements) = &command.assignments[0].value else {
+            panic!("expected array");
+        };
+        assert_eq!(elements.len(), 3);
+        assert_eq!(elements[0], CshAstWord::SingleQuoted("one two".into()));
+        assert!(matches!(
+            &elements[1],
+            CshAstWord::CommandSubstitution { .. }
+        ));
+        assert_eq!(elements[2], CshAstWord::Literal("three".into()));
+        let CshAstExpression::Test(CshAstWord::Concat(parts)) = &ast[ast.commands[1]] else {
+            panic!("expected structured test");
+        };
+        assert!(matches!(&parts[1], CshAstWord::Parameter { name, .. } if name == "items"));
         assert!(
-            matches!(&ast[ast.commands[1]], CshAstExpression::Test(text) if text == " ${items[0]} =~ ^(one|two)$ && -n \"$HOME\" ")
+            parts.contains(&CshAstWord::DoubleQuoted(Box::new(CshAstWord::Variable(
+                "HOME".into()
+            ))))
         );
         for source in [
             "f()",
@@ -855,18 +1583,41 @@ b # comment"#).unwrap();
                 Command(
                     CshAstCommand {
                         assignments: [],
-                        name: "echo",
+                        name: Some(
+                            Literal(
+                                "echo",
+                            ),
+                        ),
                         args: [
-                            "",
-                            "prefix",
-                            "a b",
+                            SingleQuoted(
+                                "",
+                            ),
+                            Concat(
+                                [
+                                    Literal(
+                                        "pre",
+                                    ),
+                                    DoubleQuoted(
+                                        Literal(
+                                            "fix",
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            SingleQuoted(
+                                "a b",
+                            ),
                         ],
                     },
                 ),
                 Command(
                     CshAstCommand {
                         assignments: [],
-                        name: "pwd",
+                        name: Some(
+                            Literal(
+                                "pwd",
+                            ),
+                        ),
                         args: [],
                     },
                 ),
@@ -884,7 +1635,11 @@ b # comment"#).unwrap();
                 Command(
                     CshAstCommand {
                         assignments: [],
-                        name: "if",
+                        name: Some(
+                            SingleQuoted(
+                                "if",
+                            ),
+                        ),
                         args: [],
                     },
                 ),
@@ -964,9 +1719,15 @@ b # comment"#).unwrap();
                 Command(
                     CshAstCommand {
                         assignments: [],
-                        name: "echo",
+                        name: Some(
+                            Literal(
+                                "echo",
+                            ),
+                        ),
                         args: [
-                            "héllo\n🌍",
+                            SingleQuoted(
+                                "héllo\n🌍",
+                            ),
                         ],
                     },
                 ),

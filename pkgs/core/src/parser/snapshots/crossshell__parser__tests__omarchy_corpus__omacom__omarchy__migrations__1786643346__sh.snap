@@ -8,9 +8,17 @@ CshAst {
         Command(
             CshAstCommand {
                 assignments: [],
-                name: "echo",
+                name: Some(
+                    Literal(
+                        "echo",
+                    ),
+                ),
                 args: [
-                    "Repair the Copy URL shortcut for profiles that predate its pinned extension id",
+                    DoubleQuoted(
+                        Literal(
+                            "Repair the Copy URL shortcut for profiles that predate its pinned extension id",
+                        ),
+                    ),
                 ],
             },
         ),
@@ -19,10 +27,14 @@ CshAst {
                 assignments: [
                     CshAstAssignment {
                         name: "pinned_id",
-                        value: "bgpiichlckmfanooecilcjemknkcpngb",
+                        value: DoubleQuoted(
+                            Literal(
+                                "bgpiichlckmfanooecilcjemknkcpngb",
+                            ),
+                        ),
                     },
                 ],
-                name: "",
+                name: None,
                 args: [],
             },
         ),
@@ -31,10 +43,37 @@ CshAst {
                 assignments: [
                     CshAstAssignment {
                         name: "repair_py",
-                        value: "$(cat <<'PY'\nimport json\nimport shutil\nimport sys\nfrom pathlib import Path\n\npath = Path(sys.argv[1])\npinned_id = sys.argv[2]\nmode = sys.argv[3]\n\ntry:\n    preferences = json.loads(path.read_text())\nexcept (OSError, ValueError):\n    sys.exit(1)\n\nextensions = preferences.get(\"extensions\", {})\ncommands = extensions.get(\"commands\", {})\nsettings = extensions.get(\"settings\", {})\n\ndef ghost_id(command):\n    if command.get(\"command_name\") != \"copy-url\":\n        return None\n    extension = command.get(\"extension\")\n    if not extension or extension == pinned_id:\n        return None\n    # An installed extension records its install path in settings; only the\n    # ghosts of Copy URL itself may be rebound.\n    install_path = settings.get(extension, {}).get(\"path\", \"\")\n    if install_path and not install_path.endswith(\"/default/chromium/extensions/copy-url\"):\n        return None\n    return extension\n\nif mode == \"check\":\n    sys.exit(0 if any(ghost_id(c) for c in commands.values()) else 1)\n\n# Chromium keeps one shortcut per command, so a ghost may only be rebound\n# when the pinned extension holds no copy-url binding of its own; further\n# ghosts are dropped rather than doubled up.\npinned_bound = any(\n    c.get(\"command_name\") == \"copy-url\" and c.get(\"extension\") == pinned_id\n    for c in commands.values()\n)\n\nchanged = False\nfor accelerator in list(commands):\n    ghost = ghost_id(commands[accelerator])\n    if not ghost:\n        continue\n    if pinned_bound:\n        del commands[accelerator]\n    else:\n        commands[accelerator][\"extension\"] = pinned_id\n        pinned_bound = True\n        pinned_command = settings.get(pinned_id, {}).get(\"commands\", {}).get(\"copy-url\", {})\n        if pinned_command:\n            pinned_command[\"was_assigned\"] = True\n    settings.pop(ghost, None)\n    changed = True\n\nif changed:\n    shutil.copy2(path, path.with_name(path.name + \".omarchy-copy-url-repair.bak\"))\n    path.write_text(json.dumps(preferences, separators=(\",\", \":\")))\nPY\n)",
+                        value: CommandSubstitution {
+                            commands: [
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "cat",
+                                                ),
+                                            ),
+                                            args: [],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: "<<",
+                                            target: Literal(
+                                                "PY",
+                                            ),
+                                            here_document: 0,
+                                        },
+                                    ],
+                                },
+                            ],
+                            backticks: false,
+                        },
                     },
                 ],
-                name: "",
+                name: None,
                 args: [],
             },
         ),
@@ -43,10 +82,169 @@ CshAst {
                 assignments: [
                     CshAstAssignment {
                         name: "profile_roots",
-                        value: "(\n  \"$HOME/.config/chromium\"\n  \"$HOME/.config/google-chrome\"\n  \"$HOME/.config/google-chrome-beta\"\n  \"$HOME/.config/google-chrome-unstable\"\n  \"$HOME/.config/BraveSoftware/Brave-Browser\"\n  \"$HOME/.config/BraveSoftware/Brave-Browser-Beta\"\n  \"$HOME/.config/BraveSoftware/Brave-Browser-Nightly\"\n  \"$HOME/.config/microsoft-edge\"\n  \"$HOME/.config/microsoft-edge-beta\"\n  \"$HOME/.config/microsoft-edge-dev\"\n  \"$HOME/.config/vivaldi\"\n  \"$HOME/.config/opera\"\n  \"$HOME/.config/helium\"\n)",
+                        value: Array(
+                            [
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/chromium",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/google-chrome",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/google-chrome-beta",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/google-chrome-unstable",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/BraveSoftware/Brave-Browser",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/BraveSoftware/Brave-Browser-Beta",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/BraveSoftware/Brave-Browser-Nightly",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/microsoft-edge",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/microsoft-edge-beta",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/microsoft-edge-dev",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/vivaldi",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/opera",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Variable(
+                                                "HOME",
+                                            ),
+                                            Literal(
+                                                "/.config/helium",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ],
+                        ),
                     },
                 ],
-                name: "",
+                name: None,
                 args: [],
             },
         ),
@@ -60,10 +258,12 @@ CshAst {
                                 assignments: [
                                     CshAstAssignment {
                                         name: "pending",
-                                        value: "()",
+                                        value: Array(
+                                            [],
+                                        ),
                                     },
                                 ],
-                                name: "",
+                                name: None,
                                 args: [],
                             },
                         ),
@@ -71,20 +271,44 @@ CshAst {
                             variable: "profile_root",
                             words: Some(
                                 [
-                                    "${profile_roots[@]}",
+                                    DoubleQuoted(
+                                        Parameter {
+                                            prefix: "",
+                                            name: "profile_roots",
+                                            suffix: Literal(
+                                                "[@]",
+                                            ),
+                                        },
+                                    ),
                                 ],
                             ),
                             body: CshAst {
                                 commands: [
                                     Binary {
                                         left: Test(
-                                            " -d $profile_root ",
+                                            Concat(
+                                                [
+                                                    Literal(
+                                                        " -d ",
+                                                    ),
+                                                    Variable(
+                                                        "profile_root",
+                                                    ),
+                                                    Literal(
+                                                        " ",
+                                                    ),
+                                                ],
+                                            ),
                                         ),
                                         operator: Or,
                                         right: Command(
                                             CshAstCommand {
                                                 assignments: [],
-                                                name: "continue",
+                                                name: Some(
+                                                    Literal(
+                                                        "continue",
+                                                    ),
+                                                ),
                                                 args: [],
                                             },
                                         ),
@@ -93,20 +317,47 @@ CshAst {
                                         variable: "preferences",
                                         words: Some(
                                             [
-                                                "$profile_root/*/Preferences",
+                                                Concat(
+                                                    [
+                                                        DoubleQuoted(
+                                                            Variable(
+                                                                "profile_root",
+                                                            ),
+                                                        ),
+                                                        Pattern(
+                                                            "/*/Preferences",
+                                                        ),
+                                                    ],
+                                                ),
                                             ],
                                         ),
                                         body: CshAst {
                                             commands: [
                                                 Binary {
                                                     left: Test(
-                                                        " -f $preferences ",
+                                                        Concat(
+                                                            [
+                                                                Literal(
+                                                                    " -f ",
+                                                                ),
+                                                                Variable(
+                                                                    "preferences",
+                                                                ),
+                                                                Literal(
+                                                                    " ",
+                                                                ),
+                                                            ],
+                                                        ),
                                                     ),
                                                     operator: Or,
                                                     right: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "continue",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "continue",
+                                                                ),
+                                                            ),
                                                             args: [],
                                                         },
                                                     ),
@@ -115,13 +366,33 @@ CshAst {
                                                     left: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "python3",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "python3",
+                                                                ),
+                                                            ),
                                                             args: [
-                                                                "-c",
-                                                                "$repair_py",
-                                                                "$preferences",
-                                                                "$pinned_id",
-                                                                "check",
+                                                                Literal(
+                                                                    "-c",
+                                                                ),
+                                                                DoubleQuoted(
+                                                                    Variable(
+                                                                        "repair_py",
+                                                                    ),
+                                                                ),
+                                                                DoubleQuoted(
+                                                                    Variable(
+                                                                        "preferences",
+                                                                    ),
+                                                                ),
+                                                                DoubleQuoted(
+                                                                    Variable(
+                                                                        "pinned_id",
+                                                                    ),
+                                                                ),
+                                                                Literal(
+                                                                    "check",
+                                                                ),
                                                             ],
                                                         },
                                                     ),
@@ -129,7 +400,11 @@ CshAst {
                                                     right: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "continue",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "continue",
+                                                                ),
+                                                            ),
                                                             args: [],
                                                         },
                                                     ),
@@ -137,7 +412,24 @@ CshAst {
                                                 Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "pending+=(\"$preferences\")",
+                                                        name: Some(
+                                                            Concat(
+                                                                [
+                                                                    Literal(
+                                                                        "pending+=",
+                                                                    ),
+                                                                    Array(
+                                                                        [
+                                                                            DoubleQuoted(
+                                                                                Variable(
+                                                                                    "preferences",
+                                                                                ),
+                                                                            ),
+                                                                        ],
+                                                                    ),
+                                                                ],
+                                                            ),
+                                                        ),
                                                         args: [],
                                                     },
                                                 ),
@@ -159,10 +451,18 @@ CshAst {
                         Command(
                             CshAstCommand {
                                 assignments: [],
-                                name: "local",
+                                name: Some(
+                                    Literal(
+                                        "local",
+                                    ),
+                                ),
                                 args: [
-                                    "profile_root",
-                                    "backup",
+                                    Literal(
+                                        "profile_root",
+                                    ),
+                                    Literal(
+                                        "backup",
+                                    ),
                                 ],
                             },
                         ),
@@ -170,7 +470,15 @@ CshAst {
                             variable: "profile_root",
                             words: Some(
                                 [
-                                    "${profile_roots[@]}",
+                                    DoubleQuoted(
+                                        Parameter {
+                                            prefix: "",
+                                            name: "profile_roots",
+                                            suffix: Literal(
+                                                "[@]",
+                                            ),
+                                        },
+                                    ),
                                 ],
                             ),
                             body: CshAst {
@@ -179,22 +487,51 @@ CshAst {
                                         variable: "backup",
                                         words: Some(
                                             [
-                                                "$profile_root/*/Preferences.omarchy-copy-url-repair.bak",
+                                                Concat(
+                                                    [
+                                                        DoubleQuoted(
+                                                            Variable(
+                                                                "profile_root",
+                                                            ),
+                                                        ),
+                                                        Pattern(
+                                                            "/*/Preferences.omarchy-copy-url-repair.bak",
+                                                        ),
+                                                    ],
+                                                ),
                                             ],
                                         ),
                                         body: CshAst {
                                             commands: [
                                                 Binary {
                                                     left: Test(
-                                                        " -f $backup ",
+                                                        Concat(
+                                                            [
+                                                                Literal(
+                                                                    " -f ",
+                                                                ),
+                                                                Variable(
+                                                                    "backup",
+                                                                ),
+                                                                Literal(
+                                                                    " ",
+                                                                ),
+                                                            ],
+                                                        ),
                                                     ),
                                                     operator: And,
                                                     right: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "return",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "return",
+                                                                ),
+                                                            ),
                                                             args: [
-                                                                "0",
+                                                                Literal(
+                                                                    "0",
+                                                                ),
                                                             ],
                                                         },
                                                     ),
@@ -208,9 +545,15 @@ CshAst {
                         Command(
                             CshAstCommand {
                                 assignments: [],
-                                name: "return",
+                                name: Some(
+                                    Literal(
+                                        "return",
+                                    ),
+                                ),
                                 args: [
-                                    "1",
+                                    Literal(
+                                        "1",
+                                    ),
                                 ],
                             },
                         ),
@@ -224,7 +567,31 @@ CshAst {
                 CshAst {
                     commands: [
                         Test(
-                            " -L $1/SingletonLock || -e $1/SingletonLock || -S $1/SingletonSocket ",
+                            Concat(
+                                [
+                                    Literal(
+                                        " -L ",
+                                    ),
+                                    Variable(
+                                        "1",
+                                    ),
+                                    Literal(
+                                        "/SingletonLock || -e ",
+                                    ),
+                                    Variable(
+                                        "1",
+                                    ),
+                                    Literal(
+                                        "/SingletonLock || -S ",
+                                    ),
+                                    Variable(
+                                        "1",
+                                    ),
+                                    Literal(
+                                        "/SingletonSocket ",
+                                    ),
+                                ],
+                            ),
                         ),
                     ],
                 },
@@ -238,11 +605,21 @@ CshAst {
                         Command(
                             CshAstCommand {
                                 assignments: [],
-                                name: "local",
+                                name: Some(
+                                    Literal(
+                                        "local",
+                                    ),
+                                ),
                                 args: [
-                                    "preferences",
-                                    "backup",
-                                    "profile_root",
+                                    Literal(
+                                        "preferences",
+                                    ),
+                                    Literal(
+                                        "backup",
+                                    ),
+                                    Literal(
+                                        "profile_root",
+                                    ),
                                 ],
                             },
                         ),
@@ -250,7 +627,15 @@ CshAst {
                             variable: "preferences",
                             words: Some(
                                 [
-                                    "${pending[@]}",
+                                    DoubleQuoted(
+                                        Parameter {
+                                            prefix: "",
+                                            name: "pending",
+                                            suffix: Literal(
+                                                "[@]",
+                                            ),
+                                        },
+                                    ),
                                 ],
                             ),
                             body: CshAst {
@@ -259,9 +644,55 @@ CshAst {
                                         left: Command(
                                             CshAstCommand {
                                                 assignments: [],
-                                                name: "profile_open",
+                                                name: Some(
+                                                    Literal(
+                                                        "profile_open",
+                                                    ),
+                                                ),
                                                 args: [
-                                                    "$(dirname \"$(dirname \"$preferences\")\")",
+                                                    DoubleQuoted(
+                                                        CommandSubstitution {
+                                                            commands: [
+                                                                Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: Some(
+                                                                            Literal(
+                                                                                "dirname",
+                                                                            ),
+                                                                        ),
+                                                                        args: [
+                                                                            DoubleQuoted(
+                                                                                CommandSubstitution {
+                                                                                    commands: [
+                                                                                        Command(
+                                                                                            CshAstCommand {
+                                                                                                assignments: [],
+                                                                                                name: Some(
+                                                                                                    Literal(
+                                                                                                        "dirname",
+                                                                                                    ),
+                                                                                                ),
+                                                                                                args: [
+                                                                                                    DoubleQuoted(
+                                                                                                        Variable(
+                                                                                                            "preferences",
+                                                                                                        ),
+                                                                                                    ),
+                                                                                                ],
+                                                                                            },
+                                                                                        ),
+                                                                                    ],
+                                                                                    backticks: false,
+                                                                                },
+                                                                            ),
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                            ],
+                                                            backticks: false,
+                                                        },
+                                                    ),
                                                 ],
                                             },
                                         ),
@@ -269,9 +700,15 @@ CshAst {
                                         right: Command(
                                             CshAstCommand {
                                                 assignments: [],
-                                                name: "return",
+                                                name: Some(
+                                                    Literal(
+                                                        "return",
+                                                    ),
+                                                ),
                                                 args: [
-                                                    "0",
+                                                    Literal(
+                                                        "0",
+                                                    ),
                                                 ],
                                             },
                                         ),
@@ -283,7 +720,15 @@ CshAst {
                             variable: "profile_root",
                             words: Some(
                                 [
-                                    "${profile_roots[@]}",
+                                    DoubleQuoted(
+                                        Parameter {
+                                            prefix: "",
+                                            name: "profile_roots",
+                                            suffix: Literal(
+                                                "[@]",
+                                            ),
+                                        },
+                                    ),
                                 ],
                             ),
                             body: CshAst {
@@ -292,20 +737,47 @@ CshAst {
                                         variable: "backup",
                                         words: Some(
                                             [
-                                                "$profile_root/*/Preferences.omarchy-copy-url-repair.bak",
+                                                Concat(
+                                                    [
+                                                        DoubleQuoted(
+                                                            Variable(
+                                                                "profile_root",
+                                                            ),
+                                                        ),
+                                                        Pattern(
+                                                            "/*/Preferences.omarchy-copy-url-repair.bak",
+                                                        ),
+                                                    ],
+                                                ),
                                             ],
                                         ),
                                         body: CshAst {
                                             commands: [
                                                 Binary {
                                                     left: Test(
-                                                        " -f $backup ",
+                                                        Concat(
+                                                            [
+                                                                Literal(
+                                                                    " -f ",
+                                                                ),
+                                                                Variable(
+                                                                    "backup",
+                                                                ),
+                                                                Literal(
+                                                                    " ",
+                                                                ),
+                                                            ],
+                                                        ),
                                                     ),
                                                     operator: Or,
                                                     right: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "continue",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "continue",
+                                                                ),
+                                                            ),
                                                             args: [],
                                                         },
                                                     ),
@@ -314,9 +786,55 @@ CshAst {
                                                     left: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "profile_open",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "profile_open",
+                                                                ),
+                                                            ),
                                                             args: [
-                                                                "$(dirname \"$(dirname \"$backup\")\")",
+                                                                DoubleQuoted(
+                                                                    CommandSubstitution {
+                                                                        commands: [
+                                                                            Command(
+                                                                                CshAstCommand {
+                                                                                    assignments: [],
+                                                                                    name: Some(
+                                                                                        Literal(
+                                                                                            "dirname",
+                                                                                        ),
+                                                                                    ),
+                                                                                    args: [
+                                                                                        DoubleQuoted(
+                                                                                            CommandSubstitution {
+                                                                                                commands: [
+                                                                                                    Command(
+                                                                                                        CshAstCommand {
+                                                                                                            assignments: [],
+                                                                                                            name: Some(
+                                                                                                                Literal(
+                                                                                                                    "dirname",
+                                                                                                                ),
+                                                                                                            ),
+                                                                                                            args: [
+                                                                                                                DoubleQuoted(
+                                                                                                                    Variable(
+                                                                                                                        "backup",
+                                                                                                                    ),
+                                                                                                                ),
+                                                                                                            ],
+                                                                                                        },
+                                                                                                    ),
+                                                                                                ],
+                                                                                                backticks: false,
+                                                                                            },
+                                                                                        ),
+                                                                                    ],
+                                                                                },
+                                                                            ),
+                                                                        ],
+                                                                        backticks: false,
+                                                                    },
+                                                                ),
                                                             ],
                                                         },
                                                     ),
@@ -324,9 +842,15 @@ CshAst {
                                                     right: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "return",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "return",
+                                                                ),
+                                                            ),
                                                             args: [
-                                                                "0",
+                                                                Literal(
+                                                                    "0",
+                                                                ),
                                                             ],
                                                         },
                                                     ),
@@ -340,9 +864,15 @@ CshAst {
                         Command(
                             CshAstCommand {
                                 assignments: [],
-                                name: "return",
+                                name: Some(
+                                    Literal(
+                                        "return",
+                                    ),
+                                ),
                                 args: [
-                                    "1",
+                                    Literal(
+                                        "1",
+                                    ),
                                 ],
                             },
                         ),
@@ -353,7 +883,11 @@ CshAst {
         Command(
             CshAstCommand {
                 assignments: [],
-                name: "find_pending",
+                name: Some(
+                    Literal(
+                        "find_pending",
+                    ),
+                ),
                 args: [],
             },
         ),
@@ -371,7 +905,11 @@ CshAst {
                                     Command(
                                         CshAstCommand {
                                             assignments: [],
-                                            name: "unverified_repairs_exist",
+                                            name: Some(
+                                                Literal(
+                                                    "unverified_repairs_exist",
+                                                ),
+                                            ),
                                             args: [],
                                         },
                                     ),
@@ -384,9 +922,15 @@ CshAst {
                             Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "exit",
+                                    name: Some(
+                                        Literal(
+                                            "exit",
+                                        ),
+                                    ),
                                     args: [
-                                        "0",
+                                        Literal(
+                                            "0",
+                                        ),
                                     ],
                                 },
                             ),
@@ -403,7 +947,11 @@ CshAst {
                     Command(
                         CshAstCommand {
                             assignments: [],
-                            name: "affected_profile_open",
+                            name: Some(
+                                Literal(
+                                    "affected_profile_open",
+                                ),
+                            ),
                             args: [],
                         },
                     ),
@@ -420,10 +968,20 @@ CshAst {
                                             Command(
                                                 CshAstCommand {
                                                     assignments: [],
-                                                    name: "gum",
+                                                    name: Some(
+                                                        Literal(
+                                                            "gum",
+                                                        ),
+                                                    ),
                                                     args: [
-                                                        "confirm",
-                                                        "Close the browser windows to repair the Copy URL shortcut, then continue",
+                                                        Literal(
+                                                            "confirm",
+                                                        ),
+                                                        DoubleQuoted(
+                                                            Literal(
+                                                                "Close the browser windows to repair the Copy URL shortcut, then continue",
+                                                            ),
+                                                        ),
                                                     ],
                                                 },
                                             ),
@@ -436,9 +994,17 @@ CshAst {
                                             expression: Command(
                                                 CshAstCommand {
                                                     assignments: [],
-                                                    name: "echo",
+                                                    name: Some(
+                                                        Literal(
+                                                            "echo",
+                                                        ),
+                                                    ),
                                                     args: [
-                                                        "A running browser would undo the Copy URL shortcut repair.",
+                                                        DoubleQuoted(
+                                                            Literal(
+                                                                "A running browser would undo the Copy URL shortcut repair.",
+                                                            ),
+                                                        ),
                                                     ],
                                                 },
                                             ),
@@ -446,7 +1012,9 @@ CshAst {
                                                 CshAstRedirect {
                                                     descriptor: None,
                                                     operator: ">&",
-                                                    target: "2",
+                                                    target: Literal(
+                                                        "2",
+                                                    ),
                                                 },
                                             ],
                                         },
@@ -454,9 +1022,17 @@ CshAst {
                                             expression: Command(
                                                 CshAstCommand {
                                                     assignments: [],
-                                                    name: "echo",
+                                                    name: Some(
+                                                        Literal(
+                                                            "echo",
+                                                        ),
+                                                    ),
                                                     args: [
-                                                        "Close the browser windows, then run: omarchy-migrate",
+                                                        DoubleQuoted(
+                                                            Literal(
+                                                                "Close the browser windows, then run: omarchy-migrate",
+                                                            ),
+                                                        ),
                                                     ],
                                                 },
                                             ),
@@ -464,16 +1040,24 @@ CshAst {
                                                 CshAstRedirect {
                                                     descriptor: None,
                                                     operator: ">&",
-                                                    target: "2",
+                                                    target: Literal(
+                                                        "2",
+                                                    ),
                                                 },
                                             ],
                                         },
                                         Command(
                                             CshAstCommand {
                                                 assignments: [],
-                                                name: "exit",
+                                                name: Some(
+                                                    Literal(
+                                                        "exit",
+                                                    ),
+                                                ),
                                                 args: [
-                                                    "1",
+                                                    Literal(
+                                                        "1",
+                                                    ),
                                                 ],
                                             },
                                         ),
@@ -489,7 +1073,11 @@ CshAst {
         Command(
             CshAstCommand {
                 assignments: [],
-                name: "find_pending",
+                name: Some(
+                    Literal(
+                        "find_pending",
+                    ),
+                ),
                 args: [],
             },
         ),
@@ -497,7 +1085,15 @@ CshAst {
             variable: "preferences",
             words: Some(
                 [
-                    "${pending[@]}",
+                    DoubleQuoted(
+                        Parameter {
+                            prefix: "",
+                            name: "pending",
+                            suffix: Literal(
+                                "[@]",
+                            ),
+                        },
+                    ),
                 ],
             ),
             body: CshAst {
@@ -505,13 +1101,33 @@ CshAst {
                     Command(
                         CshAstCommand {
                             assignments: [],
-                            name: "python3",
+                            name: Some(
+                                Literal(
+                                    "python3",
+                                ),
+                            ),
                             args: [
-                                "-c",
-                                "$repair_py",
-                                "$preferences",
-                                "$pinned_id",
-                                "repair",
+                                Literal(
+                                    "-c",
+                                ),
+                                DoubleQuoted(
+                                    Variable(
+                                        "repair_py",
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Variable(
+                                        "preferences",
+                                    ),
+                                ),
+                                DoubleQuoted(
+                                    Variable(
+                                        "pinned_id",
+                                    ),
+                                ),
+                                Literal(
+                                    "repair",
+                                ),
                             ],
                         },
                     ),
@@ -526,7 +1142,11 @@ CshAst {
                             Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "affected_profile_open",
+                                    name: Some(
+                                        Literal(
+                                            "affected_profile_open",
+                                        ),
+                                    ),
                                     args: [],
                                 },
                             ),
@@ -538,9 +1158,17 @@ CshAst {
                                 expression: Command(
                                     CshAstCommand {
                                         assignments: [],
-                                        name: "echo",
+                                        name: Some(
+                                            Literal(
+                                                "echo",
+                                            ),
+                                        ),
                                         args: [
-                                            "A browser started during the Copy URL shortcut repair and may undo it on exit.",
+                                            DoubleQuoted(
+                                                Literal(
+                                                    "A browser started during the Copy URL shortcut repair and may undo it on exit.",
+                                                ),
+                                            ),
                                         ],
                                     },
                                 ),
@@ -548,7 +1176,9 @@ CshAst {
                                     CshAstRedirect {
                                         descriptor: None,
                                         operator: ">&",
-                                        target: "2",
+                                        target: Literal(
+                                            "2",
+                                        ),
                                     },
                                 ],
                             },
@@ -556,9 +1186,17 @@ CshAst {
                                 expression: Command(
                                     CshAstCommand {
                                         assignments: [],
-                                        name: "echo",
+                                        name: Some(
+                                            Literal(
+                                                "echo",
+                                            ),
+                                        ),
                                         args: [
-                                            "Close the browser windows, then run: omarchy-migrate",
+                                            DoubleQuoted(
+                                                Literal(
+                                                    "Close the browser windows, then run: omarchy-migrate",
+                                                ),
+                                            ),
                                         ],
                                     },
                                 ),
@@ -566,16 +1204,24 @@ CshAst {
                                     CshAstRedirect {
                                         descriptor: None,
                                         operator: ">&",
-                                        target: "2",
+                                        target: Literal(
+                                            "2",
+                                        ),
                                     },
                                 ],
                             },
                             Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "exit",
+                                    name: Some(
+                                        Literal(
+                                            "exit",
+                                        ),
+                                    ),
                                     args: [
-                                        "1",
+                                        Literal(
+                                            "1",
+                                        ),
                                     ],
                                 },
                             ),
@@ -589,7 +1235,15 @@ CshAst {
             variable: "preferences",
             words: Some(
                 [
-                    "${pending[@]}",
+                    DoubleQuoted(
+                        Parameter {
+                            prefix: "",
+                            name: "pending",
+                            suffix: Literal(
+                                "[@]",
+                            ),
+                        },
+                    ),
                 ],
             ),
             body: CshAst {
@@ -602,13 +1256,33 @@ CshAst {
                                         Command(
                                             CshAstCommand {
                                                 assignments: [],
-                                                name: "python3",
+                                                name: Some(
+                                                    Literal(
+                                                        "python3",
+                                                    ),
+                                                ),
                                                 args: [
-                                                    "-c",
-                                                    "$repair_py",
-                                                    "$preferences",
-                                                    "$pinned_id",
-                                                    "check",
+                                                    Literal(
+                                                        "-c",
+                                                    ),
+                                                    DoubleQuoted(
+                                                        Variable(
+                                                            "repair_py",
+                                                        ),
+                                                    ),
+                                                    DoubleQuoted(
+                                                        Variable(
+                                                            "preferences",
+                                                        ),
+                                                    ),
+                                                    DoubleQuoted(
+                                                        Variable(
+                                                            "pinned_id",
+                                                        ),
+                                                    ),
+                                                    Literal(
+                                                        "check",
+                                                    ),
                                                 ],
                                             },
                                         ),
@@ -620,9 +1294,17 @@ CshAst {
                                             expression: Command(
                                                 CshAstCommand {
                                                     assignments: [],
-                                                    name: "echo",
+                                                    name: Some(
+                                                        Literal(
+                                                            "echo",
+                                                        ),
+                                                    ),
                                                     args: [
-                                                        "A browser undid the Copy URL shortcut repair on exit.",
+                                                        DoubleQuoted(
+                                                            Literal(
+                                                                "A browser undid the Copy URL shortcut repair on exit.",
+                                                            ),
+                                                        ),
                                                     ],
                                                 },
                                             ),
@@ -630,7 +1312,9 @@ CshAst {
                                                 CshAstRedirect {
                                                     descriptor: None,
                                                     operator: ">&",
-                                                    target: "2",
+                                                    target: Literal(
+                                                        "2",
+                                                    ),
                                                 },
                                             ],
                                         },
@@ -638,9 +1322,17 @@ CshAst {
                                             expression: Command(
                                                 CshAstCommand {
                                                     assignments: [],
-                                                    name: "echo",
+                                                    name: Some(
+                                                        Literal(
+                                                            "echo",
+                                                        ),
+                                                    ),
                                                     args: [
-                                                        "Close the browser windows, then run: omarchy-migrate",
+                                                        DoubleQuoted(
+                                                            Literal(
+                                                                "Close the browser windows, then run: omarchy-migrate",
+                                                            ),
+                                                        ),
                                                     ],
                                                 },
                                             ),
@@ -648,16 +1340,24 @@ CshAst {
                                                 CshAstRedirect {
                                                     descriptor: None,
                                                     operator: ">&",
-                                                    target: "2",
+                                                    target: Literal(
+                                                        "2",
+                                                    ),
                                                 },
                                             ],
                                         },
                                         Command(
                                             CshAstCommand {
                                                 assignments: [],
-                                                name: "exit",
+                                                name: Some(
+                                                    Literal(
+                                                        "exit",
+                                                    ),
+                                                ),
                                                 args: [
-                                                    "1",
+                                                    Literal(
+                                                        "1",
+                                                    ),
                                                 ],
                                             },
                                         ),
@@ -669,6 +1369,14 @@ CshAst {
                     },
                 ],
             },
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport shutil\nimport sys\nfrom pathlib import Path\n\npath = Path(sys.argv[1])\npinned_id = sys.argv[2]\nmode = sys.argv[3]\n\ntry:\n    preferences = json.loads(path.read_text())\nexcept (OSError, ValueError):\n    sys.exit(1)\n\nextensions = preferences.get(\"extensions\", {})\ncommands = extensions.get(\"commands\", {})\nsettings = extensions.get(\"settings\", {})\n\ndef ghost_id(command):\n    if command.get(\"command_name\") != \"copy-url\":\n        return None\n    extension = command.get(\"extension\")\n    if not extension or extension == pinned_id:\n        return None\n    # An installed extension records its install path in settings; only the\n    # ghosts of Copy URL itself may be rebound.\n    install_path = settings.get(extension, {}).get(\"path\", \"\")\n    if install_path and not install_path.endswith(\"/default/chromium/extensions/copy-url\"):\n        return None\n    return extension\n\nif mode == \"check\":\n    sys.exit(0 if any(ghost_id(c) for c in commands.values()) else 1)\n\n# Chromium keeps one shortcut per command, so a ghost may only be rebound\n# when the pinned extension holds no copy-url binding of its own; further\n# ghosts are dropped rather than doubled up.\npinned_bound = any(\n    c.get(\"command_name\") == \"copy-url\" and c.get(\"extension\") == pinned_id\n    for c in commands.values()\n)\n\nchanged = False\nfor accelerator in list(commands):\n    ghost = ghost_id(commands[accelerator])\n    if not ghost:\n        continue\n    if pinned_bound:\n        del commands[accelerator]\n    else:\n        commands[accelerator][\"extension\"] = pinned_id\n        pinned_bound = True\n        pinned_command = settings.get(pinned_id, {}).get(\"commands\", {}).get(\"copy-url\", {})\n        if pinned_command:\n            pinned_command[\"was_assigned\"] = True\n    settings.pop(ghost, None)\n    changed = True\n\nif changed:\n    shutil.copy2(path, path.with_name(path.name + \".omarchy-copy-url-repair.bak\"))\n    path.write_text(json.dumps(preferences, separators=(\",\", \":\")))\n",
         },
     ],
 }

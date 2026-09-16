@@ -8,9 +8,17 @@ CshAst {
         Command(
             CshAstCommand {
                 assignments: [],
-                name: "echo",
+                name: Some(
+                    Literal(
+                        "echo",
+                    ),
+                ),
                 args: [
-                    "Remove the tmux alert hooks and its bar indicator",
+                    DoubleQuoted(
+                        Literal(
+                            "Remove the tmux alert hooks and its bar indicator",
+                        ),
+                    ),
                 ],
             },
         ),
@@ -19,10 +27,21 @@ CshAst {
                 assignments: [
                     CshAstAssignment {
                         name: "tmux_config",
-                        value: "$HOME/.config/tmux/tmux.conf",
+                        value: DoubleQuoted(
+                            Concat(
+                                [
+                                    Variable(
+                                        "HOME",
+                                    ),
+                                    Literal(
+                                        "/.config/tmux/tmux.conf",
+                                    ),
+                                ],
+                            ),
+                        ),
                     },
                 ],
-                name: "",
+                name: None,
                 args: [],
             },
         ),
@@ -32,7 +51,19 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                " -f $tmux_config ",
+                                Concat(
+                                    [
+                                        Literal(
+                                            " -f ",
+                                        ),
+                                        Variable(
+                                            "tmux_config",
+                                        ),
+                                        Literal(
+                                            " ",
+                                        ),
+                                    ],
+                                ),
                             ),
                         ],
                     },
@@ -43,10 +74,25 @@ CshAst {
                                     assignments: [
                                         CshAstAssignment {
                                             name: "tmp",
-                                            value: "$(mktemp)",
+                                            value: CommandSubstitution {
+                                                commands: [
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: Some(
+                                                                Literal(
+                                                                    "mktemp",
+                                                                ),
+                                                            ),
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                ],
+                                                backticks: false,
+                                            },
                                         },
                                     ],
-                                    name: "",
+                                    name: None,
                                     args: [],
                                 },
                             ),
@@ -59,10 +105,20 @@ CshAst {
                                                     expression: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "awk",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "awk",
+                                                                ),
+                                                            ),
                                                             args: [
-                                                                "\n    function flush(count,   i) { for (i = 0; i < count; i++) print \"\" }\n\n    function keep(line) {\n      if (dropped) { if (printed && blanks) print \"\" }\n      else flush(blanks)\n\n      blanks = 0\n      dropped = 0\n      printed = 1\n      print line\n    }\n\n    # The heading only belongs to the block when a removed hook follows it.\n    /^[[:space:]]*# Alerts$/ && header == \"\" { header = $0; next }\n\n    /^[[:space:]]*set-hook -g alert-(bell|activity|silence) .*omarchy\\.indicators refresh/ ||\n    /^[[:space:]]*set-hook -g (after-select-window|client-session-changed|client-focus-(in|out))(\\[[0-9]+\\])? .*(omarchy-tmux-alert track|omarchy\\.indicators refresh)/ {\n      header = \"\"\n      dropped = 1\n      next\n    }\n\n    /^[[:space:]]*$/ {\n      if (header != \"\") { keep(header); header = \"\" }\n      blanks++\n      next\n    }\n\n    {\n      if (header != \"\") { keep(header); header = \"\" }\n      keep($0)\n    }\n\n    END {\n      if (header != \"\") keep(header)\n      if (!dropped) flush(blanks)\n    }\n  ",
-                                                                "$tmux_config",
+                                                                SingleQuoted(
+                                                                    "\n    function flush(count,   i) { for (i = 0; i < count; i++) print \"\" }\n\n    function keep(line) {\n      if (dropped) { if (printed && blanks) print \"\" }\n      else flush(blanks)\n\n      blanks = 0\n      dropped = 0\n      printed = 1\n      print line\n    }\n\n    # The heading only belongs to the block when a removed hook follows it.\n    /^[[:space:]]*# Alerts$/ && header == \"\" { header = $0; next }\n\n    /^[[:space:]]*set-hook -g alert-(bell|activity|silence) .*omarchy\\.indicators refresh/ ||\n    /^[[:space:]]*set-hook -g (after-select-window|client-session-changed|client-focus-(in|out))(\\[[0-9]+\\])? .*(omarchy-tmux-alert track|omarchy\\.indicators refresh)/ {\n      header = \"\"\n      dropped = 1\n      next\n    }\n\n    /^[[:space:]]*$/ {\n      if (header != \"\") { keep(header); header = \"\" }\n      blanks++\n      next\n    }\n\n    {\n      if (header != \"\") { keep(header); header = \"\" }\n      keep($0)\n    }\n\n    END {\n      if (header != \"\") keep(header)\n      if (!dropped) flush(blanks)\n    }\n  ",
+                                                                ),
+                                                                DoubleQuoted(
+                                                                    Variable(
+                                                                        "tmux_config",
+                                                                    ),
+                                                                ),
                                                             ],
                                                         },
                                                     ),
@@ -70,7 +126,11 @@ CshAst {
                                                         CshAstRedirect {
                                                             descriptor: None,
                                                             operator: ">",
-                                                            target: "$tmp",
+                                                            target: DoubleQuoted(
+                                                                Variable(
+                                                                    "tmp",
+                                                                ),
+                                                            ),
                                                         },
                                                     ],
                                                 },
@@ -87,11 +147,25 @@ CshAst {
                                                                         Command(
                                                                             CshAstCommand {
                                                                                 assignments: [],
-                                                                                name: "cmp",
+                                                                                name: Some(
+                                                                                    Literal(
+                                                                                        "cmp",
+                                                                                    ),
+                                                                                ),
                                                                                 args: [
-                                                                                    "-s",
-                                                                                    "$tmp",
-                                                                                    "$tmux_config",
+                                                                                    Literal(
+                                                                                        "-s",
+                                                                                    ),
+                                                                                    DoubleQuoted(
+                                                                                        Variable(
+                                                                                            "tmp",
+                                                                                        ),
+                                                                                    ),
+                                                                                    DoubleQuoted(
+                                                                                        Variable(
+                                                                                            "tmux_config",
+                                                                                        ),
+                                                                                    ),
                                                                                 ],
                                                                             },
                                                                         ),
@@ -104,9 +178,17 @@ CshAst {
                                                                         expression: Command(
                                                                             CshAstCommand {
                                                                                 assignments: [],
-                                                                                name: "cat",
+                                                                                name: Some(
+                                                                                    Literal(
+                                                                                        "cat",
+                                                                                    ),
+                                                                                ),
                                                                                 args: [
-                                                                                    "$tmp",
+                                                                                    DoubleQuoted(
+                                                                                        Variable(
+                                                                                            "tmp",
+                                                                                        ),
+                                                                                    ),
                                                                                 ],
                                                                             },
                                                                         ),
@@ -114,14 +196,22 @@ CshAst {
                                                                             CshAstRedirect {
                                                                                 descriptor: None,
                                                                                 operator: ">",
-                                                                                target: "$tmux_config",
+                                                                                target: DoubleQuoted(
+                                                                                    Variable(
+                                                                                        "tmux_config",
+                                                                                    ),
+                                                                                ),
                                                                             },
                                                                         ],
                                                                     },
                                                                     Command(
                                                                         CshAstCommand {
                                                                             assignments: [],
-                                                                            name: "omarchy-restart-tmux",
+                                                                            name: Some(
+                                                                                Literal(
+                                                                                    "omarchy-restart-tmux",
+                                                                                ),
+                                                                            ),
                                                                             args: [],
                                                                         },
                                                                     ),
@@ -141,9 +231,27 @@ CshAst {
                                             Command(
                                                 CshAstCommand {
                                                     assignments: [],
-                                                    name: "echo",
+                                                    name: Some(
+                                                        Literal(
+                                                            "echo",
+                                                        ),
+                                                    ),
                                                     args: [
-                                                        "Could not rewrite $tmux_config; remove the tmux alert hooks by hand.",
+                                                        DoubleQuoted(
+                                                            Concat(
+                                                                [
+                                                                    Literal(
+                                                                        "Could not rewrite ",
+                                                                    ),
+                                                                    Variable(
+                                                                        "tmux_config",
+                                                                    ),
+                                                                    Literal(
+                                                                        "; remove the tmux alert hooks by hand.",
+                                                                    ),
+                                                                ],
+                                                            ),
+                                                        ),
                                                     ],
                                                 },
                                             ),
@@ -154,10 +262,20 @@ CshAst {
                             Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "rm",
+                                    name: Some(
+                                        Literal(
+                                            "rm",
+                                        ),
+                                    ),
                                     args: [
-                                        "-f",
-                                        "$tmp",
+                                        Literal(
+                                            "-f",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "tmp",
+                                            ),
+                                        ),
                                     ],
                                 },
                             ),
@@ -176,9 +294,15 @@ CshAst {
                                 expression: Command(
                                     CshAstCommand {
                                         assignments: [],
-                                        name: "tmux",
+                                        name: Some(
+                                            Literal(
+                                                "tmux",
+                                            ),
+                                        ),
                                         args: [
-                                            "has-session",
+                                            Literal(
+                                                "has-session",
+                                            ),
                                         ],
                                     },
                                 ),
@@ -188,7 +312,9 @@ CshAst {
                                             "2",
                                         ),
                                         operator: ">",
-                                        target: "/dev/null",
+                                        target: Literal(
+                                            "/dev/null",
+                                        ),
                                     },
                                 ],
                             },
@@ -204,10 +330,18 @@ CshAst {
                                             Command(
                                                 CshAstCommand {
                                                     assignments: [],
-                                                    name: "read",
+                                                    name: Some(
+                                                        Literal(
+                                                            "read",
+                                                        ),
+                                                    ),
                                                     args: [
-                                                        "-r",
-                                                        "hook",
+                                                        Literal(
+                                                            "-r",
+                                                        ),
+                                                        Literal(
+                                                            "hook",
+                                                        ),
                                                     ],
                                                 },
                                             ),
@@ -217,13 +351,29 @@ CshAst {
                                         commands: [
                                             Binary {
                                                 left: Test(
-                                                    " -n $hook ",
+                                                    Concat(
+                                                        [
+                                                            Literal(
+                                                                " -n ",
+                                                            ),
+                                                            Variable(
+                                                                "hook",
+                                                            ),
+                                                            Literal(
+                                                                " ",
+                                                            ),
+                                                        ],
+                                                    ),
                                                 ),
                                                 operator: Or,
                                                 right: Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "continue",
+                                                        name: Some(
+                                                            Literal(
+                                                                "continue",
+                                                            ),
+                                                        ),
                                                         args: [],
                                                     },
                                                 ),
@@ -233,11 +383,23 @@ CshAst {
                                                     expression: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "tmux",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "tmux",
+                                                                ),
+                                                            ),
                                                             args: [
-                                                                "set-hook",
-                                                                "-gu",
-                                                                "$hook",
+                                                                Literal(
+                                                                    "set-hook",
+                                                                ),
+                                                                Literal(
+                                                                    "-gu",
+                                                                ),
+                                                                DoubleQuoted(
+                                                                    Variable(
+                                                                        "hook",
+                                                                    ),
+                                                                ),
                                                             ],
                                                         },
                                                     ),
@@ -247,7 +409,9 @@ CshAst {
                                                                 "2",
                                                             ),
                                                             operator: ">",
-                                                            target: "/dev/null",
+                                                            target: Literal(
+                                                                "/dev/null",
+                                                            ),
                                                         },
                                                     ],
                                                 },
@@ -255,7 +419,11 @@ CshAst {
                                                 right: Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "true",
+                                                        name: Some(
+                                                            Literal(
+                                                                "true",
+                                                            ),
+                                                        ),
                                                         args: [],
                                                     },
                                                 ),
@@ -267,7 +435,60 @@ CshAst {
                                     CshAstRedirect {
                                         descriptor: None,
                                         operator: "<",
-                                        target: "<(tmux show-hooks -g 2>/dev/null |\n    awk '$0 ~ /omarchy-tmux-alert|omarchy\\.indicators refresh/ { print $1 }')",
+                                        target: ProcessSubstitution {
+                                            operator: "<",
+                                            commands: [
+                                                Binary {
+                                                    left: Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: Some(
+                                                                    Literal(
+                                                                        "tmux",
+                                                                    ),
+                                                                ),
+                                                                args: [
+                                                                    Literal(
+                                                                        "show-hooks",
+                                                                    ),
+                                                                    Literal(
+                                                                        "-g",
+                                                                    ),
+                                                                ],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: Some(
+                                                                    "2",
+                                                                ),
+                                                                operator: ">",
+                                                                target: Literal(
+                                                                    "/dev/null",
+                                                                ),
+                                                            },
+                                                        ],
+                                                    },
+                                                    operator: Pipe,
+                                                    right: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: Some(
+                                                                Literal(
+                                                                    "awk",
+                                                                ),
+                                                            ),
+                                                            args: [
+                                                                SingleQuoted(
+                                                                    "$0 ~ /omarchy-tmux-alert|omarchy\\.indicators refresh/ { print $1 }",
+                                                                ),
+                                                            ],
+                                                        },
+                                                    ),
+                                                },
+                                            ],
+                                        },
                                     },
                                 ],
                             },
@@ -279,10 +500,18 @@ CshAst {
                                             Command(
                                                 CshAstCommand {
                                                     assignments: [],
-                                                    name: "read",
+                                                    name: Some(
+                                                        Literal(
+                                                            "read",
+                                                        ),
+                                                    ),
                                                     args: [
-                                                        "-r",
-                                                        "window",
+                                                        Literal(
+                                                            "-r",
+                                                        ),
+                                                        Literal(
+                                                            "window",
+                                                        ),
                                                     ],
                                                 },
                                             ),
@@ -292,13 +521,29 @@ CshAst {
                                         commands: [
                                             Binary {
                                                 left: Test(
-                                                    " -n $window ",
+                                                    Concat(
+                                                        [
+                                                            Literal(
+                                                                " -n ",
+                                                            ),
+                                                            Variable(
+                                                                "window",
+                                                            ),
+                                                            Literal(
+                                                                " ",
+                                                            ),
+                                                        ],
+                                                    ),
                                                 ),
                                                 operator: Or,
                                                 right: Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "continue",
+                                                        name: Some(
+                                                            Literal(
+                                                                "continue",
+                                                            ),
+                                                        ),
                                                         args: [],
                                                     },
                                                 ),
@@ -308,13 +553,29 @@ CshAst {
                                                     expression: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "tmux",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "tmux",
+                                                                ),
+                                                            ),
                                                             args: [
-                                                                "set-option",
-                                                                "-wqu",
-                                                                "-t",
-                                                                "$window",
-                                                                "@omarchy_unfocused_activity",
+                                                                Literal(
+                                                                    "set-option",
+                                                                ),
+                                                                Literal(
+                                                                    "-wqu",
+                                                                ),
+                                                                Literal(
+                                                                    "-t",
+                                                                ),
+                                                                DoubleQuoted(
+                                                                    Variable(
+                                                                        "window",
+                                                                    ),
+                                                                ),
+                                                                Literal(
+                                                                    "@omarchy_unfocused_activity",
+                                                                ),
                                                             ],
                                                         },
                                                     ),
@@ -324,7 +585,9 @@ CshAst {
                                                                 "2",
                                                             ),
                                                             operator: ">",
-                                                            target: "/dev/null",
+                                                            target: Literal(
+                                                                "/dev/null",
+                                                            ),
                                                         },
                                                     ],
                                                 },
@@ -332,7 +595,11 @@ CshAst {
                                                 right: Command(
                                                     CshAstCommand {
                                                         assignments: [],
-                                                        name: "true",
+                                                        name: Some(
+                                                            Literal(
+                                                                "true",
+                                                            ),
+                                                        ),
                                                         args: [],
                                                     },
                                                 ),
@@ -344,7 +611,48 @@ CshAst {
                                     CshAstRedirect {
                                         descriptor: None,
                                         operator: "<",
-                                        target: "<(tmux list-windows -a -F '#{window_id}' 2>/dev/null)",
+                                        target: ProcessSubstitution {
+                                            operator: "<",
+                                            commands: [
+                                                Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: Some(
+                                                                Literal(
+                                                                    "tmux",
+                                                                ),
+                                                            ),
+                                                            args: [
+                                                                Literal(
+                                                                    "list-windows",
+                                                                ),
+                                                                Literal(
+                                                                    "-a",
+                                                                ),
+                                                                Literal(
+                                                                    "-F",
+                                                                ),
+                                                                SingleQuoted(
+                                                                    "#{window_id}",
+                                                                ),
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: Some(
+                                                                "2",
+                                                            ),
+                                                            operator: ">",
+                                                            target: Literal(
+                                                                "/dev/null",
+                                                            ),
+                                                        },
+                                                    ],
+                                                },
+                                            ],
+                                        },
                                     },
                                 ],
                             },
@@ -359,10 +667,21 @@ CshAst {
                 assignments: [
                     CshAstAssignment {
                         name: "config_file",
-                        value: "$HOME/.config/omarchy/shell.json",
+                        value: DoubleQuoted(
+                            Concat(
+                                [
+                                    Variable(
+                                        "HOME",
+                                    ),
+                                    Literal(
+                                        "/.config/omarchy/shell.json",
+                                    ),
+                                ],
+                            ),
+                        ),
                     },
                 ],
-                name: "",
+                name: None,
                 args: [],
             },
         ),
@@ -373,17 +692,41 @@ CshAst {
                         commands: [
                             Binary {
                                 left: Test(
-                                    " -s $config_file ",
+                                    Concat(
+                                        [
+                                            Literal(
+                                                " -s ",
+                                            ),
+                                            Variable(
+                                                "config_file",
+                                            ),
+                                            Literal(
+                                                " ",
+                                            ),
+                                        ],
+                                    ),
                                 ),
                                 operator: And,
                                 right: Command(
                                     CshAstCommand {
                                         assignments: [],
-                                        name: "grep",
+                                        name: Some(
+                                            Literal(
+                                                "grep",
+                                            ),
+                                        ),
                                         args: [
-                                            "-q",
-                                            "TmuxAlert",
-                                            "$config_file",
+                                            Literal(
+                                                "-q",
+                                            ),
+                                            SingleQuoted(
+                                                "TmuxAlert",
+                                            ),
+                                            DoubleQuoted(
+                                                Variable(
+                                                    "config_file",
+                                                ),
+                                            ),
                                         ],
                                     },
                                 ),
@@ -397,10 +740,25 @@ CshAst {
                                     assignments: [
                                         CshAstAssignment {
                                             name: "tmp",
-                                            value: "$(mktemp)",
+                                            value: CommandSubstitution {
+                                                commands: [
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: Some(
+                                                                Literal(
+                                                                    "mktemp",
+                                                                ),
+                                                            ),
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                ],
+                                                backticks: false,
+                                            },
                                         },
                                     ],
-                                    name: "",
+                                    name: None,
                                     args: [],
                                 },
                             ),
@@ -413,10 +771,20 @@ CshAst {
                                                     expression: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "jq",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "jq",
+                                                                ),
+                                                            ),
                                                             args: [
-                                                                "\n    def entry_id:\n      if type == \"string\" then . elif type == \"object\" then (.id // \"\") else \"\" end;\n\n    def without_tmux_alert: map(select(entry_id != \"TmuxAlert\"));\n\n    def stripped($key):\n      if (.[$key] | type) == \"array\" then .[$key] |= without_tmux_alert else . end;\n\n    # The list the widget actually reads: \"indicators\" is the older spelling of\n    # \"items\", and either one empty means \"show the default set\".\n    def picked:\n      if (.items | type) == \"array\" and (.items | length) > 0 then .items\n      elif (.indicators | type) == \"array\" and (.indicators | length) > 0 then .indicators\n      else null end;\n\n    def cleaned:\n      if type == \"object\" and .id == \"omarchy.indicators\" then stripped(\"items\") | stripped(\"indicators\") else . end;\n\n    def emptied:\n      type == \"object\" and .id == \"omarchy.indicators\" and\n      picked != null and (cleaned | picked) == null;\n\n    walk(if type == \"array\" then map(select(emptied | not)) | map(cleaned) else . end)\n  ",
-                                                                "$config_file",
+                                                                SingleQuoted(
+                                                                    "\n    def entry_id:\n      if type == \"string\" then . elif type == \"object\" then (.id // \"\") else \"\" end;\n\n    def without_tmux_alert: map(select(entry_id != \"TmuxAlert\"));\n\n    def stripped($key):\n      if (.[$key] | type) == \"array\" then .[$key] |= without_tmux_alert else . end;\n\n    # The list the widget actually reads: \"indicators\" is the older spelling of\n    # \"items\", and either one empty means \"show the default set\".\n    def picked:\n      if (.items | type) == \"array\" and (.items | length) > 0 then .items\n      elif (.indicators | type) == \"array\" and (.indicators | length) > 0 then .indicators\n      else null end;\n\n    def cleaned:\n      if type == \"object\" and .id == \"omarchy.indicators\" then stripped(\"items\") | stripped(\"indicators\") else . end;\n\n    def emptied:\n      type == \"object\" and .id == \"omarchy.indicators\" and\n      picked != null and (cleaned | picked) == null;\n\n    walk(if type == \"array\" then map(select(emptied | not)) | map(cleaned) else . end)\n  ",
+                                                                ),
+                                                                DoubleQuoted(
+                                                                    Variable(
+                                                                        "config_file",
+                                                                    ),
+                                                                ),
                                                             ],
                                                         },
                                                     ),
@@ -424,7 +792,11 @@ CshAst {
                                                         CshAstRedirect {
                                                             descriptor: None,
                                                             operator: ">",
-                                                            target: "$tmp",
+                                                            target: DoubleQuoted(
+                                                                Variable(
+                                                                    "tmp",
+                                                                ),
+                                                            ),
                                                         },
                                                     ],
                                                 },
@@ -436,9 +808,17 @@ CshAst {
                                                     expression: Command(
                                                         CshAstCommand {
                                                             assignments: [],
-                                                            name: "cat",
+                                                            name: Some(
+                                                                Literal(
+                                                                    "cat",
+                                                                ),
+                                                            ),
                                                             args: [
-                                                                "$tmp",
+                                                                DoubleQuoted(
+                                                                    Variable(
+                                                                        "tmp",
+                                                                    ),
+                                                                ),
                                                             ],
                                                         },
                                                     ),
@@ -446,7 +826,11 @@ CshAst {
                                                         CshAstRedirect {
                                                             descriptor: None,
                                                             operator: ">",
-                                                            target: "$config_file",
+                                                            target: DoubleQuoted(
+                                                                Variable(
+                                                                    "config_file",
+                                                                ),
+                                                            ),
                                                         },
                                                     ],
                                                 },
@@ -460,9 +844,27 @@ CshAst {
                                             Command(
                                                 CshAstCommand {
                                                     assignments: [],
-                                                    name: "echo",
+                                                    name: Some(
+                                                        Literal(
+                                                            "echo",
+                                                        ),
+                                                    ),
                                                     args: [
-                                                        "Could not rewrite $config_file; remove the TmuxAlert indicator by hand.",
+                                                        DoubleQuoted(
+                                                            Concat(
+                                                                [
+                                                                    Literal(
+                                                                        "Could not rewrite ",
+                                                                    ),
+                                                                    Variable(
+                                                                        "config_file",
+                                                                    ),
+                                                                    Literal(
+                                                                        "; remove the TmuxAlert indicator by hand.",
+                                                                    ),
+                                                                ],
+                                                            ),
+                                                        ),
                                                     ],
                                                 },
                                             ),
@@ -473,10 +875,20 @@ CshAst {
                             Command(
                                 CshAstCommand {
                                     assignments: [],
-                                    name: "rm",
+                                    name: Some(
+                                        Literal(
+                                            "rm",
+                                        ),
+                                    ),
                                     args: [
-                                        "-f",
-                                        "$tmp",
+                                        Literal(
+                                            "-f",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "tmp",
+                                            ),
+                                        ),
                                     ],
                                 },
                             ),

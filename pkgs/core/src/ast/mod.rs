@@ -30,8 +30,9 @@ pub enum CshAstExpression {
         name: String,
         body: CshAstNodeId,
     },
-    /// Bash conditional syntax, retained for evaluation (including regex text).
-    Test(String),
+    /// Conditional syntax with structured expansions and quotes. Operators and
+    /// regex text are literal fragments, rather than command-list operators.
+    Test(CshAstWord),
     /// Arithmetic syntax is retained without evaluating it.
     Arithmetic(String),
     ArithmeticFor {
@@ -53,7 +54,7 @@ pub enum CshAstExpression {
     },
     For {
         variable: String,
-        words: Option<Vec<String>>,
+        words: Option<Vec<CshAstWord>>,
         body: CshAstList,
     },
     Loop {
@@ -62,7 +63,7 @@ pub enum CshAstExpression {
         body: CshAstList,
     },
     Case {
-        word: String,
+        word: CshAstWord,
         arms: Vec<CshAstCaseArm>,
     },
     Redirected {
@@ -79,7 +80,7 @@ pub struct CshAstBranch {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CshAstCaseArm {
-    pub patterns: Vec<String>,
+    pub patterns: Vec<CshAstWord>,
     pub body: CshAstList,
     pub terminator: String,
 }
@@ -88,7 +89,7 @@ pub struct CshAstCaseArm {
 pub struct CshAstRedirect {
     pub descriptor: Option<String>,
     pub operator: String,
-    pub target: String,
+    pub target: CshAstWord,
     /// Index into the owning AST's here-document arena.
     pub here_document: Option<usize>,
 }
@@ -112,12 +113,60 @@ pub enum CshAstOperator {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CshAstCommand {
     pub assignments: Vec<CshAstAssignment>,
-    pub name: String,
-    pub args: Vec<String>,
+    pub name: Option<CshAstWord>,
+    pub args: Vec<CshAstWord>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CshAstAssignment {
     pub name: String,
-    pub value: String,
+    pub value: CshAstWord,
+}
+
+/// One shell word. Concatenated fragments remain a single argument; quoting and
+/// escaping are preserved so an evaluator can decide splitting and globbing.
+/// Substitution command IDs refer to the owning `CshAst::nodes` arena.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CshAstWord {
+    Literal(String),
+    SingleQuoted(String),
+    /// ANSI-C quoted content, before interpreting backslash escapes.
+    AnsiCQuoted(String),
+    DoubleQuoted(Box<CshAstWord>),
+    LocaleQuoted(Box<CshAstWord>),
+    Escaped(String),
+    Variable(String),
+    /// Braced parameter syntax, including structured expansions in the suffix.
+    Parameter {
+        prefix: String,
+        name: String,
+        suffix: Box<CshAstWord>,
+    },
+    CommandSubstitution {
+        commands: CshAstList,
+        backticks: bool,
+    },
+    ProcessSubstitution {
+        operator: String,
+        commands: CshAstList,
+    },
+    ArithmeticExpansion(Box<CshAstWord>),
+    Concat(Vec<CshAstWord>),
+    Array(Vec<CshAstWord>),
+    /// Unquoted glob syntax (quoted wildcard characters remain literals).
+    Pattern(String),
+    ExtendedGlob {
+        operator: char,
+        pattern: Box<CshAstWord>,
+    },
+}
+
+impl CshAstWord {
+    pub(crate) fn concat(mut parts: Vec<Self>) -> Self {
+        match parts.len() {
+            0 => Self::Literal(String::new()),
+            1 => parts.pop().unwrap(),
+            _ => Self::Concat(parts),
+        }
+    }
 }

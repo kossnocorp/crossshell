@@ -8,9 +8,17 @@ CshAst {
         Command(
             CshAstCommand {
                 assignments: [],
-                name: "echo",
+                name: Some(
+                    Literal(
+                        "echo",
+                    ),
+                ),
                 args: [
-                    "Rebuild the boot image when it predates the Limine kernel command line",
+                    DoubleQuoted(
+                        Literal(
+                            "Rebuild the boot image when it predates the Limine kernel command line",
+                        ),
+                    ),
                 ],
             },
         ),
@@ -19,10 +27,18 @@ CshAst {
                 assignments: [
                     CshAstAssignment {
                         name: "defaults_conf",
-                        value: "${OMARCHY_LIMINE_DEFAULTS_CONF:-/etc/limine-entry-tool.d/omarchy-defaults.conf}",
+                        value: DoubleQuoted(
+                            Parameter {
+                                prefix: "",
+                                name: "OMARCHY_LIMINE_DEFAULTS_CONF",
+                                suffix: Literal(
+                                    ":-/etc/limine-entry-tool.d/omarchy-defaults.conf",
+                                ),
+                            },
+                        ),
                     },
                 ],
-                name: "",
+                name: None,
                 args: [],
             },
         ),
@@ -31,10 +47,18 @@ CshAst {
                 assignments: [
                     CshAstAssignment {
                         name: "running_cmdline",
-                        value: "${OMARCHY_RUNNING_CMDLINE:-/proc/cmdline}",
+                        value: DoubleQuoted(
+                            Parameter {
+                                prefix: "",
+                                name: "OMARCHY_RUNNING_CMDLINE",
+                                suffix: Literal(
+                                    ":-/proc/cmdline",
+                                ),
+                            },
+                        ),
                     },
                 ],
-                name: "",
+                name: None,
                 args: [],
             },
         ),
@@ -43,10 +67,18 @@ CshAst {
                 assignments: [
                     CshAstAssignment {
                         name: "rebuild_marker",
-                        value: "${OMARCHY_LIMINE_REBUILD_MARKER:-/var/lib/omarchy/migrations/1786482992}",
+                        value: DoubleQuoted(
+                            Parameter {
+                                prefix: "",
+                                name: "OMARCHY_LIMINE_REBUILD_MARKER",
+                                suffix: Literal(
+                                    ":-/var/lib/omarchy/migrations/1786482992",
+                                ),
+                            },
+                        ),
                     },
                 ],
-                name: "",
+                name: None,
                 args: [],
             },
         ),
@@ -54,9 +86,15 @@ CshAst {
             left: Command(
                 CshAstCommand {
                     assignments: [],
-                    name: "omarchy-cmd-present",
+                    name: Some(
+                        Literal(
+                            "omarchy-cmd-present",
+                        ),
+                    ),
                     args: [
-                        "limine-mkinitcpio",
+                        Literal(
+                            "limine-mkinitcpio",
+                        ),
                     ],
                 },
             ),
@@ -64,39 +102,87 @@ CshAst {
             right: Command(
                 CshAstCommand {
                     assignments: [],
-                    name: "exit",
+                    name: Some(
+                        Literal(
+                            "exit",
+                        ),
+                    ),
                     args: [
-                        "0",
+                        Literal(
+                            "0",
+                        ),
                     ],
                 },
             ),
         },
         Binary {
             left: Test(
-                " -f $defaults_conf && -r $running_cmdline ",
+                Concat(
+                    [
+                        Literal(
+                            " -f ",
+                        ),
+                        Variable(
+                            "defaults_conf",
+                        ),
+                        Literal(
+                            " && -r ",
+                        ),
+                        Variable(
+                            "running_cmdline",
+                        ),
+                        Literal(
+                            " ",
+                        ),
+                    ],
+                ),
             ),
             operator: Or,
             right: Command(
                 CshAstCommand {
                     assignments: [],
-                    name: "exit",
+                    name: Some(
+                        Literal(
+                            "exit",
+                        ),
+                    ),
                     args: [
-                        "0",
+                        Literal(
+                            "0",
+                        ),
                     ],
                 },
             ),
         },
         Binary {
             left: Test(
-                " ! -e $rebuild_marker ",
+                Concat(
+                    [
+                        Literal(
+                            " ! -e ",
+                        ),
+                        Variable(
+                            "rebuild_marker",
+                        ),
+                        Literal(
+                            " ",
+                        ),
+                    ],
+                ),
             ),
             operator: Or,
             right: Command(
                 CshAstCommand {
                     assignments: [],
-                    name: "exit",
+                    name: Some(
+                        Literal(
+                            "exit",
+                        ),
+                    ),
                     args: [
-                        "0",
+                        Literal(
+                            "0",
+                        ),
                     ],
                 },
             ),
@@ -106,10 +192,34 @@ CshAst {
                 assignments: [
                     CshAstAssignment {
                         name: "booted",
-                        value: "$(<\"$running_cmdline\")",
+                        value: CommandSubstitution {
+                            commands: [
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: None,
+                                            args: [],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: "<",
+                                            target: DoubleQuoted(
+                                                Variable(
+                                                    "running_cmdline",
+                                                ),
+                                            ),
+                                        },
+                                    ],
+                                },
+                            ],
+                            backticks: false,
+                        },
                     },
                 ],
-                name: "",
+                name: None,
                 args: [],
             },
         ),
@@ -118,10 +228,12 @@ CshAst {
                 assignments: [
                     CshAstAssignment {
                         name: "missing",
-                        value: "()",
+                        value: Array(
+                            [],
+                        ),
                     },
                 ],
-                name: "",
+                name: None,
                 args: [],
             },
         ),
@@ -129,20 +241,106 @@ CshAst {
             variable: "param",
             words: Some(
                 [
-                    "$(sed -n 's/^KERNEL_CMDLINE\\[default\\]+=\"\\(.*\\)\"[[:space:]]*$/\\1/p' \"$defaults_conf\")",
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "sed",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "-n",
+                                        ),
+                                        SingleQuoted(
+                                            "s/^KERNEL_CMDLINE\\[default\\]+=\"\\(.*\\)\"[[:space:]]*$/\\1/p",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "defaults_conf",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
                 ],
             ),
             body: CshAst {
                 commands: [
                     Binary {
                         left: Test(
-                            " \" $booted \" == *\" $param \"* ",
+                            Concat(
+                                [
+                                    Literal(
+                                        " ",
+                                    ),
+                                    DoubleQuoted(
+                                        Concat(
+                                            [
+                                                Literal(
+                                                    " ",
+                                                ),
+                                                Variable(
+                                                    "booted",
+                                                ),
+                                                Literal(
+                                                    " ",
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    Literal(
+                                        " == *",
+                                    ),
+                                    DoubleQuoted(
+                                        Concat(
+                                            [
+                                                Literal(
+                                                    " ",
+                                                ),
+                                                Variable(
+                                                    "param",
+                                                ),
+                                                Literal(
+                                                    " ",
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    Literal(
+                                        "* ",
+                                    ),
+                                ],
+                            ),
                         ),
                         operator: Or,
                         right: Command(
                             CshAstCommand {
                                 assignments: [],
-                                name: "missing+=(\"$param\")",
+                                name: Some(
+                                    Concat(
+                                        [
+                                            Literal(
+                                                "missing+=",
+                                            ),
+                                            Array(
+                                                [
+                                                    DoubleQuoted(
+                                                        Variable(
+                                                            "param",
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ),
                                 args: [],
                             },
                         ),
@@ -158,9 +356,15 @@ CshAst {
             right: Command(
                 CshAstCommand {
                     assignments: [],
-                    name: "exit",
+                    name: Some(
+                        Literal(
+                            "exit",
+                        ),
+                    ),
                     args: [
-                        "0",
+                        Literal(
+                            "0",
+                        ),
                     ],
                 },
             ),
@@ -168,30 +372,72 @@ CshAst {
         Command(
             CshAstCommand {
                 assignments: [],
-                name: "echo",
+                name: Some(
+                    Literal(
+                        "echo",
+                    ),
+                ),
                 args: [
-                    "The booted kernel is missing ${missing[*]}; rebuilding the boot image",
+                    DoubleQuoted(
+                        Concat(
+                            [
+                                Literal(
+                                    "The booted kernel is missing ",
+                                ),
+                                Parameter {
+                                    prefix: "",
+                                    name: "missing",
+                                    suffix: Literal(
+                                        "[*]",
+                                    ),
+                                },
+                                Literal(
+                                    "; rebuilding the boot image",
+                                ),
+                            ],
+                        ),
+                    ),
                 ],
             },
         ),
         Command(
             CshAstCommand {
                 assignments: [],
-                name: "sudo",
+                name: Some(
+                    Literal(
+                        "sudo",
+                    ),
+                ),
                 args: [
-                    "limine-mkinitcpio",
+                    Literal(
+                        "limine-mkinitcpio",
+                    ),
                 ],
             },
         ),
         Command(
             CshAstCommand {
                 assignments: [],
-                name: "sudo",
+                name: Some(
+                    Literal(
+                        "sudo",
+                    ),
+                ),
                 args: [
-                    "install",
-                    "-Dm644",
-                    "/dev/null",
-                    "$rebuild_marker",
+                    Literal(
+                        "install",
+                    ),
+                    Literal(
+                        "-Dm644",
+                    ),
+                    Literal(
+                        "/dev/null",
+                    ),
+                    DoubleQuoted(
+                        Variable(
+                            "rebuild_marker",
+                        ),
+                    ),
                 ],
             },
         ),

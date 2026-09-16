@@ -1,4 +1,5 @@
 use crate::prelude::internal::*;
+mod word;
 
 type Parsed<'a, T> = Result<T, CshError<'a>>;
 
@@ -50,6 +51,7 @@ impl Keyword {
 #[derive(Clone, Copy)]
 enum Stop {
     Eof,
+    Backtick,
     Subshell,
     Group,
     Then,
@@ -98,6 +100,7 @@ pub(super) struct Cursor<'a> {
     depth: usize,
     here_documents: Vec<CshAstHereDocument>,
     pending_here_documents: Vec<usize>,
+    backtick: bool,
 }
 
 impl<'a> Cursor<'a> {
@@ -109,6 +112,7 @@ impl<'a> Cursor<'a> {
             depth: 0,
             here_documents: Vec::new(),
             pending_here_documents: Vec::new(),
+            backtick: false,
         };
         let commands = cursor.list(Stop::Eof, false)?;
         if !cursor.pending_here_documents.is_empty() {
@@ -284,6 +288,7 @@ impl<'a> Cursor<'a> {
         }
         match stop {
             Stop::Eof => false,
+            Stop::Backtick => self.byte() == Some(b'`'),
             Stop::Subshell => self.byte() == Some(b')'),
             Stop::Group => self.keyword() == Some(Keyword::CloseBrace),
             Stop::Then => self.keyword() == Some(Keyword::Then),
@@ -544,33 +549,27 @@ impl<'a> Cursor<'a> {
         Ok(self.source[start..end].to_owned())
     }
 
-    fn test_expression(&mut self) -> Parsed<'a, String> {
+    fn test_expression(&mut self) -> Parsed<'a, CshAstWord> {
         self.pos += 2;
-        let start = self.pos;
-        let mut scratch = String::new();
+        let mut start = self.pos;
+        let mut parts = Vec::new();
         let mut boundary = true;
         loop {
             match self.byte() {
                 None => return Err(self.expected("a closing ]]")),
                 Some(b']') if boundary && self.peek(1) == Some(b']') => {
-                    let text = self.source[start..self.pos].to_owned();
+                    if start < self.pos {
+                        parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
+                    }
                     self.pos += 2;
-                    return Ok(text);
+                    return Ok(CshAstWord::concat(parts));
                 }
-                Some(b'\'') => {
-                    self.single(&mut scratch)?;
-                    boundary = false;
-                }
-                Some(b'"') => {
-                    self.double(&mut scratch)?;
-                    boundary = false;
-                }
-                Some(b'$' | b'`') => {
-                    self.expansion(&mut scratch)?;
-                    boundary = false;
-                }
-                Some(b'\\') => {
-                    self.skip_escape()?;
+                Some(b'\'' | b'"' | b'$' | b'`' | b'\\') => {
+                    if start < self.pos {
+                        parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
+                    }
+                    parts.push(self.word_part(false, self.source.len())?);
+                    start = self.pos;
                     boundary = false;
                 }
                 Some(b) => {
@@ -578,7 +577,6 @@ impl<'a> Cursor<'a> {
                     self.pos += 1;
                 }
             }
-            scratch.clear();
         }
     }
 
@@ -617,7 +615,9 @@ impl<'a> Cursor<'a> {
             self.require_keyword(Keyword::Done)?;
             return Ok(CshAstExpression::ArithmeticFor { clauses, body });
         }
-        let variable = self.required_word()?;
+        let variable = self
+            .delimiter_word()?
+            .ok_or_else(|| self.expected("a loop variable"))?;
         self.space();
         let words = if self.eat_keyword(Keyword::In) {
             let mut words = Vec::new();
@@ -688,7 +688,7 @@ impl<'a> Cursor<'a> {
     fn simple(&mut self) -> Parsed<'a, CshAstNodeId> {
         let mut command = CshAstCommand {
             assignments: Vec::new(),
-            name: String::new(),
+            name: None,
             args: Vec::new(),
         };
         let mut has_name = false;
@@ -701,25 +701,36 @@ impl<'a> Cursor<'a> {
                 has_item = true;
                 continue;
             }
-            let start = self.pos;
+            let assignment =
+                if !has_name && matches!(self.byte(), Some(b'a'..=b'z' | b'A'..=b'Z' | b'_')) {
+                    let len = self
+                        .rest()
+                        .bytes()
+                        .take_while(|b| b.is_ascii_alphanumeric() || *b == b'_')
+                        .count();
+                    (self.peek(len) == Some(b'='))
+                        .then(|| self.source[self.pos..self.pos + len].to_owned())
+                } else {
+                    None
+                };
+            if let Some(name) = assignment {
+                self.pos += name.len() + 1;
+                let value = if self.byte() == Some(b'(') {
+                    self.array_word()?
+                } else {
+                    self.assignment_word()?
+                        .unwrap_or_else(|| CshAstWord::Literal(String::new()))
+                };
+                command.assignments.push(CshAstAssignment { name, value });
+                has_item = true;
+                continue;
+            }
             let Some(word) = self.word()? else {
                 break;
             };
             has_item = true;
-            let raw = &self.source[start..self.pos];
-            if !has_name
-                && let Some((name, _)) = raw.split_once('=')
-                && !name.is_empty()
-                && name.bytes().enumerate().all(|(i, b)| {
-                    b == b'_' || b.is_ascii_alphabetic() || (i > 0 && b.is_ascii_digit())
-                })
-            {
-                command.assignments.push(CshAstAssignment {
-                    name: name.to_owned(),
-                    value: word[name.len() + 1..].to_owned(),
-                });
-            } else if !has_name {
-                command.name = word;
+            if !has_name {
+                command.name = Some(word);
                 has_name = true;
             } else {
                 command.args.push(word);
@@ -777,13 +788,24 @@ impl<'a> Cursor<'a> {
         let descriptor = (digits > 0).then(|| self.source[start..start + digits].to_owned());
         self.space();
         let delimiter_start = self.pos;
-        let target = self
-            .word()?
-            .ok_or_else(|| self.expected("a redirection target"))?;
+        let delimiter = if matches!(operator, "<<" | "<<-") {
+            Some(
+                self.delimiter_word()?
+                    .ok_or_else(|| self.expected("a redirection target"))?,
+            )
+        } else {
+            None
+        };
+        let target = if let Some(delimiter) = &delimiter {
+            CshAstWord::Literal(delimiter.clone())
+        } else {
+            self.word()?
+                .ok_or_else(|| self.expected("a redirection target"))?
+        };
         let here_document = if matches!(operator, "<<" | "<<-") {
             let id = self.here_documents.len();
             self.here_documents.push(CshAstHereDocument {
-                delimiter: target.clone(),
+                delimiter: delimiter.unwrap(),
                 quoted: self.source[delimiter_start..self.pos].contains(['\'', '"', '\\']),
                 strip_tabs: operator == "<<-",
                 body: String::new(),
@@ -801,11 +823,11 @@ impl<'a> Cursor<'a> {
         }))
     }
 
-    fn required_word(&mut self) -> Parsed<'a, String> {
+    fn required_word(&mut self) -> Parsed<'a, CshAstWord> {
         self.word()?.ok_or_else(|| self.expected("a word"))
     }
 
-    fn word(&mut self) -> Parsed<'a, Option<String>> {
+    fn delimiter_word(&mut self) -> Parsed<'a, Option<String>> {
         if self.byte() == Some(b'#') {
             return Ok(None);
         }

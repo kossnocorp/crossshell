@@ -24,18 +24,53 @@ if let CshAstExpression::Binary { left, right, .. } = root {
 
 Nodes and word strings are owned, so the input can be dropped after parsing.
 Operator chains are parsed iteratively and destroying an AST does not recurse
-through its expression links. Recursive command-list nesting is limited to 128
-levels. Balanced parameter, arithmetic, and extended-glob delimiters are scanned
+through its expression links. Recursive command-list and word-expansion nesting
+is limited to 128 levels. Balanced parameter, arithmetic, and extended-glob delimiters are scanned
 with an explicit stack.
 
 Debug formatting resolves node IDs to show the syntax tree. This keeps AST
-snapshots readable and independent of arena allocation order. Expansion syntax
-is retained as text; command and process substitutions are syntax-checked before
-their temporary arena nodes are reclaimed.
+snapshots readable and independent of arena allocation order, including commands
+nested inside words.
 
-Functions have arena-linked bodies. Bash `[[ ... ]]` conditions and arithmetic
-expressions retain their source text for evaluation; array literals retain their
-syntax in assignment values and declaration arguments. Here-document redirects
+## Structured words
+
+Command names, arguments, assignment values, redirect targets, `for` words, and
+`case` subjects/patterns use `CshAstWord`. A command without a name (for example,
+an assignment-only command) has `name: None`.
+
+Words distinguish literals, single/double quotes, escaped characters, variables,
+braced parameters, command/process substitutions, arithmetic expansions, glob
+patterns, and arrays. `Concat` joins fragments into **one word**, preserving quote
+boundaries needed for field splitting and pathname expansion. ANSI-C quotes retain
+their escape syntax; locale quotes retain their expandable contents.
+
+For example, `"$ROOT"/migrations/*.sh` becomes:
+
+```text
+Concat([
+    DoubleQuoted(Variable("ROOT")),
+    Pattern("/migrations/*.sh"),
+])
+```
+
+`CommandSubstitution { commands, backticks }` and
+`ProcessSubstitution { operator, commands }` retain command-list IDs in the same
+expression arena as the outer command. Follow them with `&ast[id]`, just like
+top-level expressions. Nested substitutions and their here-documents remain owned
+by the AST after the original source is dropped.
+
+Braced parameters retain their prefix and name separately from their suffix;
+the suffix contains subscript/operator text and structured expansion operands.
+Arithmetic expansions likewise retain expression text with structured nested
+expansions. These are syntax representations, not evaluated values.
+
+Functions have arena-linked bodies. Bash `[[ ... ]]` conditions contain structured
+word fragments, exposing variables, parameter expansions, quotes, and substitution
+commands. Conditional operators and regex text are literal fragments. For example,
+`${running_kernel,,}` exposes the parameter name `running_kernel` and suffix `,,`
+(Bash's lowercase-all operation). Arithmetic commands retain their source text
+for evaluation. Array literals contain word
+elements in assignment values and declaration arguments. Here-document redirects
 reference `CshAst::here_documents`, which records the delimiter, quoting and
 tab-stripping flags, and body. Bodies are read in declaration order at the next
 newline, and command substitutions have independent pending here-documents.
