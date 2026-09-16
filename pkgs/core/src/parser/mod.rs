@@ -122,6 +122,19 @@ mod tests {
     }
 
     #[test]
+    fn parses_smoke_test_data() {
+        let scripts = include_str!("../../test/smoke/data/top-npm-scripts.sh").lines();
+        let mut asts = vec![];
+        for (index, script) in scripts.enumerate() {
+            match CshParser::parse(script) {
+                Ok(ast) => asts.push(ast),
+                Err(_) => panic!("Failed to parse script #{index}:\n{script}"),
+            }
+        }
+        assert_debug_snapshot!("smoke_test_data", asts)
+    }
+
+    #[test]
     fn parses_comments_separators_and_quotes() {
         let ast = CshParser::parse("# comment\necho '' pre\"fix\" 'a b'  ; pwd # end\n").unwrap();
         assert_debug_snapshot!(ast, @r#"
