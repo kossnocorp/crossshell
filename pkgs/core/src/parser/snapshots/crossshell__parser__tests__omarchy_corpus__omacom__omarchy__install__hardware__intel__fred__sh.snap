@@ -1,0 +1,135 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/intel/fred.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "DROP_IN",
+                        value: "/etc/limine-entry-tool.d/intel-panther-lake-fred.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-hw-intel-ptl",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Test(
+                                                        " ! -f $DROP_IN ",
+                                                    ),
+                                                    operator: Or,
+                                                    right: Negated(
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "grep",
+                                                                args: [
+                                                                    "-q",
+                                                                    "fred=on",
+                                                                    "$DROP_IN",
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "sudo",
+                                                        args: [
+                                                            "mkdir",
+                                                            "-p",
+                                                            "/etc/limine-entry-tool.d",
+                                                        ],
+                                                    },
+                                                ),
+                                                Binary {
+                                                    left: Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "cat",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: None,
+                                                                operator: "<<",
+                                                                target: "EOF",
+                                                                here_document: 0,
+                                                            },
+                                                        ],
+                                                    },
+                                                    operator: Pipe,
+                                                    right: Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "sudo",
+                                                                args: [
+                                                                    "tee",
+                                                                    "$DROP_IN",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: None,
+                                                                operator: ">",
+                                                                target: "/dev/null",
+                                                            },
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: false,
+            strip_tabs: false,
+            body: "# Intel Panther Lake FRED support\nKERNEL_CMDLINE[default]+=\" fred=on\"\n",
+        },
+    ],
+}

@@ -1,0 +1,1339 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/launch-openclaw-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmp_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmp_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$tmp_dir/bin",
+                    "$tmp_dir/home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "TEST_LOG=$tmp_dir/log",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "PATH=$tmp_dir/bin:$PATH",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "HOME=$tmp_dir/home",
+                ],
+            },
+        ),
+        For {
+            variable: "stub",
+            words: Some(
+                [
+                    "omarchy-launch-webapp",
+                    "omarchy-launch-floating-terminal-with-presentation",
+                    "omarchy-openclaw-onboard",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cat",
+                                args: [],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$tmp_dir/bin/$stub",
+                            },
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: "<<",
+                                target: "SCRIPT",
+                                here_document: 0,
+                            },
+                        ],
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "chmod",
+                            args: [
+                                "+x",
+                                "$tmp_dir/bin/$stub",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "#!/bin/bash\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/sleep",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/bin/sleep",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/systemctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SCRIPT",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/bin/systemctl",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "$ROOT/bin/omarchy-launch-openclaw",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^omarchy-launch-floating-terminal-with-presentation:omarchy-openclaw-onboard && \\[\\[ -f \\$HOME/.openclaw/openclaw.json \\]\\] && omarchy-launch-openclaw$",
+                        "$TEST_LOG",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch hands a never-onboarded machine to the wizard",
+                        "$(grep floating \"$TEST_LOG\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "^omarchy-launch-webapp:",
+                            "$TEST_LOG",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch hands a never-onboarded machine to the wizard",
+                        "webapp opened anyway",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "OpenClaw launch hands a never-onboarded machine to the wizard",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$HOME/.openclaw",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/.openclaw/openclaw.json",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/openclaw",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SCRIPT",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/bin/openclaw",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "$ROOT/bin/omarchy-launch-openclaw",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^omarchy-launch-webapp:http://127.0.0.1:18789/#handoff$",
+                        "$TEST_LOG",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch opens the running gateway's handoff URL",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "OpenClaw launch opens the running gateway's handoff URL",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/openclaw",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SCRIPT",
+                    here_document: 3,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/bin/openclaw",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$tmp_dir/gateway-up",
+                    "$tmp_dir/gateway-enabled",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$HOME/.config/systemd/user",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/.config/systemd/user/openclaw-gateway.service",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TEST_LOG",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "$ROOT/bin/omarchy-launch-openclaw",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^openclaw:gateway install --force$",
+                        "$TEST_LOG",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch installs a never-enabled gateway before opening the app",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "^openclaw:gateway start$",
+                            "$TEST_LOG",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch installs a never-enabled gateway before opening the app",
+                        "started the half-installed unit instead",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^omarchy-launch-webapp:http://127.0.0.1:18789/#cold-start$",
+                        "$TEST_LOG",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch installs a never-enabled gateway before opening the app",
+                        "webapp never opened",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "OpenClaw launch installs a never-enabled gateway before opening the app",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$tmp_dir/gateway-enabled",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$tmp_dir/gateway-up",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TEST_LOG",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "$ROOT/bin/omarchy-launch-openclaw",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^openclaw:gateway start$",
+                        "$TEST_LOG",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch starts a stopped gateway before opening the app",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "^openclaw:gateway install",
+                            "$TEST_LOG",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch starts a stopped gateway before opening the app",
+                        "reinstalled the unit",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "--",
+                            "--yes",
+                            "$TEST_LOG",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch starts a stopped gateway before opening the app",
+                        "fell back to dashboard --yes",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^omarchy-launch-webapp:http://127.0.0.1:18789/#cold-start$",
+                        "$TEST_LOG",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch starts a stopped gateway before opening the app",
+                        "webapp never opened",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "OpenClaw launch starts a stopped gateway before opening the app",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$tmp_dir/gateway-enabled",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/timeout",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SCRIPT",
+                    here_document: 4,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/bin/timeout",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TEST_LOG",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rc",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "$ROOT/bin/omarchy-launch-openclaw",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">&",
+                        target: "1",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "rc",
+                            value: "$?",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $rc != 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch bounds a hanging dashboard probe",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^timeout:10$",
+                        "$TEST_LOG",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch bounds a hanging dashboard probe",
+                        "probe ran without a timeout",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "OpenClaw launch bounds a hanging dashboard probe",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$tmp_dir/bin/timeout",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/openclaw",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SCRIPT",
+                    here_document: 5,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/bin/openclaw",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "webapp_calls_before",
+                        value: "$(grep -c '^omarchy-launch-webapp:' \"$TEST_LOG\" || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rc",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "$ROOT/bin/omarchy-launch-openclaw",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">&",
+                        target: "1",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "rc",
+                            value: "$?",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "webapp_calls_after",
+                        value: "$(grep -c '^omarchy-launch-webapp:' \"$TEST_LOG\" || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $rc != 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch fails cleanly when the gateway never comes up",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $webapp_calls_before == \"$webapp_calls_after\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "OpenClaw launch fails cleanly when the gateway never comes up",
+                        "webapp opened anyway",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "OpenClaw launch fails cleanly when the gateway never comes up",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$HOME/.openclaw/openclaw.json",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/omarchy-openclaw-onboard",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SCRIPT",
+                    here_document: 6,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/bin/omarchy-openclaw-onboard",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/openclaw",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SCRIPT",
+                    here_document: 7,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/bin/openclaw",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "floating_calls_before",
+                        value: "$(grep -c '^omarchy-launch-floating-terminal-with-presentation:' \"$TEST_LOG\" || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "$ROOT/bin/omarchy-launch-openclaw",
+                args: [
+                    "--tui",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^omarchy-openclaw-onboard:$",
+                        "$TEST_LOG",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "--tui onboards in the current terminal",
+                        "$(grep 'onboard' \"$TEST_LOG\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "floating_calls_after",
+                        value: "$(grep -c '^omarchy-launch-floating-terminal-with-presentation:' \"$TEST_LOG\" || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $floating_calls_before == \"$floating_calls_after\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "--tui onboards in the current terminal",
+                        "spawned a floating terminal",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^openclaw:tui$",
+                        "$TEST_LOG",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "--tui attaches to the gateway",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "--tui onboards in place and attaches to the gateway",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/openclaw",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SCRIPT",
+                    here_document: 8,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/bin/openclaw",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TEST_LOG",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "$ROOT/bin/omarchy-launch-openclaw",
+                args: [
+                    "--tui",
+                    "--message",
+                    "Review this project",
+                ],
+            },
+        ),
+        Binary {
+            left: Binary {
+                left: Test(
+                    " $(grep -c '^argv:' \"$TEST_LOG\") == 3 ",
+                ),
+                operator: And,
+                right: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "^argv:\\[Review this project\\]$",
+                            "$TEST_LOG",
+                        ],
+                    },
+                ),
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "--tui seeds the session through --message",
+                        "$(grep '^argv:' \"$TEST_LOG\" | tr '\\n' ' ')",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "^omarchy-launch-webapp:",
+                            "$TEST_LOG",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "--tui seeds the session through --message",
+                        "webapp opened instead",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "--tui seeds the session through --message",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SCRIPT",
+            quoted: false,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '$stub:%s\\n' \"\\$*\" >>\"\\$TEST_LOG\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SCRIPT",
+            quoted: false,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'systemctl:%s\\\\n' \"\\$*\" >>\"\\$TEST_LOG\"\n[[ \\$* == *is-enabled* ]] && [[ -f $tmp_dir/gateway-enabled ]]\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SCRIPT",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'openclaw:%s\\n' \"$*\" >>\"$TEST_LOG\"\n[[ $* == *--json* ]] &&\n  echo '{\"ok\":true,\"url\":\"http://127.0.0.1:18789/?token=shared\",\"browserUrl\":\"http://127.0.0.1:18789/#handoff\"}'\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SCRIPT",
+            quoted: false,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'openclaw:%s\\\\n' \"\\$*\" >>\"\\$TEST_LOG\"\nif [[ \\$* == *--json* ]]; then\n  [[ -f $tmp_dir/gateway-up ]] || { echo '{\"ok\":false,\"reason\":\"Gateway is not running.\"}'; exit 1; }\n  echo '{\"ok\":true,\"browserUrl\":\"http://127.0.0.1:18789/#cold-start\"}'\nelif [[ \\$1 == gateway ]]; then\n  touch \"$tmp_dir/gateway-up\"\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SCRIPT",
+            quoted: false,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'timeout:%s\\\\n' \"\\$1\" >>\"\\$TEST_LOG\"\nexit 124\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SCRIPT",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'openclaw:%s\\n' \"$*\" >>\"$TEST_LOG\"\n[[ $* == *--json* ]] && exit 1\nexit 0\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SCRIPT",
+            quoted: false,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'omarchy-openclaw-onboard:%s\\n' \"\\$*\" >>\"\\$TEST_LOG\"\nmkdir -p \"\\$HOME/.openclaw\" && touch \"\\$HOME/.openclaw/openclaw.json\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SCRIPT",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'openclaw:%s\\n' \"$*\" >>\"$TEST_LOG\"\n[[ $* == *--json* ]] && echo '{\"ok\":true,\"browserUrl\":\"http://127.0.0.1:18789/#tui\"}'\nexit 0\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SCRIPT",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'openclaw:%s\\n' \"$*\" >>\"$TEST_LOG\"\n[[ $1 == tui ]] && printf 'argv:[%s]\\n' \"$@\" >>\"$TEST_LOG\"\n[[ $* == *--json* ]] && echo '{\"ok\":true,\"browserUrl\":\"http://127.0.0.1:18789/#tui\"}'\nexit 0\n",
+        },
+    ],
+}

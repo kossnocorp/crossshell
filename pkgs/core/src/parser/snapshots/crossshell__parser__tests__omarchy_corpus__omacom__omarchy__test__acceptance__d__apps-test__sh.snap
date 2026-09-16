@@ -1,0 +1,355 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/acceptance.d/apps-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Function {
+            name: "launch_and_verify",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "name=$1",
+                                    "command=$2",
+                                    "class=$3",
+                                    "timeout=${4:-45}",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "window_present",
+                                                        args: [
+                                                            "$class",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "/dev/null",
+                                                    },
+                                                    CshAstRedirect {
+                                                        descriptor: Some(
+                                                            "2",
+                                                        ),
+                                                        operator: ">&",
+                                                        target: "1",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "fail",
+                                                    args: [
+                                                        "$name starts with no pre-existing window",
+                                                        "a window matching $class is already open",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "launch_app",
+                                args: [
+                                    "$command",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "wait_until",
+                                args: [
+                                    "$name opens a window",
+                                    "$timeout",
+                                    "window_present",
+                                    "$class",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "sleep",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "screenshot",
+                                args: [
+                                    "success-app-$name",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "deadline=$((SECONDS + 30))",
+                                ],
+                            },
+                        ),
+                        Loop {
+                            until: false,
+                            condition: CshAst {
+                                commands: [
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "window_present",
+                                                args: [
+                                                    "$class",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                            CshAstRedirect {
+                                                descriptor: Some(
+                                                    "2",
+                                                ),
+                                                operator: ">&",
+                                                target: "1",
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            body: CshAst {
+                                commands: [
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "close_windows",
+                                            args: [
+                                                "$class",
+                                            ],
+                                        },
+                                    ),
+                                    If {
+                                        branches: [
+                                            CshAstBranch {
+                                                condition: CshAst {
+                                                    commands: [
+                                                        Arithmetic(
+                                                            "SECONDS >= deadline",
+                                                        ),
+                                                    ],
+                                                },
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "fail",
+                                                                args: [
+                                                                    "$name window closes",
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        otherwise: None,
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "sleep",
+                                            args: [
+                                                "2",
+                                            ],
+                                        },
+                                    ),
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$name window closes",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "apps",
+                        value: "terminal|foot|^foot$\nbrowser|chromium --new-window|(?i)chromium\nneovim|xdg-terminal-exec --app-id=org.omarchy.nvim nvim|org.omarchy.nvim\nwriter|omawrite|(?i)omawrite",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "status",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Loop {
+                until: false,
+                condition: CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "IFS",
+                                        value: "|",
+                                    },
+                                ],
+                                name: "read",
+                                args: [
+                                    "-r",
+                                    "name",
+                                    "command",
+                                    "class",
+                                    "timeout",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+                body: CshAst {
+                    commands: [
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Subshell(
+                                                    CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "launch_and_verify",
+                                                                    args: [
+                                                                        "$name",
+                                                                        "$command",
+                                                                        "$class",
+                                                                        "$timeout",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "status",
+                                                            value: "1",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                    ],
+                },
+            },
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<<",
+                    target: "$apps",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "exit",
+                args: [
+                    "$status",
+                ],
+            },
+        ),
+    ],
+}

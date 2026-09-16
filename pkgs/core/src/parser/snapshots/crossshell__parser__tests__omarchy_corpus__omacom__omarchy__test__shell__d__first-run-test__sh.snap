@@ -1,0 +1,319 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/first-run-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mock_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$mock_bin",
+                    "$test_tmp/home",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/omarchy-done",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/omarchy-provision-user",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$mock_bin/omarchy-done",
+                    "$mock_bin/omarchy-provision-user",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "finalize_called",
+                        value: "$test_tmp/finalize-called",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "HOME",
+                            value: "$test_tmp/home",
+                        },
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$mock_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_FINALIZE_CALLED",
+                            value: "$finalize_called",
+                        },
+                    ],
+                    name: "bash",
+                    args: [
+                        "$ROOT/bin/omarchy-provision-first-run",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/output",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -e $finalize_called ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "completed first-run exits before any setup step",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "First-run already complete",
+                            "$test_tmp/output",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "completed first-run reports its lifecycle gate",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-F",
+                                            "user-migration-notify-watch-enabled",
+                                            "$ROOT/bin/omarchy-provision-first-run",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "first-run does not track the migration watcher separately",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-F",
+                                            "skip-first-run-update-notification",
+                                            "$ROOT/install/user/first-run/wifi.sh",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "first-run does not track update notifications separately",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "first-run uses one lifecycle completion marker",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n[[ $1 == \"check\" && $2 == \"first-run-user\" ]]\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\ntouch \"$OMARCHY_TEST_FINALIZE_CALLED\"\n",
+        },
+    ],
+}

@@ -1,0 +1,367 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/update-pacman-guard-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "run_guard",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "OMARCHY_PACMAN_CMDLINE",
+                                        value: "$1",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-update-pacman-guard",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "run_guard",
+                                        args: [
+                                            "pacman -Syu --noconfirm",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$test_tmp/direct.out",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "$test_tmp/direct.err",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "pacman guard blocks direct system upgrades",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "omarchy update",
+                        "$test_tmp/direct.err",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "pacman guard explains omarchy update entrypoint",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "pacman guard blocks direct pacman -Syu",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "run_guard",
+                                        args: [
+                                            "pacman --sync --refresh --sysupgrade",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$test_tmp/long.out",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "$test_tmp/long.err",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "pacman guard blocks long-form system upgrades",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "pacman guard blocks long-form pacman sysupgrade",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "OMARCHY_UPDATE_PACMAN",
+                            value: "1",
+                        },
+                    ],
+                    name: "run_guard",
+                    args: [
+                        "pacman -Syu --noconfirm",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/omarchy.out",
+                },
+                CshAstRedirect {
+                    descriptor: Some(
+                        "2",
+                    ),
+                    operator: ">",
+                    target: "$test_tmp/omarchy.err",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -s $test_tmp/omarchy.err ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "pacman guard stays quiet for omarchy update pacman call",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "pacman guard allows omarchy update pacman call",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "OMARCHY_ALLOW_DIRECT_PACMAN",
+                            value: "1",
+                        },
+                    ],
+                    name: "run_guard",
+                    args: [
+                        "pacman -Syu --noconfirm",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/override.out",
+                },
+                CshAstRedirect {
+                    descriptor: Some(
+                        "2",
+                    ),
+                    operator: ">",
+                    target: "$test_tmp/override.err",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -s $test_tmp/override.err ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "pacman guard stays quiet for explicit direct pacman override",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "pacman guard allows explicit direct pacman override",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_guard",
+                    args: [
+                        "pacman -S firefox",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/install.out",
+                },
+                CshAstRedirect {
+                    descriptor: Some(
+                        "2",
+                    ),
+                    operator: ">",
+                    target: "$test_tmp/install.err",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -s $test_tmp/install.err ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "pacman guard stays quiet for non-sysupgrade pacman command",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "pacman guard ignores non-system-upgrade transactions",
+                ],
+            },
+        ),
+    ],
+}

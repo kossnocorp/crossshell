@@ -1,0 +1,915 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/bluetooth-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^ConditionPathIsDirectory=/sys/class/bluetooth$",
+                        "$ROOT/default/systemd/user/bt-agent.service",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bt-agent is skipped on machines without Bluetooth hardware",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bt-agent is skipped on machines without Bluetooth hardware",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "device_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$device_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mock_bin",
+                        value: "$device_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$mock_bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "POWERED_FILE=$device_tmp/powered",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/bluetoothctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/rfkill",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$mock_bin/bluetoothctl",
+                    "$mock_bin/rfkill",
+                ],
+            },
+        ),
+        Function {
+            name: "bluetooth_run",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "powered=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "shift",
+                                args: [],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "echo",
+                                    args: [
+                                        "$powered",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$POWERED_FILE",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$device_tmp/log",
+                                },
+                            ],
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$mock_bin:$ROOT/bin:$PATH",
+                                        },
+                                        CshAstAssignment {
+                                            name: "BLUETOOTHCTL_LOG",
+                                            value: "$device_tmp/log",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_BLUETOOTH_POWER_WAIT_SECONDS",
+                                            value: "0",
+                                        },
+                                    ],
+                                    name: "$@",
+                                    args: [],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$* exits cleanly with Powered: $powered",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "%s",
+                                    "$device_tmp/log",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "bluetooth_power",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "bluetooth_run",
+                                args: [
+                                    "$1",
+                                    "$ROOT/bin/omarchy-bluetooth-power",
+                                    "$2",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "off_log",
+                        value: "$(bluetooth_power yes off)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "rfkill block bluetooth",
+                        "$off_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth turns off with an rfkill block",
+                        "$(cat \"$off_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth turns off with an rfkill block",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "power off",
+                        "$off_log",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth does not also power the adapter down",
+                        "$(cat \"$off_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth does not also power the adapter down",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "on_log",
+                        value: "$(bluetooth_power no on)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "rfkill unblock bluetooth",
+                        "$on_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth turns on by lifting the block",
+                        "$(cat \"$on_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth turns on by lifting the block",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "power on",
+                        "$on_log",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth leaves the power-on to bluetoothd when the block is lifted",
+                        "$(cat \"$on_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth leaves the power-on to bluetoothd when the block is lifted",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "inert_log",
+                        value: "$(RFKILL_INERT=1 bluetooth_power no on)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "power on",
+                        "$inert_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth powers the adapter on when unblocking does not",
+                        "$(cat \"$inert_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth powers the adapter on when unblocking does not",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "toggle_on_log",
+                        value: "$(bluetooth_power yes toggle)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "rfkill block bluetooth",
+                        "$toggle_on_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth toggles a powered adapter off",
+                        "$(cat \"$toggle_on_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth toggles a powered adapter off",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "toggle_off_log",
+                        value: "$(bluetooth_power no toggle)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "rfkill unblock bluetooth",
+                        "$toggle_off_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth toggles an unpowered adapter on",
+                        "$(cat \"$toggle_off_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth toggles an unpowered adapter on",
+                ],
+            },
+        ),
+        Function {
+            name: "bluetooth_device_log",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "bluetooth_run",
+                                args: [
+                                    "$1",
+                                    "$ROOT/bin/omarchy-bluetooth-device",
+                                    "connect",
+                                    "AA:BB:CC:DD:EE:FF",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "powered_log",
+                        value: "$(bluetooth_device_log yes)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "rfkill",
+                        "$powered_log",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth skips the power-on delay when the adapter is already powered",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth skips the power-on delay when the adapter is already powered",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "connect AA:BB:CC:DD:EE:FF",
+                        "$powered_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth still connects when the adapter is already powered",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth still connects when the adapter is already powered",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "unpowered_log",
+                        value: "$(bluetooth_device_log no)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "rfkill unblock bluetooth",
+                        "$unpowered_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth lifts the block before connecting",
+                        "$(cat \"$unpowered_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth lifts the block before connecting",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "connect AA:BB:CC:DD:EE:FF",
+                        "$unpowered_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth connects once the adapter is up",
+                        "$(cat \"$unpowered_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth connects once the adapter is up",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "echo",
+                    args: [
+                        "yes",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$POWERED_FILE.11:22:33:44:55:66",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "MOCK_CONTROLLERS=AA:BB:CC:DD:EE:FF 11:22:33:44:55:66",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "multi_log",
+                        value: "$(bluetooth_power no toggle)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "unset",
+                args: [
+                    "MOCK_CONTROLLERS",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$POWERED_FILE.11:22:33:44:55:66",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "rfkill block bluetooth",
+                        "$multi_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth counts a secondary controller as on",
+                        "$(cat \"$multi_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth counts a secondary controller as on",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "AutoEnable=false",
+                        "$ROOT/install/hardware/bluetooth.sh",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bluetooth install leaves AutoEnable at its default",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bluetooth install leaves AutoEnable at its default",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const fs = require('fs')\nconst bluetooth = requireFromRoot('shell/plugins/panels/bluetooth/Model.js')\nconst panelSource = fs.readFileSync(root + '/shell/plugins/panels/bluetooth/Panel.qml', 'utf8')\n\nassert(/IpcHandler[\\s\\S]*?function toggleBluetooth\\(\\) \\{ root\\.toggleBluetooth\\(\\) \\}/.test(panelSource), 'bluetooth exposes the radio toggle over IPC')\nassert(/manageIpc: false/.test(panelSource), 'bluetooth owns its IPC handler so it can extend the target methods')\n\n// Writing adapter.enabled sets BlueZ Powered, which does not survive a reboot.\nassert(/function toggleBluetooth\\(\\)[\\s\\S]*?execDetached\\(\\[\"omarchy-bluetooth-power\", adapter\\.enabled \\? \"off\" : \"on\"\\]\\)/.test(panelSource), 'bluetooth toggles the radio through the rfkill soft block')\nassert(!/adapter\\.enabled = /.test(panelSource), 'bluetooth never writes the adapter power state directly')\n\n// Discovery is a BlueZ session that nothing ends at panel close: it persists\n// until StopDiscovery or until quickshell's D-Bus connection drops with the\n// shell, and a leaked session keeps the radio in inquiry, starving A2DP audio\n// on the same controller. The panel tracks the stop it owes and settles it\n// once closed.\nconst retryTimer = panelSource.match(/id: discoveryRetry[\\s\\S]*?onTriggered: \\{[\\s\\S]*?\\n {4}\\}/)\nassert(retryTimer, 'bluetooth has the discovery retry timer')\nassert(/owesDiscoveryStop = true/.test(retryTimer[0]), 'bluetooth takes on the stop it owes when it starts discovery')\n\n// Quickshell only forwards a discovering write that differs from BlueZ's last\n// confirmed state, so a stop written in the same instant as an in-flight\n// StartDiscovery would be swallowed. Binding the stop timer to the confirmed\n// state means a confirmation landing at any point after close re-arms it.\nconst stopTimer = panelSource.match(/id: discoveryStop[\\s\\S]*?onTriggered: \\{[\\s\\S]*?\\n {4}\\}/)\nassert(stopTimer, 'bluetooth has the discovery stop timer')\nassert(/running: !root\\.opened && root\\.owesDiscoveryStop[\\s\\S]*discovering === true/.test(stopTimer[0]), 'bluetooth arms the stop off the confirmed discovery state while closed')\nassert(/discovering = false/.test(stopTimer[0]), 'bluetooth stops discovery after the panel closes')\n\n// One widget instance exists per monitor and they share the default adapter,\n// so a closing instance hands the scan to a panel still open on another\n// monitor instead of stopping it — that is the popout handoff between\n// monitors.\nassert(/function openSibling\\(\\)/.test(panelSource), 'bluetooth can see panel instances on other monitors')\nassert(/sibling\\.owesDiscoveryStop = true/.test(stopTimer[0]), 'bluetooth moves the stop it owes to an open panel on another monitor instead of stopping its scan')\n\n// The debt clears when BlueZ confirms discovery down, and a destroyed\n// instance hands it to a surviving sibling instead of taking it to the grave.\nassert(/onDiscoveringChanged[\\s\\S]{0,120}owesDiscoveryStop = false/.test(panelSource), 'bluetooth settles the stop it owes once discovery is confirmed down')\nassert(/Component\\.onDestruction: \\{[\\s\\S]{0,400}owesDiscoveryStop = true[\\s\\S]{0,200}discovering = false/.test(panelSource), 'bluetooth passes the stop it owes to a sibling when an instance is destroyed')\n\nassert(bluetooth.isUuidLike('0000110b-0000-1000-8000-00805f9b34fb'), 'bluetooth detects UUID-like names')\nassert(bluetooth.isAddressLike('AA:BB:CC:DD:EE:FF'), 'bluetooth detects address-like names')\nassertEqual(bluetooth.normalizedAddress('AA:BB_CC-dd-ee-ff'), 'aabbccddeeff', 'bluetooth normalizes BlueZ and PipeWire address formats')\nassert(!bluetooth.hasHumanName({ name: 'AA:BB:CC:DD:EE:FF' }), 'bluetooth rejects address-only device labels')\nassert(bluetooth.hasHumanName({ deviceName: 'MX Master 3S' }), 'bluetooth accepts human device labels')\n\nconst devices = [\n  { name: 'Speaker', connected: false, paired: true, address: '2' },\n  { name: 'Headphones', connected: true, address: '1' },\n  { name: 'Keyboard', connected: false, address: '3' },\n  { name: 'AA:BB:CC:DD:EE:FF', connected: true, address: '4' },\n  { name: 'Mouse', connected: false, trusted: true, address: '5' }\n]\n\nconst arrayLikeDevices = {\n  0: devices[0],\n  1: devices[1],\n  length: 2\n}\nassertDeepEqual(\n  bluetooth.toArray(arrayLikeDevices).map(bluetooth.deviceLabel),\n  ['Speaker', 'Headphones'],\n  'bluetooth converts Quickshell QObjectList-style values into arrays'\n)\n\nconst lists = bluetooth.deviceLists(devices)\nassertDeepEqual(lists.connected.map(bluetooth.deviceLabel), ['Headphones'], 'bluetooth groups connected devices')\nassertDeepEqual(lists.known.map(bluetooth.deviceLabel), ['Mouse', 'Speaker'], 'bluetooth groups known devices by label')\nassertDeepEqual(lists.discovered.map(bluetooth.deviceLabel), ['Keyboard'], 'bluetooth groups discovered devices')\nassertDeepEqual(bluetooth.visibleSections(lists, true), ['connected', 'known', 'discovered'], 'bluetooth shows discovered section while scanning')\nassertDeepEqual(bluetooth.visibleSections(lists, false), ['connected', 'known'], 'bluetooth hides discovered section when not scanning')\n\nconst arrayLikeLists = bluetooth.deviceLists({\n  0: { name: 'Earbuds', connected: true, address: '6' },\n  1: { name: 'Trackpad', paired: true, address: '7' },\n  2: { name: 'Gamepad', address: '8' },\n  length: 3\n})\nassertDeepEqual(arrayLikeLists.connected.map(bluetooth.deviceLabel), ['Earbuds'], 'bluetooth groups connected devices from array-like values')\nassertDeepEqual(arrayLikeLists.known.map(bluetooth.deviceLabel), ['Trackpad'], 'bluetooth groups known devices from array-like values')\nassertDeepEqual(arrayLikeLists.discovered.map(bluetooth.deviceLabel), ['Gamepad'], 'bluetooth groups discovered devices from array-like values')\n\nassertDeepEqual(\n  bluetooth.deviceRow({ name: 'Deadbeef', address: '1', connected: false }),\n  { address: '1', name: 'Deadbeef', deviceName: '', connected: false, state: -1, batteryAvailable: false, battery: 0, pairing: false },\n  'bluetooth projects device rows with primitives only'\n)\nassertEqual(\n  bluetooth.deviceLabel(bluetooth.deviceRow({ name: 'Generic', deviceName: 'MX Master 3S', address: '2', connected: true })),\n  'MX Master 3S',\n  'bluetooth keeps deviceName in row projections so labels survive QObject-free rows'\n)\n\nassertDeepEqual(\n  bluetooth.withPendingAction({ a: 'connecting' }, 'b', 'forgetting'),\n  { a: 'connecting', b: 'forgetting' },\n  'bluetooth adds pending actions immutably'\n)\nassertDeepEqual(bluetooth.withPendingAction({ a: 'connecting' }, 'a', ''), {}, 'bluetooth clears pending actions immutably')\n\nconst bluetoothSink = {\n  isSink: true,\n  isStream: false,\n  ready: true,\n  name: 'bluez_output.AA_BB_CC_DD_EE_FF.1',\n  properties: {\n    'device.product.name': 'JBL Go 3'\n  }\n}\nassert(\n  bluetooth.bluetoothSinkMatchesDevice(bluetoothSink, { address: 'AA:BB:CC:DD:EE:FF', name: 'JBL Go 3' }),\n  'bluetooth matches audio sinks by device address'\n)\nassert(\n  bluetooth.bluetoothSinkMatchesDevice(\n    {\n      isSink: true,\n      isStream: false,\n      ready: true,\n      name: 'alsa_output.usb-speaker',\n      properties: { 'device.product.name': 'JBL Go 3' }\n    },\n    { address: '11:22:33:44:55:66', name: 'JBL Go 3' }\n  ),\n  'bluetooth matches audio sinks by human device label when address is unavailable'\n)\nassert(\n  !bluetooth.bluetoothSinkMatchesDevice({ isSink: false, isStream: false, ready: true, name: 'bluez_output.AA_BB_CC_DD_EE_FF.1', properties: {} }, { address: 'AA:BB:CC:DD:EE:FF', name: 'JBL Go 3' }),\n  'bluetooth ignores non-sink nodes when matching audio outputs'\n)\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf '%s\\n' \"$*\" >>\"$BLUETOOTHCTL_LOG\"\n[[ $1 == \"power\" && $2 == \"on\" ]] && echo yes >\"$POWERED_FILE\"\n[[ $1 == \"list\" ]] &&\n  for c in ${MOCK_CONTROLLERS:-AA:BB:CC:DD:EE:FF}; do printf 'Controller %s mock\\n' \"$c\"; done\n# Per-controller state where a test set it, the shared file otherwise.\nif [[ $1 == \"show\" ]]; then\n  state=\"$POWERED_FILE\"\n  [[ -n ${2:-} && -f \"$POWERED_FILE.$2\" ]] && state=\"$POWERED_FILE.$2\"\n  printf '\\tPowered: %s\\n' \"$(cat \"$state\")\"\nfi\nexit 0\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf 'rfkill %s\\n' \"$*\" >>\"$BLUETOOTHCTL_LOG\"\n# Lifting the block is normally all it takes: AutoEnable is left at its default,\n# so bluetoothd powers the adapter up on its own. RFKILL_INERT stands in for the\n# adapter that was powered down without a block, where it does not.\n[[ $1 == \"unblock\" && -z ${RFKILL_INERT:-} ]] && echo yes >\"$POWERED_FILE\"\n[[ $1 == \"block\" ]] && echo no >\"$POWERED_FILE\"\nexit 0\n",
+        },
+    ],
+}

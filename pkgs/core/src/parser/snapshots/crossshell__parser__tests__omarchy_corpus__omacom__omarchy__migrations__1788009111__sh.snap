@@ -1,0 +1,717 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1788009111.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Temporarily remove automatic printer discovery",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "machine_marker",
+                        value: "${OMARCHY_CUPS_BROWSED_REMOVAL_MARKER:-/var/lib/omarchy/migrations/1788009111}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $machine_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-pkg-present",
+                    args: [
+                        "cups-browsed",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "pacman",
+                    args: [
+                        "-Rs",
+                        "--print",
+                        "cups-browsed",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "systemctl",
+                                        args: [
+                                            "is-enabled",
+                                            "--quiet",
+                                            "cups-browsed.service",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "sudo",
+                                        args: [
+                                            "systemctl",
+                                            "disable",
+                                            "--now",
+                                            "cups-browsed.service",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "systemctl",
+                                        args: [
+                                            "is-active",
+                                            "--quiet",
+                                            "cups-browsed.service",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "sudo",
+                                        args: [
+                                            "systemctl",
+                                            "stop",
+                                            "cups-browsed.service",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "queue_report",
+                                            value: "$(LC_ALL=C lpstat -v 2>&1)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " $queue_report == \"lpstat: No destinations added.\" ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "queue_report",
+                                            value: "",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "%s\\n",
+                                        "$queue_report",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">&",
+                                    target: "2",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "exit",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "generated_queues",
+                        value: "$(printf '%s\\n' \"$queue_report\" |\n  sed -n 's|^device for \\(.*\\): implicitclass://.*|\\1|p')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Loop {
+                until: false,
+                condition: CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "IFS",
+                                        value: "",
+                                    },
+                                ],
+                                name: "read",
+                                args: [
+                                    "-r",
+                                    "queue",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+                body: CshAst {
+                    commands: [
+                        Binary {
+                            left: Test(
+                                " -n $queue ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "continue",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "reject_error",
+                                                                value: "$(sudo cupsreject -r \"Printer discovery has been removed from Omarchy\" \"$queue\" 2>&1)",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            If {
+                                                branches: [
+                                                    CshAstBranch {
+                                                        condition: CshAst {
+                                                            commands: [
+                                                                Redirected {
+                                                                    expression: Command(
+                                                                        CshAstCommand {
+                                                                            assignments: [
+                                                                                CshAstAssignment {
+                                                                                    name: "LC_ALL",
+                                                                                    value: "C",
+                                                                                },
+                                                                            ],
+                                                                            name: "lpstat",
+                                                                            args: [
+                                                                                "-p",
+                                                                                "$queue",
+                                                                            ],
+                                                                        },
+                                                                    ),
+                                                                    redirects: [
+                                                                        CshAstRedirect {
+                                                                            descriptor: None,
+                                                                            operator: ">",
+                                                                            target: "/dev/null",
+                                                                        },
+                                                                        CshAstRedirect {
+                                                                            descriptor: Some(
+                                                                                "2",
+                                                                            ),
+                                                                            operator: ">&",
+                                                                            target: "1",
+                                                                        },
+                                                                    ],
+                                                                },
+                                                            ],
+                                                        },
+                                                        body: CshAst {
+                                                            commands: [
+                                                                Redirected {
+                                                                    expression: Command(
+                                                                        CshAstCommand {
+                                                                            assignments: [],
+                                                                            name: "printf",
+                                                                            args: [
+                                                                                "%s\\n",
+                                                                                "$reject_error",
+                                                                            ],
+                                                                        },
+                                                                    ),
+                                                                    redirects: [
+                                                                        CshAstRedirect {
+                                                                            descriptor: None,
+                                                                            operator: ">&",
+                                                                            target: "2",
+                                                                        },
+                                                                    ],
+                                                                },
+                                                                Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "exit",
+                                                                        args: [
+                                                                            "1",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                            ],
+                                                        },
+                                                    },
+                                                ],
+                                                otherwise: Some(
+                                                    CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "continue",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "job_report",
+                                                            value: "$(LC_ALL=C lpstat -o \"$queue\" 2>&1)",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Binary {
+                                                left: Test(
+                                                    " -z $job_report ",
+                                                ),
+                                                operator: Or,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "continue",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                },
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "LC_ALL",
+                                                                value: "C",
+                                                            },
+                                                        ],
+                                                        name: "lpstat",
+                                                        args: [
+                                                            "-p",
+                                                            "$queue",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "/dev/null",
+                                                    },
+                                                    CshAstRedirect {
+                                                        descriptor: Some(
+                                                            "2",
+                                                        ),
+                                                        operator: ">&",
+                                                        target: "1",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "%s\\n",
+                                                            "$job_report",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">&",
+                                                        target: "2",
+                                                    },
+                                                ],
+                                            },
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "exit",
+                                                    args: [
+                                                        "1",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "continue",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "delete_error",
+                                                                value: "$(sudo lpadmin -x \"$queue\" 2>&1)",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            If {
+                                                branches: [
+                                                    CshAstBranch {
+                                                        condition: CshAst {
+                                                            commands: [
+                                                                Redirected {
+                                                                    expression: Command(
+                                                                        CshAstCommand {
+                                                                            assignments: [
+                                                                                CshAstAssignment {
+                                                                                    name: "LC_ALL",
+                                                                                    value: "C",
+                                                                                },
+                                                                            ],
+                                                                            name: "lpstat",
+                                                                            args: [
+                                                                                "-p",
+                                                                                "$queue",
+                                                                            ],
+                                                                        },
+                                                                    ),
+                                                                    redirects: [
+                                                                        CshAstRedirect {
+                                                                            descriptor: None,
+                                                                            operator: ">",
+                                                                            target: "/dev/null",
+                                                                        },
+                                                                        CshAstRedirect {
+                                                                            descriptor: Some(
+                                                                                "2",
+                                                                            ),
+                                                                            operator: ">&",
+                                                                            target: "1",
+                                                                        },
+                                                                    ],
+                                                                },
+                                                            ],
+                                                        },
+                                                        body: CshAst {
+                                                            commands: [
+                                                                Redirected {
+                                                                    expression: Command(
+                                                                        CshAstCommand {
+                                                                            assignments: [],
+                                                                            name: "printf",
+                                                                            args: [
+                                                                                "%s\\n",
+                                                                                "$delete_error",
+                                                                            ],
+                                                                        },
+                                                                    ),
+                                                                    redirects: [
+                                                                        CshAstRedirect {
+                                                                            descriptor: None,
+                                                                            operator: ">&",
+                                                                            target: "2",
+                                                                        },
+                                                                    ],
+                                                                },
+                                                                Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "exit",
+                                                                        args: [
+                                                                            "1",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                            ],
+                                                        },
+                                                    },
+                                                ],
+                                                otherwise: None,
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                    ],
+                },
+            },
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<<",
+                    target: "$generated_queues",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-pkg-drop",
+                    args: [
+                        "cups-browsed",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "install",
+                    "-Dm644",
+                    "/dev/null",
+                    "$machine_marker",
+                ],
+            },
+        ),
+    ],
+}

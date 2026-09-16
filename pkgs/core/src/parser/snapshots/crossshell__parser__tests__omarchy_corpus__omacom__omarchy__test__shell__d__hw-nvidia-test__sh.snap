@@ -1,0 +1,669 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hw-nvidia-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmp_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmp_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "write_pci_devices",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$tmp_dir/devices",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mkdir",
+                                args: [
+                                    "-p",
+                                    "$tmp_dir/devices",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "index=0",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "spec",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "spec",
+                            words: Some(
+                                [
+                                    "$@",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "local",
+                                            args: [
+                                                "slot",
+                                            ],
+                                        },
+                                    ),
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [
+                                                CshAstAssignment {
+                                                    name: "slot",
+                                                    value: "$(printf '0000:%02x:00.0' \"$index\")",
+                                                },
+                                            ],
+                                            name: "",
+                                            args: [],
+                                        },
+                                    ),
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "mkdir",
+                                            args: [
+                                                "-p",
+                                                "$tmp_dir/devices/$slot",
+                                            ],
+                                        },
+                                    ),
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "printf",
+                                                args: [
+                                                    "%s\\n",
+                                                    "${spec%%:*}",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "$tmp_dir/devices/$slot/vendor",
+                                            },
+                                        ],
+                                    },
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "printf",
+                                                args: [
+                                                    "%s\\n",
+                                                    "$(cut -d: -f2 <<<\"$spec\")",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "$tmp_dir/devices/$slot/device",
+                                            },
+                                        ],
+                                    },
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "printf",
+                                                args: [
+                                                    "%s\\n",
+                                                    "${spec##*:}",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "$tmp_dir/devices/$slot/class",
+                                            },
+                                        ],
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [
+                                                CshAstAssignment {
+                                                    name: "index",
+                                                    value: "$((index + 1))",
+                                                },
+                                            ],
+                                            name: "",
+                                            args: [],
+                                        },
+                                    ),
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "hw_nvidia",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "OMARCHY_PCI_DEVICES_PATH",
+                                        value: "$tmp_dir/devices",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-hw-$1",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "assert_detects",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                    "nvidia=$2",
+                                    "gsp=$3",
+                                    "without_gsp=$4",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "command",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "command",
+                            words: Some(
+                                [
+                                    "nvidia",
+                                    "gsp",
+                                    "without-gsp",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "local",
+                                            args: [
+                                                "expected",
+                                            ],
+                                        },
+                                    ),
+                                    Case {
+                                        word: "$command",
+                                        arms: [
+                                            CshAstCaseArm {
+                                                patterns: [
+                                                    "nvidia",
+                                                ],
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [
+                                                                    CshAstAssignment {
+                                                                        name: "expected",
+                                                                        value: "$nvidia",
+                                                                    },
+                                                                ],
+                                                                name: "",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                                terminator: ";;",
+                                            },
+                                            CshAstCaseArm {
+                                                patterns: [
+                                                    "gsp",
+                                                ],
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [
+                                                                    CshAstAssignment {
+                                                                        name: "expected",
+                                                                        value: "$gsp",
+                                                                    },
+                                                                ],
+                                                                name: "",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                                terminator: ";;",
+                                            },
+                                            CshAstCaseArm {
+                                                patterns: [
+                                                    "without-gsp",
+                                                ],
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [
+                                                                    CshAstAssignment {
+                                                                        name: "expected",
+                                                                        value: "$without_gsp",
+                                                                    },
+                                                                ],
+                                                                name: "",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                                terminator: ";;",
+                                            },
+                                        ],
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "local",
+                                            args: [
+                                                "detector=nvidia",
+                                            ],
+                                        },
+                                    ),
+                                    Binary {
+                                        left: Test(
+                                            " $command == \"nvidia\" ",
+                                        ),
+                                        operator: Or,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "detector",
+                                                        value: "nvidia-$command",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "local",
+                                            args: [
+                                                "actual=no",
+                                            ],
+                                        },
+                                    ),
+                                    Binary {
+                                        left: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "hw_nvidia",
+                                                args: [
+                                                    "$detector",
+                                                ],
+                                            },
+                                        ),
+                                        operator: And,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "actual",
+                                                        value: "yes",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                    },
+                                    Binary {
+                                        left: Test(
+                                            " $actual == \"$expected\" ",
+                                        ),
+                                        operator: Or,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "fail",
+                                                args: [
+                                                    "$description",
+                                                    "omarchy-hw-$detector: expected $expected, got $actual",
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [
+                    "0x1002:0x15e7:0x030000",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "a machine without an NVIDIA GPU detects nothing",
+                    "no",
+                    "no",
+                    "no",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [
+                    "0x1002:0x15e7:0x030000",
+                    "0x10de:0x2560:0x030200",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "a hybrid Ampere laptop detects a GSP GPU",
+                    "yes",
+                    "yes",
+                    "no",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [
+                    "0x10de:0x1f91:0x030000",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "Turing is the oldest generation with GSP firmware",
+                    "yes",
+                    "yes",
+                    "no",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [
+                    "0x10de:0x1d81:0x030000",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "Volta is the newest generation without GSP firmware",
+                    "yes",
+                    "no",
+                    "yes",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [
+                    "0x10de:0x1b80:0x030000",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "Pascal detects a GPU without GSP firmware",
+                    "yes",
+                    "no",
+                    "yes",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [
+                    "0x10de:0x1340:0x030000",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "Maxwell detects a GPU without GSP firmware",
+                    "yes",
+                    "no",
+                    "yes",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [
+                    "0x10de:0x1004:0x030000",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "Kepler is too old for either driver",
+                    "yes",
+                    "no",
+                    "no",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [
+                    "0x10de:0x06cd:0x030000",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "Fermi is too old for either driver",
+                    "yes",
+                    "no",
+                    "no",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [
+                    "0x10de:0x2c02:0x030000",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "Blackwell detects a GSP GPU",
+                    "yes",
+                    "yes",
+                    "no",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [
+                    "0x10de:0x228e:0x040300",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "a non-display NVIDIA function is not a GPU",
+                    "no",
+                    "no",
+                    "no",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_pci_devices",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "a machine with no PCI devices detects nothing",
+                    "no",
+                    "no",
+                    "no",
+                ],
+            },
+        ),
+    ],
+}

@@ -1,0 +1,394 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/voxtype-invitation-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_home",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_bin",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "log_file",
+                        value: "$(mktemp)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hook_path",
+                        value: "$test_home/.config/omarchy/hooks/post-update.d/install-voxtype.hook",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "cleanup",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$test_home",
+                                    "$test_bin",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$log_file",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "cleanup",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$(dirname \"$hook_path\")",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_bin/omarchy-notification-send",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$test_bin/omarchy-notification-send",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_bin/systemd-run",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$test_bin/systemd-run",
+                ],
+            },
+        ),
+        Function {
+            name: "run_invitation_hook",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cp",
+                                args: [
+                                    "$ROOT/install/user/first-run/install-voxtype.hook",
+                                    "$hook_path",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "HOME",
+                                        value: "$test_home",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$test_bin:$ROOT/bin:$PATH",
+                                    },
+                                    CshAstAssignment {
+                                        name: "TEST_LOG",
+                                        value: "$log_file",
+                                    },
+                                ],
+                                name: "bash",
+                                args: [
+                                    "$hook_path",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_invitation_hook",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $test_home/.local/state/omarchy/done/voxtype-install-invitation ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Voxtype invitation records completion",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $hook_path ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Voxtype invitation keeps its hook installed",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(grep -c '^notification$' \"$log_file\") -eq 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Voxtype invitation sends one notification",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "exec:omarchy-launch-floating-terminal-with-presentation omarchy-voxtype-install",
+                        "$log_file",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Voxtype invitation attaches the installer to the notification",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^systemd-run:",
+                        "$log_file",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Voxtype invitation needs no unit to hold an unanswered toast",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$test_home",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$test_bin:$ROOT/bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "TEST_LOG",
+                        value: "$log_file",
+                    },
+                ],
+                name: "bash",
+                args: [
+                    "$hook_path",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $hook_path ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "completed Voxtype invitation keeps its hook installed",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(grep -c '^notification$' \"$log_file\") -eq 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "completed Voxtype invitation hook does not notify again",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Voxtype invitation only runs once",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\necho notification >>\"$TEST_LOG\"\nexec_args=()\nwhile (($# > 0)); do\n  if [[ $1 == \"--exec\" ]]; then shift; exec_args=(\"$@\"); break; fi\n  shift\ndone\n((${#exec_args[@]})) && echo \"exec:${exec_args[*]}\" >>\"$TEST_LOG\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\necho \"systemd-run:$*\" >>\"$TEST_LOG\"\n",
+        },
+    ],
+}

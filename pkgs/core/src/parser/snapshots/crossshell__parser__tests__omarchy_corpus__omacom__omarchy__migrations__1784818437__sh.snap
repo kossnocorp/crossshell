@@ -1,0 +1,103 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1784818437.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Gate sudo and polkit fingerprint auth behind the lid state (password when the lid is shut)",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "gate",
+                        value: "auth      [success=1 default=ignore] pam_exec.so quiet /usr/bin/omarchy-hw-laptop-closed",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "pam",
+            words: Some(
+                [
+                    "/etc/pam.d/sudo",
+                    "/etc/pam.d/polkit-1",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Binary {
+                                                left: Test(
+                                                    " -f $pam ",
+                                                ),
+                                                operator: And,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "grep",
+                                                        args: [
+                                                            "-q",
+                                                            "pam_fprintd\\.so",
+                                                            "$pam",
+                                                        ],
+                                                    },
+                                                ),
+                                            },
+                                            operator: And,
+                                            right: Negated(
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "grep",
+                                                        args: [
+                                                            "-q",
+                                                            "omarchy-hw-laptop-closed",
+                                                            "$pam",
+                                                        ],
+                                                    },
+                                                ),
+                                            ),
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "sudo",
+                                                args: [
+                                                    "sed",
+                                                    "-i",
+                                                    "/pam_fprintd\\.so/i $gate",
+                                                    "$pam",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+    ],
+}

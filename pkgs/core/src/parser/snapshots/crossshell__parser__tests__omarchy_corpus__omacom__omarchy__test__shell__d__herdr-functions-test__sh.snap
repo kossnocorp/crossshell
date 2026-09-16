@@ -1,0 +1,378 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/herdr-functions-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$ROOT/default/bash/fns/herdr",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf -- \"$test_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$test_dir/first project's files",
+                    "$test_dir/second project",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "log",
+                        value: "$test_dir/herdr.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "herdr",
+            body: Group(
+                CshAst {
+                    commands: [
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " $1 == \"workspace\" ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "return",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " $1 == \"tab\" ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "printf",
+                                                    args: [
+                                                        "{\"result\":{\"root_pane\":{\"pane_id\":\"new-pane\"}}}\\n",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " $1 == \"pane\" && $2 == \"run\" ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "%s\\n",
+                                                            "$4",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">>",
+                                                        target: "$log",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "HERDR_PANE_ID=current-pane",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "HERDR_WORKSPACE_ID=workspace",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cd",
+                args: [
+                    "$test_dir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "hdlm",
+                args: [
+                    "codex --flag='value with spaces'",
+                    "claude --model sonnet",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "commands",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "$log",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected_first",
+                        value: "$(printf 'cd %q && hdl %q %q' \\\n  \"$test_dir/first project's files\" \"codex --flag='value with spaces'\" \"claude --model sonnet\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected_second",
+                        value: "$(printf 'hdl %q %q' \"codex --flag='value with spaces'\" \"claude --model sonnet\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${commands[0]} == \"$expected_first\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hdlm safely quotes its first queued command",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "hdlm safely quotes its first queued command",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${commands[1]} == \"$expected_second\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hdlm preserves agent argument boundaries",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "hdlm preserves agent argument boundaries",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$log",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "hdlm",
+                args: [
+                    "codex --quiet",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "commands",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "$log",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected_first",
+                        value: "$(printf 'cd %q && hdl %q' \"$test_dir/first project's files\" \"codex --quiet\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${commands[0]} == \"$expected_first\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hdlm omits an absent second agent argument",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "hdlm omits an absent second agent argument",
+                ],
+            },
+        ),
+    ],
+}

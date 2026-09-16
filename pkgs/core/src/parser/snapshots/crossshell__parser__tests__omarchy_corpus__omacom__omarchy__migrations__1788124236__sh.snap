@@ -1,0 +1,976 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1788124236.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Disable SSH password authentication, or sshd itself when no key is authorized",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "config",
+                        value: "/etc/ssh/sshd_config.d/10-omarchy-hardening.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "authorized_keys",
+                        value: "$HOME/.ssh/authorized_keys",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "as_root",
+            body: Group(
+                CshAst {
+                    commands: [
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Arithmetic(
+                                                " EUID == 0 ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "$@",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "sudo",
+                                                args: [
+                                                    "$@",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "skip",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "echo",
+                                args: [
+                                    "$1 SSH password authentication remains enabled; run omarchy-setup-security-sshd to harden manually.",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "exit",
+                                args: [
+                                    "0",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -e $config || -L $config ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Negated(
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "systemctl",
+                                                args: [
+                                                    "is-enabled",
+                                                    "--quiet",
+                                                    "sshd.service",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: Some(
+                                                    "2",
+                                                ),
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                        ],
+                                    },
+                                ),
+                                operator: And,
+                                right: Negated(
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "systemctl",
+                                                args: [
+                                                    "is-active",
+                                                    "--quiet",
+                                                    "sshd.service",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: Some(
+                                                    "2",
+                                                ),
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Function {
+            name: "has_usable_key",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "line",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Loop {
+                                until: false,
+                                condition: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "IFS",
+                                                            value: "",
+                                                        },
+                                                    ],
+                                                    name: "read",
+                                                    args: [
+                                                        "-r",
+                                                        "line",
+                                                    ],
+                                                },
+                                            ),
+                                            operator: Or,
+                                            right: Test(
+                                                " -n $line ",
+                                            ),
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Test(
+                                                                " $line =~ ^[[:space:]]*(#|$) ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "continue",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Redirected {
+                                                                expression: Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "ssh-keygen",
+                                                                        args: [
+                                                                            "-lf",
+                                                                            "/dev/stdin",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                                redirects: [
+                                                                    CshAstRedirect {
+                                                                        descriptor: None,
+                                                                        operator: "<<<",
+                                                                        target: "$line",
+                                                                    },
+                                                                    CshAstRedirect {
+                                                                        descriptor: None,
+                                                                        operator: ">",
+                                                                        target: "/dev/null",
+                                                                    },
+                                                                    CshAstRedirect {
+                                                                        descriptor: Some(
+                                                                            "2",
+                                                                        ),
+                                                                        operator: ">&",
+                                                                        target: "1",
+                                                                    },
+                                                                ],
+                                                            },
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "return",
+                                                                    args: [
+                                                                        "0",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                    ],
+                                },
+                            },
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "$authorized_keys",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -f $authorized_keys && ! -r $authorized_keys ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "skip",
+                                    args: [
+                                        "Could not read $authorized_keys to check for a usable key.",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " ! -f $authorized_keys ",
+                                ),
+                                operator: Or,
+                                right: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "has_usable_key",
+                                            args: [],
+                                        },
+                                    ),
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "as_root",
+                                                            args: [
+                                                                "systemctl",
+                                                                "disable",
+                                                                "--now",
+                                                                "sshd.service",
+                                                            ],
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "echo",
+                                                            args: [
+                                                                "Administrator privileges are required to close the password-only SSH server. Run omarchy-migrate again from a terminal.",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: ">&",
+                                                            target: "2",
+                                                        },
+                                                    ],
+                                                },
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "exit",
+                                                        args: [
+                                                            "1",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "echo",
+                                    args: [
+                                        "No usable SSH key is authorized, so sshd only accepted password logins. The SSH server has been disabled: run omarchy-setup-security-sshd to set it up with key-based authentication, or re-enable sshd to accept password logins anyway.",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "home_mode",
+                            value: "$(stat -c '%a' \"$HOME\" 2>/dev/null)",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "skip",
+                    args: [
+                        "Could not inspect the permissions on $HOME.",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " 8#$home_mode & 8#022 ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "skip",
+                                    args: [
+                                        "$HOME is group- or world-writable, so sshd would ignore the authorized key.",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "chmod",
+                                            args: [
+                                                "700",
+                                                "$HOME/.ssh",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                                operator: Or,
+                                right: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "chmod",
+                                            args: [
+                                                "600",
+                                                "$authorized_keys",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "skip",
+                                    args: [
+                                        "Could not tighten the permissions on $authorized_keys.",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Disabling SSH password authentication on the existing key-based SSH setup...",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Negated(
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "as_root",
+                                            args: [
+                                                "install",
+                                                "-Dm644",
+                                                "/dev/stdin",
+                                                "$config",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: "<<",
+                                            target: "CONF",
+                                            here_document: 0,
+                                        },
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "echo",
+                                        args: [
+                                            "Administrator privileges are required to harden the existing SSH setup. Run omarchy-migrate again from a terminal.",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">&",
+                                        target: "2",
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Negated(
+                                Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "as_root",
+                                        args: [
+                                            "sshd",
+                                            "-t",
+                                        ],
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "as_root",
+                                        args: [
+                                            "rm",
+                                            "-f",
+                                            "--",
+                                            "$config",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "true",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "skip",
+                                    args: [
+                                        "sshd rejected its configuration.",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "effective_config",
+                            value: "$(as_root sshd -T)",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "as_root",
+                                    args: [
+                                        "rm",
+                                        "-f",
+                                        "--",
+                                        "$config",
+                                    ],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "true",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "skip",
+                                args: [
+                                    "Could not inspect sshd's effective configuration.",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Negated(
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "-qixF",
+                                                    "passwordauthentication no",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: "<<<",
+                                                target: "$effective_config",
+                                            },
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Negated(
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "-qixF",
+                                                    "kbdinteractiveauthentication no",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: "<<<",
+                                                target: "$effective_config",
+                                            },
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "as_root",
+                                        args: [
+                                            "rm",
+                                            "-f",
+                                            "--",
+                                            "$config",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "true",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "skip",
+                                    args: [
+                                        "sshd does not apply the hardening drop-in, so an earlier rule or a config without the sshd_config.d include wins.",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "systemctl",
+                                        args: [
+                                            "is-active",
+                                            "--quiet",
+                                            "sshd.service",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "as_root",
+                                                            args: [
+                                                                "systemctl",
+                                                                "reload",
+                                                                "sshd.service",
+                                                            ],
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "echo",
+                                                            args: [
+                                                                "The hardening config is installed and valid, but sshd did not reload; it takes effect when sshd next restarts.",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: ">&",
+                                                            target: "2",
+                                                        },
+                                                    ],
+                                                },
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "exit",
+                                                        args: [
+                                                            "0",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "CONF",
+            quoted: true,
+            strip_tabs: false,
+            body: "# Written by Omarchy once an SSH key was already authorized.\n# Delete this file and reload sshd to allow password logins again.\nPasswordAuthentication no\nKbdInteractiveAuthentication no\n",
+        },
+    ],
+}

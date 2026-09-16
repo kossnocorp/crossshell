@@ -1,0 +1,440 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/agent-invitation-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_home",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_bin",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "log_file",
+                        value: "$(mktemp)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hook_path",
+                        value: "$test_home/.config/omarchy/hooks/post-update.d/setup-agent.hook",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "cleanup",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$test_home",
+                                    "$test_bin",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$log_file",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "cleanup",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$(dirname \"$hook_path\")",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_bin/omarchy-notification-send",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$test_bin/omarchy-notification-send",
+                ],
+            },
+        ),
+        Function {
+            name: "run_invitation_hook",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cp",
+                                args: [
+                                    "$ROOT/install/user/first-run/setup-agent.hook",
+                                    "$hook_path",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "HOME",
+                                        value: "$test_home",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$test_bin:$ROOT/bin:$PATH",
+                                    },
+                                    CshAstAssignment {
+                                        name: "TEST_LOG",
+                                        value: "$log_file",
+                                    },
+                                ],
+                                name: "bash",
+                                args: [
+                                    "$hook_path",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_invitation_hook",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $test_home/.local/state/omarchy/done/agent-setup-invitation ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "agent invitation records completion",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $hook_path ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "agent invitation keeps its hook installed",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(grep -c '^notification$' \"$log_file\") -eq 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "agent invitation sends one notification",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "exec:omarchy menu summon setup.default.agent",
+                        "$log_file",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "agent invitation opens the agent defaults menu",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_invitation_hook",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(grep -c '^notification$' \"$log_file\") -eq 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "completed agent invitation does not notify again",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "agent invitation only runs once",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fresh_home",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$fresh_home/.config/omarchy/defaults",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "claude\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fresh_home/.config/omarchy/defaults/agent",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$log_file",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$ROOT/install/user/first-run/setup-agent.hook",
+                    "$hook_path",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$fresh_home",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$test_bin:$ROOT/bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "TEST_LOG",
+                        value: "$log_file",
+                    },
+                ],
+                name: "bash",
+                args: [
+                    "$hook_path",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $log_file ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "agent invitation stays quiet when a default is already set",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -f $fresh_home/.local/state/omarchy/done/agent-setup-invitation ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "agent invitation leaves its marker unset when a default is already set",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$fresh_home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "agent invitation skips anyone who already chose an agent",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\necho notification >>\"$TEST_LOG\"\nexec_args=()\nwhile (($# > 0)); do\n  if [[ $1 == \"--exec\" ]]; then shift; exec_args=(\"$@\"); break; fi\n  shift\ndone\n((${#exec_args[@]})) && echo \"exec:${exec_args[*]}\" >>\"$TEST_LOG\"\n",
+        },
+    ],
+}

@@ -1,0 +1,368 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/network-manager-transition-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dns",
+                        value: "$ROOT/bin/omarchy-dns",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hardware_network",
+                        value: "$ROOT/install/hardware/network.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Negated(
+                Redirected {
+                    expression: Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "grep",
+                            args: [
+                                "-F",
+                                "systemd-networkd",
+                                "$dns",
+                            ],
+                        },
+                    ),
+                    redirects: [
+                        CshAstRedirect {
+                            descriptor: None,
+                            operator: ">",
+                            target: "/dev/null",
+                        },
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-dns no longer restarts systemd-networkd",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "NetworkManager/conf.d/20-omarchy-dns.conf",
+                        "$dns",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "[global-dns-domain-*]",
+                        "$dns",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "ipv4.ignore-auto-dns yes",
+                        "$dns",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "ipv4.ignore-auto-dns no",
+                        "$dns",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "nmcli device reapply",
+                        "$dns",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "nmcli general reload conf",
+                        "$dns",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "nmcli general reload dns-full",
+                        "$dns",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-F",
+                                            "nmcli general reload conf,dns-full",
+                                            "$dns",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "omarchy-dns must not push DNS before reapplying active profiles",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "omarchy-dns configures DNS through NetworkManager",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "systemd-networkd.service",
+                        "$hardware_network",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "systemd-networkd.socket",
+                        "$hardware_network",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "20-wlan.network",
+                        "$hardware_network",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-F",
+                        "omarchy-networkd-retired",
+                        "$hardware_network",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "hardware setup retires archinstall networkd state",
+                ],
+            },
+        ),
+    ],
+}

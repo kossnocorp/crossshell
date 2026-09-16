@@ -1,0 +1,804 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/nopasswd-sudo-expiry-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "script",
+                        value: "$ROOT/bin/omarchy-sudo-passwordless",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmpfiles_file",
+                        value: "$ROOT/etc/tmpfiles.d/omarchy-nopasswd-sudo.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mock_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "grant",
+                        value: "$test_tmp/grant",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "calls",
+                        value: "$test_tmp/calls",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$mock_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/gum",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/systemctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$mock_bin/gum",
+                    "$mock_bin/sudo",
+                    "$mock_bin/systemctl",
+                ],
+            },
+        ),
+        Function {
+            name: "run_command",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "TEST_CALLS",
+                                        value: "$calls",
+                                    },
+                                    CshAstAssignment {
+                                        name: "TEST_GRANT",
+                                        value: "$grant",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$mock_bin:$PATH",
+                                    },
+                                    CshAstAssignment {
+                                        name: "USER",
+                                        value: "alice",
+                                    },
+                                ],
+                                name: "$script",
+                                args: [
+                                    "$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$calls",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "enable_output",
+                        value: "$(run_command 15)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $grant ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "successful timer setup leaves the passwordless sudo grant enabled",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(cat \"$grant\") == \"alice ALL=(ALL) NOPASSWD: ALL\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the enabled grant belongs to the current user",
+                        "$(cat \"$grant\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^sudo systemd-run --on-active=15m .* rm -f -- /etc/sudoers.d/99-omarchy-nopasswd-alice$",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "enabling arms the expiry timer",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $enable_output == *\"automatically disable in 15 minutes\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "success is reported after the timer is armed",
+                        "$enable_output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "enabling arms expiry before reporting success",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$calls",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$grant",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "failure_output",
+                                            value: "$(TEST_FAIL_SYSTEMD_RUN=true run_command 15 2>&1)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "enabling fails when the expiry timer cannot be armed",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " ! -e $grant ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "timer setup failure revokes the new passwordless sudo grant",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $failure_output == *\"Revoking access now\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "timer setup failure explains the fail-closed revocation",
+                        "$failure_output",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $failure_output != *\"Passwordless sudo has been ENABLED\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "timer setup failure does not report that passwordless sudo was enabled",
+                        "$failure_output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "timer setup failure revokes a new grant",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$calls",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "alice ALL=(ALL) NOPASSWD: ALL\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$grant",
+                },
+            ],
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "update_output",
+                                            value: "$(TEST_TIMER_ACTIVE=true TEST_FAIL_SYSTEMD_RUN=true run_command 30 2>&1)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "updating fails when the replacement expiry timer cannot be armed",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " ! -e $grant ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "timer update failure revokes the existing passwordless sudo grant",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $update_output != *\"timer updated\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "timer update failure does not report success",
+                        "$update_output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "timer update failure revokes the existing grant",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "tmpfiles_rules",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "<(grep -vE '^[[:space:]]*(#|$)' \"$tmpfiles_file\")",
+                },
+            ],
+        },
+        Binary {
+            left: Arithmetic(
+                " ${#tmpfiles_rules[@]} == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "passwordless sudo ships one tmpfiles rule",
+                        "${tmpfiles_rules[*]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fake_root",
+                        value: "$test_tmp/root",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "sudoers_dir",
+                        value: "$fake_root/etc/sudoers.d",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$sudoers_dir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "grant_names",
+                        value: "(alice buildbot-2 user.123 'service$')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "grant_name",
+            words: Some(
+                [
+                    "${grant_names[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "touch",
+                            args: [
+                                "$sudoers_dir/99-omarchy-nopasswd-$grant_name",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$sudoers_dir/omarchy-dns",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "systemd-tmpfiles",
+                args: [
+                    "--root=$fake_root",
+                    "--remove",
+                    "--inline",
+                    "${tmpfiles_rules[@]}",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $sudoers_dir/99-omarchy-nopasswd-alice ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "boot-only cleanup leaves a live grant alone outside boot",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "systemd-tmpfiles",
+                args: [
+                    "--root=$fake_root",
+                    "--remove",
+                    "--boot",
+                    "--inline",
+                    "${tmpfiles_rules[@]}",
+                ],
+            },
+        ),
+        For {
+            variable: "grant_name",
+            words: Some(
+                [
+                    "${grant_names[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "stale_grant",
+                                    value: "$sudoers_dir/99-omarchy-nopasswd-$grant_name",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Test(
+                            " ! -e $stale_grant ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "boot cleanup removes every generated grant",
+                                    "$stale_grant",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Binary {
+            left: Test(
+                " -f $sudoers_dir/omarchy-dns ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "boot cleanup preserves unrelated sudoers rules",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "systemd-tmpfiles removes generated grants only during boot",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nexit 0\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf 'systemctl %s\\n' \"$*\" >>\"$TEST_CALLS\"\n[[ ${1:-} == \"is-active\" && ${TEST_TIMER_ACTIVE:-false} == \"true\" ]]\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf 'sudo %s\\n' \"$*\" >>\"$TEST_CALLS\"\n\ncase ${1:-} in\ntest)\n  [[ ${2:-} == \"-f\" && -f $TEST_GRANT ]]\n  ;;\ntee)\n  /usr/bin/tee \"$TEST_GRANT\"\n  ;;\nchmod)\n  /usr/bin/chmod \"$2\" \"$TEST_GRANT\"\n  ;;\nsystemd-run)\n  [[ ${TEST_FAIL_SYSTEMD_RUN:-false} != \"true\" ]]\n  ;;\nrm)\n  /usr/bin/rm -f -- \"$TEST_GRANT\"\n  ;;\nsystemctl)\n  exit 0\n  ;;\n*)\n  echo \"unexpected sudo command: $*\" >&2\n  exit 90\n  ;;\nesac\n",
+        },
+    ],
+}

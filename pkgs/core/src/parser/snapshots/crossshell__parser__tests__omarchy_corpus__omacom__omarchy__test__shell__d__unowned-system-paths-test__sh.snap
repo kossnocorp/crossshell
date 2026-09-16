@@ -1,0 +1,502 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/unowned-system-paths-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$ROOT",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PYTHON",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "no Omarchy script writes a path under /usr that no package owns",
+                ],
+            },
+        ),
+        For {
+            variable: "script",
+            words: Some(
+                [
+                    "bin/omarchy-hibernation-setup",
+                    "bin/omarchy-toggle-hybrid-gpu",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-F",
+                                        "\"${destination%/*}/.${destination##*/}.omarchy.XXXXXX\"",
+                                        "$ROOT/$script",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "$script reserves a hidden sibling for the privileged replacement",
+                                ],
+                            },
+                        ),
+                    },
+                    Binary {
+                        left: Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-F",
+                                        "sudo /usr/bin/install -m \"$mode\" -o root -g root -T \"$source\" \"$stage\"",
+                                        "$ROOT/$script",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "$script prepares privileged files with final root ownership and mode",
+                                ],
+                            },
+                        ),
+                    },
+                    Binary {
+                        left: Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-F",
+                                        "sudo /usr/bin/mv -Tf -- \"$stage\" \"$destination\"",
+                                        "$ROOT/$script",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "$script atomically replaces the privileged destination",
+                                ],
+                            },
+                        ),
+                    },
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "grep",
+                                                    args: [
+                                                        "-F",
+                                                        "sudo /usr/bin/chmod \"$mode\" \"$destination\"",
+                                                        "$ROOT/$script",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">",
+                                                    target: "/dev/null",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "fail",
+                                                args: [
+                                                    "$script changes mode after publishing the privileged destination",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "  /usr/lib/systemd/system-sleep/keyboard-backlight 0755",
+                            "$ROOT/bin/omarchy-hibernation-setup",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hibernation setup installs keyboard-backlight as a root-owned executable",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hook_install_line",
+                        value: "$(rg -n '^if ! install_root_file .*keyboard-backlight' \"$ROOT/bin/omarchy-hibernation-setup\" | cut -d: -f1)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "resume_marker_line",
+                        value: "$(rg -n '^echo \"HOOKS\\+=\\(resume\\)\"' \"$ROOT/bin/omarchy-hibernation-setup\" | cut -d: -f1)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -n $hook_install_line && -n $resume_marker_line ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hibernation setup keeps recognizable hook-install and resume-marker steps",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " hook_install_line < resume_marker_line ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hibernation setup marks completion before a failed hook install can be retried",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "  /usr/lib/systemd/system-sleep/force-igpu 0755",
+                            "$ROOT/bin/omarchy-toggle-hybrid-gpu",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hybrid GPU setup installs force-igpu as a root-owned executable",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "  /etc/systemd/system/supergfxd.service.d/delay-start.conf 0644",
+                            "$ROOT/bin/omarchy-toggle-hybrid-gpu",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hybrid GPU setup installs its root service drop-in as root-owned configuration",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "delay_install_line",
+                        value: "$(rg -n '^    if ! install_root_file .*delay-start\\.conf' \"$ROOT/bin/omarchy-toggle-hybrid-gpu\" | cut -d: -f1)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "force_install_line",
+                        value: "$(rg -n '^    if ! install_root_file .*force-igpu' \"$ROOT/bin/omarchy-toggle-hybrid-gpu\" | cut -d: -f1)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "config_switch_line",
+                        value: "$(rg -n '^    sudo sed -i \\\\' \"$ROOT/bin/omarchy-toggle-hybrid-gpu\" | tail -1 | cut -d: -f1)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -n $delay_install_line && -n $force_install_line && -n $config_switch_line ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hybrid GPU setup keeps recognizable support-file and config-switch steps",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " delay_install_line < config_switch_line && force_install_line < config_switch_line ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hybrid GPU setup switches config before every required file is installed",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "/usr/bin/grep -Eq",
+                        "$ROOT/default/systemd/system-sleep/force-igpu",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu does not guard execution with the configured GPU mode",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "rg",
+                                    args: [
+                                        "-n",
+                                        "cp -p.*(system-sleep|supergfxd\\.service\\.d)",
+                                        "$ROOT/bin/omarchy-hibernation-setup",
+                                        "$ROOT/bin/omarchy-toggle-hybrid-gpu",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "privileged sleep and hybrid GPU files are never copied with source ownership",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "system-sleep hooks and the hybrid GPU drop-in enforce root ownership",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "PYTHON",
+            quoted: true,
+            strip_tabs: false,
+            body: "import os, re, sys\nfrom pathlib import Path\n\nroot = Path(sys.argv[1])\n\n# Paths Omarchy writes into /usr that no package owns, with the reason.\nallowed = {\n  # Symlinks into another package's icon theme; owning them would mean owning\n  # paths inside Yaru.\n  \"/usr/share/icons/Yaru/scalable/actions\",\n  # Hardware-conditional sleep hooks, installed only on the machines that need\n  # them so the hook does not exist where it does not apply.\n  \"/usr/lib/systemd/system-sleep\",\n  # Written through a variable, so the scan below cannot see them at the point\n  # they are written. These drop configuration into another project's tree\n  # rather than Omarchy's and are not candidates for omarchy-settings.\n  \"/usr/share/chromium/extensions\",\n  \"/usr/lib/firefox/distribution\",\n  # Claude's extension is registered only when the user selects Claude.\n  \"/usr/share/google-chrome/extensions\",\n  \"/usr/share/microsoft-edge/extensions\",\n  # Static content that belongs in omarchy-settings. It cannot move there in the\n  # same release that first ships omarchy-update-system-pkgs-when-conflicted: the\n  # upgrade carrying the handler is the one that would hit the conflict, and the\n  # handler only helps once it is on disk. Package it the release after.\n  \"/usr/lib/chromium/initial_preferences\",\n}\n\n# One-time 3.x upgrade. It runs before this rule existed and cannot be made to\n# retroactively matter for machines that already ran it.\nskip_scripts = {\"bin/omarchy-upgrade-to-quattro\"}\n\npkgs_candidates = [\n  root.parent / \"omarchy-pkgs/pkgbuilds\",\n  root.parent.parent / \"omarchy-pkgs/pkgbuilds\",\n  root.parent / \"omacom/omarchy-pkgs/pkgbuilds\",\n  Path.home() / \"Work/omacom/omarchy-pkgs/pkgbuilds\",\n]\noverride = os.environ.get(\"OMARCHY_PKGS_PATH\")\nif override:\n  pkgs_candidates = [Path(override) / \"pkgbuilds\", Path(override)] + pkgs_candidates\npkgs_root = next((p for p in pkgs_candidates if p.exists()), None)\nif pkgs_root is None:\n  print(\"not ok - omarchy-pkgs checkout found for package ownership check\", file=sys.stderr)\n  sys.exit(1)\n\npackaged = \"\\n\".join(p.read_text() for p in pkgs_root.glob(\"*/PKGBUILD\"))\n\n# Commands that put a file somewhere, as opposed to reading one.\n# /etc is administrator territory that Omarchy legitimately edits. /usr is\n# package territory, where writing anything is the thing worth catching.\nwriter = re.compile(r\"\\b(tee|cp|install|ln)\\b|>\\s*/usr/\")\ntarget = re.compile(r\"/usr/[A-Za-z0-9._@/+-]+\")\n\nproblems = []\nfor base in (\"bin\", \"install\", \"migrations\"):\n  for path in sorted((root / base).rglob(\"*\")):\n    if not path.is_file():\n      continue\n    rel = str(path.relative_to(root))\n    if rel in skip_scripts:\n      continue\n    # Join continuations first, so a command split across lines is judged whole\n    # rather than as a source path on one line and a destination on the next.\n    joined, buf, start = [], \"\", 1\n    for lineno, line in enumerate(path.read_text(errors=\"ignore\").splitlines(), 1):\n      if not buf:\n        start = lineno\n      if line.rstrip().endswith(\"\\\\\"):\n        buf += line.rstrip()[:-1] + \" \"\n        continue\n      joined.append((start, buf + line))\n      buf = \"\"\n    if buf:\n      joined.append((start, buf))\n\n    for lineno, line in joined:\n      code = line.split(\"#\", 1)[0]\n      if not writer.search(code):\n        continue\n      # A redirection names its destination directly. Otherwise cp/install/ln\n      # put the destination last, and anything earlier is a source being read.\n      redirect = re.search(r\">\\s*\\\"?(/usr/[^\\s\\\"]+)\", code)\n      if redirect:\n        hit = redirect.group(1).rstrip(\"/\")\n      else:\n        tokens = re.sub(r\"[12]?>\\s*\\S+\", \"\", code).split()\n        if not tokens or not tokens[-1].startswith(\"/usr/\"):\n          continue\n        hit = tokens[-1].rstrip(\"/\")\n      # Omarchy's own tree and its binaries are covered elsewhere.\n      if hit.startswith((\"/usr/share/omarchy\", \"/usr/bin\")) or hit.count(\"/\") < 3:\n        continue\n      # Directory or file form of a recorded path both count as recorded, but\n      # only on a path boundary: system-sleeping is not system-sleep.\n      def covers(a, b):\n        return a == b or b.startswith(a + \"/\")\n      if any(covers(a, hit) or covers(hit, a) for a in allowed):\n        continue\n      # Likewise in the PKGBUILD text, where the path is a destination rather\n      # than a prefix of a longer one.\n      if re.search(re.escape(hit) + r'(?=[\"\\'\\s]|$)', packaged, re.M):\n        continue\n      problems.append(f\"{rel}:{lineno}: {hit}\")\n\nif problems:\n  print(\"not ok - Omarchy writes paths under /usr that no package owns\", file=sys.stderr)\n  for p in problems:\n    print(f\"  {p}\", file=sys.stderr)\n  print(\n    \"\\nShip it from a PKGBUILD so pacman owns it, or record it in this test\\n\"\n    \"with the reason it cannot be packaged.\",\n    file=sys.stderr,\n  )\n  sys.exit(1)\n",
+        },
+    ],
+}

@@ -1,0 +1,160 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1786380259.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Remember Bluetooth on and off through the rfkill soft block",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "marker",
+                        value: "${OMARCHY_BLUETOOTH_MIGRATION_MARKER:-/var/lib/omarchy/migrations/1786380259}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "main_conf",
+                        value: "${OMARCHY_BLUETOOTH_MAIN_CONF:-/etc/bluetooth/main.conf}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -e $marker ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-bluetooth-power",
+                                    args: [
+                                        "is-on",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "omarchy-bluetooth-power",
+                                        "on",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "sudo",
+                                args: [
+                                    "omarchy-bluetooth-power",
+                                    "off",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -f $main_conf ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "sed",
+                                        "-i",
+                                        "s/^AutoEnable=false$/#AutoEnable=true/",
+                                        "$main_conf",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "install",
+                    "-Dm644",
+                    "/dev/null",
+                    "$marker",
+                ],
+            },
+        ),
+    ],
+}

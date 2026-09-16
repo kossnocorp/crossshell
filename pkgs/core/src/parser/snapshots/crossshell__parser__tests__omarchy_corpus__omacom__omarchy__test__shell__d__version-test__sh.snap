@@ -1,0 +1,320 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/version-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/pacman",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/pacman",
+                ],
+            },
+        ),
+        Function {
+            name: "version",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "OMARCHY_TEST_PACKAGES",
+                                        value: "$1",
+                                    },
+                                    CshAstAssignment {
+                                        name: "OMARCHY_PATH",
+                                        value: "${2:-/usr/share/omarchy}",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$stub_bin:$PATH",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-version",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(version omarchy) == \"4.0.0-1\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "version reports the stable package",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "version reports the stable package",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(version omarchy-dev) == \"4.0.0-1\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "version reports the edge package",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "version reports the edge package",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(version \"\" \"$test_tmp/checkout\") == \"dev\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "version reports a dev checkout",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "version reports a dev checkout",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "version",
+                                        args: [
+                                            "",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "version fails when no Omarchy package is installed",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "version fails when no Omarchy package is installed",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "snapshot_desc",
+                            value: "$(\n  set -e\n  PATH=\"$stub_bin:$PATH\" OMARCHY_TEST_PACKAGES=\"\" OMARCHY_PATH=/usr/share/omarchy \\\n    bash -c 'DESC=\"$(omarchy-version 2>/dev/null || echo unknown)\"; echo \"$DESC\"' 2>/dev/null\n)",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "snapshot survives an unknown version",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $snapshot_desc == \"unknown\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "snapshot labels an unknown version",
+                        "actual: $snapshot_desc",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "snapshot survives an unknown version",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n[[ $1 == \"-Q\" ]] || exit 1\nshift\nfor package in \"$@\"; do\n  case \",${OMARCHY_TEST_PACKAGES:-},\" in\n    *\",$package,\"*)\n      echo \"$package ${OMARCHY_TEST_VERSION:-4.0.0-1}\"\n      exit 0\n      ;;\n  esac\ndone\necho \"error: package '$1' was not found\" >&2\nexit 1\n",
+        },
+    ],
+}

@@ -1,0 +1,53 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/lock-blank-fingerprint-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const fs = require('fs')\nconst serviceQml = fs.readFileSync(path.join(root, 'shell/plugins/lock/Service.qml'), 'utf8')\n\n// The fingerprint PAM stays armed for the whole lock waiting for a finger, so\n// `authenticating` is true from lock until unlock on every machine with a\n// reader enrolled. Gating the blank on it leaves the panel lit all night.\nassert(\n  /if \\(root\\.lockRequested && !root\\.authenticatingPassword\\) root\\.runBlank\\(\\)/.test(serviceQml),\n  'only a password check in flight stops the blank timer from blanking'\n)\n\nassert(\n  !/idleBlankTimer[\\s\\S]*?!root\\.authenticating\\)/.test(serviceQml),\n  'the blank timer never gates on the combined authenticating state'\n)\n\nassert(\n  /onAuthenticatingPasswordChanged: \\{\\s*if \\(!lockRequested\\) return\\s*if \\(authenticatingPassword\\) idleBlankTimer\\.stop\\(\\)\\s*else armBlankTimer\\(\\)/.test(serviceQml),\n  'the blank timer is held off by password entry and re-armed when it finishes'\n)\n\nassert(\n  !/onAuthenticatingChanged:/.test(serviceQml),\n  'the combined authenticating state no longer drives the blank timer'\n)\n",
+        },
+    ],
+}

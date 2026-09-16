@@ -1,0 +1,199 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1786482992.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Rebuild the boot image when it predates the Limine kernel command line",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "defaults_conf",
+                        value: "${OMARCHY_LIMINE_DEFAULTS_CONF:-/etc/limine-entry-tool.d/omarchy-defaults.conf}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "running_cmdline",
+                        value: "${OMARCHY_RUNNING_CMDLINE:-/proc/cmdline}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rebuild_marker",
+                        value: "${OMARCHY_LIMINE_REBUILD_MARKER:-/var/lib/omarchy/migrations/1786482992}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-cmd-present",
+                    args: [
+                        "limine-mkinitcpio",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $defaults_conf && -r $running_cmdline ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $rebuild_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "booted",
+                        value: "$(<\"$running_cmdline\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "missing",
+                        value: "()",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "param",
+            words: Some(
+                [
+                    "$(sed -n 's/^KERNEL_CMDLINE\\[default\\]+=\"\\(.*\\)\"[[:space:]]*$/\\1/p' \"$defaults_conf\")",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " \" $booted \" == *\" $param \"* ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "missing+=(\"$param\")",
+                                args: [],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Binary {
+            left: Arithmetic(
+                " ${#missing[@]} ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "The booted kernel is missing ${missing[*]}; rebuilding the boot image",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "limine-mkinitcpio",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "install",
+                    "-Dm644",
+                    "/dev/null",
+                    "$rebuild_marker",
+                ],
+            },
+        ),
+    ],
+}

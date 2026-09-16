@@ -1,0 +1,540 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/windows-key-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "command",
+                        value: "$ROOT/bin/omarchy-windows-key",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "rg",
+                    args: [
+                        "-q",
+                        "/sys/firmware/acpi/tables/MSDM",
+                        "$command",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "windows key helper reads the ACPI MSDM table",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "windows key helper reads the ACPI MSDM table",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "rg",
+                    args: [
+                        "-q",
+                        "read_msdm strings",
+                        "$command",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "windows key helper tries strings first",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "windows key helper tries strings first",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "rg",
+                    args: [
+                        "-q",
+                        "read_msdm cat",
+                        "$command",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "windows key helper falls back to cat",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "windows key helper falls back to cat",
+                ],
+            },
+        ),
+        Function {
+            name: "write_msdm",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "path=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "payload=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "python3",
+                                args: [
+                                    "-c",
+                                    "import pathlib, sys\npathlib.Path(sys.argv[1]).write_bytes(b\"MSDM\" + b\"\\x00\" * 52 + sys.argv[2].encode())\n",
+                                    "$path",
+                                    "$payload",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "run_helper",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "OMARCHY_MSDM_PATH",
+                                        value: "$1",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$ROOT/bin:$PATH",
+                                    },
+                                ],
+                                name: "$command",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "key",
+                        value: "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_msdm",
+                args: [
+                    "$tmp/msdm",
+                    "$key",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "output",
+                        value: "$(run_helper \"$tmp/msdm\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $output == \"$key\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "windows key helper prints the firmware key",
+                        "actual: $output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "windows key helper prints the firmware key",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$tmp/bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp/bin/strings",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp/bin/strings",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "output",
+                        value: "$(PATH=\"$tmp/bin:$ROOT/bin:$PATH\" OMARCHY_MSDM_PATH=\"$tmp/msdm\" \"$command\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $output == \"$key\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "windows key helper falls back to cat when strings finds nothing",
+                        "actual: $output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "windows key helper falls back to cat when strings finds nothing",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_msdm",
+                args: [
+                    "$tmp/empty",
+                    "no-product-key-here",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "OMARCHY_MSDM_PATH",
+                                                value: "$tmp/empty",
+                                            },
+                                            CshAstAssignment {
+                                                name: "PATH",
+                                                value: "$ROOT/bin:$PATH",
+                                            },
+                                        ],
+                                        name: "$command",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$tmp/out",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "$tmp/err",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "windows key helper fails when the table has no key",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " $(<\"$tmp/err\") == \"Firmware license table found, but no Windows product key could be extracted.\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "windows key helper reports a missing key",
+                        "actual: $(<\"$tmp/err\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "windows key helper reports a missing key",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "OMARCHY_MSDM_PATH",
+                                                value: "$tmp/missing",
+                                            },
+                                            CshAstAssignment {
+                                                name: "PATH",
+                                                value: "$ROOT/bin:$PATH",
+                                            },
+                                        ],
+                                        name: "$command",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$tmp/out",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "$tmp/err",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "windows key helper fails when firmware has no MSDM table",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " $(<\"$tmp/err\") == \"No Windows license key found in firmware.\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "windows key helper reports missing firmware table",
+                        "actual: $(<\"$tmp/err\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "windows key helper reports missing firmware table",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nexit 0\n",
+        },
+    ],
+}

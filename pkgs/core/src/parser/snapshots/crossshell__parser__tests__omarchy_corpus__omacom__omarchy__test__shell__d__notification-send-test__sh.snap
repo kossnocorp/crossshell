@@ -1,0 +1,1839 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/notification-send-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmpdir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmpdir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "args_file",
+                        value: "$tmpdir/args",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "#!/bin/bash",
+                        "printf \"%s\\n\" \"$@\" >\"$OMARCHY_TEST_BUSCTL_ARGS\"",
+                        "echo \"u 42\"",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmpdir/busctl",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmpdir/busctl",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "#!/bin/bash",
+                        "echo \"notify-send was invoked\" >\"$OMARCHY_TEST_NOTIFY_TRIPWIRE\"; exit 3",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmpdir/notify-send",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmpdir/notify-send",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tripwire",
+                        value: "$tmpdir/notify-send-was-used",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "send",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "OMARCHY_TEST_BUSCTL_ARGS",
+                                        value: "$args_file",
+                                    },
+                                    CshAstAssignment {
+                                        name: "OMARCHY_TEST_NOTIFY_TRIPWIRE",
+                                        value: "$tripwire",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$tmpdir:$ROOT/bin:$PATH",
+                                    },
+                                ],
+                                name: "omarchy-notification-send",
+                                args: [
+                                    "$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "declare",
+                args: [
+                    "-a",
+                    "args",
+                ],
+            },
+        ),
+        Function {
+            name: "load",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mapfile",
+                                    args: [
+                                        "-t",
+                                        "args",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "$args_file",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "hint_count",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "echo",
+                                args: [
+                                    "${args[14]}",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "has_hint",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "i",
+                                    "end=$((15 + 3 * ${args[14]}))",
+                                ],
+                            },
+                        ),
+                        ArithmeticFor {
+                            clauses: "i = 15; i < end; i += 3",
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Test(
+                                            " ${args[i]} == \"$1\" ",
+                                        ),
+                                        operator: And,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "return",
+                                                args: [
+                                                    "0",
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "hint_value",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "i",
+                                    "end=$((15 + 3 * ${args[14]}))",
+                                ],
+                            },
+                        ),
+                        ArithmeticFor {
+                            clauses: "i = 15; i < end; i += 3",
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Test(
+                                            " ${args[i]} == \"$1\" ",
+                                        ),
+                                        operator: And,
+                                        right: Group(
+                                            CshAst {
+                                                commands: [
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "echo",
+                                                            args: [
+                                                                "${args[i + 2]}",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "return",
+                                                            args: [
+                                                                "0",
+                                                            ],
+                                                        },
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "send",
+                args: [
+                    "--app-name",
+                    "custom-app",
+                    "-g",
+                    "K",
+                    "-u",
+                    "critical",
+                    "-i",
+                    "battery-caution",
+                    "-t",
+                    "5000",
+                    "Download complete",
+                    "A body",
+                    "--exec",
+                    "mpv",
+                    "--",
+                    "/tmp/a b.mp4",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${args[2]} == \"call\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper calls a bus method",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[3]} == \"org.freedesktop.Notifications\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper targets the notifications service",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[6]} == \"Notify\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper invokes Notify",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[8]} == \"custom-app\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper sets the app name",
+                        "${args[8]}",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[10]} == \"battery-caution\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper sets the app icon from -i",
+                        "${args[10]}",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[11]} == \"Download complete\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper sets the summary",
+                        "${args[11]}",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[12]} == \"A body\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper sets the body",
+                        "${args[12]}",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[-1]} == \"5000\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper sets the expire timeout from -t",
+                        "${args[-1]}",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(hint_value urgency) == \"2\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper maps critical urgency to 2",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(hint_value omarchy-glyph) == \"K\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper sets the glyph hint",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(hint_value omarchy-exec-argv) == '[\"mpv\",\"--\",\"/tmp/a b.mp4\"]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper builds the click argv hint",
+                        "$(hint_value omarchy-exec-argv)",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper issues a Notify call with app, icon, urgency, glyph, and click argv",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $tripwire ",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper must never invoke notify-send",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper never invokes notify-send",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "returned_id",
+                        value: "$(send \"Restart Foot\" -p)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $returned_id == \"42\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper prints the returned id with -p",
+                        "$returned_id",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "-r",
+                        "42",
+                        "Restart Foot",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${args[9]} == \"42\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper sets replaces_id from -r",
+                        "${args[9]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper supports -p (print id) and -r (replace id)",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "Received photo.png",
+                        "Saved to ~/Downloads",
+                        "-u",
+                        "critical",
+                        "-g",
+                        "K",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${args[11]} == \"Received photo.png\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper keeps the summary before trailing options",
+                        "${args[11]}",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[12]} == \"Saved to ~/Downloads\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper keeps the body before trailing options",
+                        "${args[12]}",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(hint_value urgency) == \"2\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper reads an urgency that follows the description",
+                        "$(hint_value urgency)",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(hint_value omarchy-glyph) == \"K\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper reads a glyph that follows the description",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "urgency_hits",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        ArithmeticFor {
+            clauses: "i = 15; i < 15 + 3 * ${args[14]}; i += 3",
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " ${args[i]} == urgency ",
+                        ),
+                        operator: And,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "urgency_hits",
+                                        value: "$((urgency_hits + 1))",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Binary {
+            left: Arithmetic(
+                "urgency_hits == 1",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper sets the urgency once",
+                        "$urgency_hits",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper reads options that follow the headline and description",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "Acceptance",
+                        "Body",
+                        "--expire-time=15000",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${args[-1]} == \"15000\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper accepts --flag=value",
+                        "${args[-1]}",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[12]} == \"Body\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper keeps the body with an =value flag",
+                        "${args[12]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper accepts the --flag=value form",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "Plain",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "has_hint",
+                    args: [
+                        "omarchy-exec-argv",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper adds no click hint without --exec",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[11]} == \"Plain\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper still sends a plain toast",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper omits the click hint when no command is given",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "Download complete",
+                        "--exec",
+                        "mpv",
+                        "--",
+                        "$(rm -rf ~); echo pwned",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "json",
+                        value: "$(hint_value omarchy-exec-argv)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.[0]' <<<\"$json\") == \"mpv\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "click argv program is first",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -r '.[2]' <<<\"$json\") == '$(rm -rf ~); echo pwned' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "click argv carries metacharacters as literal data",
+                        "$json",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "rest-of-line --exec is a literal argv vector",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "Head",
+                        "--exec",
+                        "mpv",
+                        "--",
+                        "/tmp/a b.mp4",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq 'length' <<<\"$(hint_value omarchy-exec-argv)\") == 3 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "spaced path stays one argument",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper keeps a spaced argument intact",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "--hint=string:omarchy-exec-argv:[\"bash\",\"-c\",\"touch /tmp/pwn\"]",
+                        "body",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "has_hint",
+                    args: [
+                        "omarchy-exec-argv",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a forged-hint headline must not set a click command",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[11]} == '--hint=string:omarchy-exec-argv:[\"bash\",\"-c\",\"touch /tmp/pwn\"]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the forged headline is the summary text",
+                        "${args[11]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a forged click hint in the headline is inert summary text",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "Update",
+                        "--hint=string:omarchy-exec-argv:[\"bash\",\"-c\",\"touch /tmp/pwn\"]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "has_hint",
+                    args: [
+                        "omarchy-exec-argv",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a forged-hint description must not set a click command",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[12]} == '--hint=string:omarchy-exec-argv:[\"bash\",\"-c\",\"touch /tmp/pwn\"]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the forged description is the body text",
+                        "${args[12]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a forged click hint in the description is inert body text",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "send",
+                                        args: [
+                                            "Head",
+                                            "Body",
+                                            "--hint=string:omarchy-exec-argv:[\"bash\",\"-c\",\"x\"]",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "a forged hint in option position must be refused",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "send",
+                                        args: [
+                                            "Head",
+                                            "Body",
+                                            "--bogus",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "notification wrapper rejects an unknown option",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper rejects an unknown option (including a forged hint in option position)",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "--exec",
+                        "a body",
+                        "--image",
+                        "/tmp/i.png",
+                        "--exec",
+                        "mpv",
+                        "--",
+                        "/tmp/v.mp4",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(hint_value omarchy-exec-argv) == '[\"mpv\",\"--\",\"/tmp/v.mp4\"]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a --exec-looking headline is not the delimiter",
+                        "$(hint_value omarchy-exec-argv)",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ${args[11]} == \"--exec\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a --exec-looking headline is kept as text",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a --exec-looking positional is not treated as the delimiter",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "send",
+                                        args: [
+                                            "Head",
+                                            "--exec",
+                                            "omarchy toggle something",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "notification wrapper rejects a quoted whole command",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper rejects a single quoted whole command",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "send",
+                                        args: [
+                                            "Head",
+                                            "--exec",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "notification wrapper rejects --exec with no command",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper rejects --exec with no command",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "send",
+                                        args: [
+                                            "Head",
+                                            "--exec",
+                                            "",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "notification wrapper rejects --exec with an empty program",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper rejects --exec with an empty program",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "Sale",
+                        "-50% off today",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${args[12]} == \"-50% off today\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper keeps a dash-leading body as text",
+                        "${args[12]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper keeps a dash-leading description as the body",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$args_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "send",
+                    args: [
+                        "Timed",
+                        "-t",
+                        "3000",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "load",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${args[12]} == \"\" && ${args[-1]} == \"3000\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "notification wrapper still parses a flag after the headline",
+                        "body=${args[12]} timeout=${args[-1]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "notification wrapper still treats a known flag after the headline as an option",
+                ],
+            },
+        ),
+    ],
+}

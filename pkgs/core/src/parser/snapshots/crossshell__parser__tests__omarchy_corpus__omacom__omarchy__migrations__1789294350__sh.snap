@@ -1,0 +1,78 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1789294350.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Switch TCP congestion control to BBR with fq pacing",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " $(sysctl -n net.ipv4.tcp_congestion_control) == \"bbr\" && $(sysctl -n net.core.default_qdisc) == \"fq\" ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "sudo",
+                        args: [
+                            "sysctl",
+                            "-p",
+                            "/etc/sysctl.d/99-omarchy-sysctl.conf",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-state",
+                    args: [
+                        "set",
+                        "reboot-required",
+                    ],
+                },
+            ),
+        },
+    ],
+}

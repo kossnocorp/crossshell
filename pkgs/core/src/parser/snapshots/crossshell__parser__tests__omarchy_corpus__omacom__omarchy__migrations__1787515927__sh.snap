@@ -1,0 +1,238 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1787515927.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Stop world-writable Chromium and Firefox policy directories",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$OMARCHY_PATH/install/helpers/browser-policy.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "repaired",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "dir",
+            words: Some(
+                [
+                    "${BROWSER_POLICY_MANAGED_DIRS[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -d $dir || -L $dir ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "browser_policy_setup_dir",
+                            args: [
+                                "$dir",
+                            ],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "repaired",
+                                    value: "1",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                ],
+            },
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " repaired ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "omarchy-theme-set-browser",
+                                        args: [],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "true",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        For {
+            variable: "dir",
+            words: Some(
+                [
+                    "${BROWSER_POLICY_FIREFOX_DIRS[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -d $dir || -L $dir ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "browser_policy_firefox_hardened",
+                                                args: [
+                                                    "$dir",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "browser_policy_purge_dir",
+                                                args: [
+                                                    "$dir",
+                                                ],
+                                            },
+                                        ),
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "continue",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "browser_policy_setup_parent",
+                            args: [
+                                "$dir",
+                            ],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "browser_policy_purge_dir",
+                            args: [
+                                "$dir",
+                            ],
+                        },
+                    ),
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Negated(
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "browser_policy_firefox_policy_file_ok",
+                                                    args: [
+                                                        "$dir/policies.json",
+                                                    ],
+                                                },
+                                            ),
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "browser_policy_install_firefox_policies",
+                                                args: [
+                                                    "$dir",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+    ],
+}

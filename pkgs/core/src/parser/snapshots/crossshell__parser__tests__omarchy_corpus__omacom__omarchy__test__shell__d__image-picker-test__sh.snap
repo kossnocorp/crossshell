@@ -1,0 +1,53 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/image-picker-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const fs = require('fs')\nconst picker = requireFromRoot('shell/plugins/image-picker/ImagePickerModel.js')\n\nassertEqual(picker.nameForPath('/themes/nord-river.png'), 'nord-river', 'image picker strips directory and extension')\nassertEqual(picker.labelForPath('/themes/nord_river.png'), 'Nord River', 'image picker builds display labels')\n\nconst rows = [\n  '/themes/a/nord-river.png\\t/cache/nord-river.jpg',\n  '/themes/b/nord-river.png\\t/cache/duplicate.jpg',\n  '/themes/a/gruvbox-dark.jpeg',\n  '',\n  '\\t/cache/no-path.jpg',\n  '/themes/a/plain'\n].join('\\n')\n\nconst images = picker.loadRows(rows)\nassertDeepEqual(\n  images,\n  [\n    { filePath: '/themes/a/nord-river.png', fileName: 'nord-river.png', thumbnailPath: '/cache/nord-river.jpg' },\n    { filePath: '/themes/a/gruvbox-dark.jpeg', fileName: 'gruvbox-dark.jpeg', thumbnailPath: '/themes/a/gruvbox-dark.jpeg' },\n    { filePath: '/themes/a/plain', fileName: 'plain', thumbnailPath: '/themes/a/plain' }\n  ],\n  'image picker parses rows and dedupes by file name'\n)\n\nassert(picker.itemMatches(images, 0, 'river'), 'image picker matches file names')\nassert(picker.itemMatches(images, 1, 'Gruvbox Dark'), 'image picker matches labels case-insensitively')\nassert(!picker.itemMatches(images, 2, 'river'), 'image picker rejects non-matching filters')\nassertEqual(picker.firstMatchingIndex(images, 'plain'), 2, 'image picker finds first matching index')\nassertEqual(picker.indexForSelectedImage(images, '/themes/a/gruvbox-dark.jpeg'), 1, 'image picker finds selected image')\nassertEqual(picker.indexForSelectedImage(images, '/missing.png'), 0, 'image picker defaults selected image to first row')\n\nassertEqual(picker.filteredPosition(images, 2, 'dark'), 1, 'image picker computes filtered position')\nassertEqual(picker.selectedFilteredPosition(images, 2, 'dark'), 0, 'image picker selected filtered position falls back when selected is hidden')\nassertEqual(picker.nextSelectedIndexForFilter(images, 0, 'dark'), 1, 'image picker moves selection to first match when filter hides current item')\n\nconst imagePickerQml = fs.readFileSync(path.join(root, 'shell/plugins/image-picker/ImagePicker.qml'), 'utf8')\nassert(\n  /function preloadRows[\\s\\S]*if \\(opened \\|\\| requestActive\\) return/.test(imagePickerQml),\n  'image picker ignores cache preloads while a request is visible'\n)\nassert(\n  /source: item\\.sourceActivated && item\\.thumbnailPath \\? Util\\.fileUrl\\(item\\.thumbnailPath\\) : \"\"[\\s\\S]*asynchronous: false/.test(imagePickerQml),\n  'image picker loads activated thumbnails synchronously to avoid carousel flicker'\n)\n",
+        },
+    ],
+}

@@ -1,0 +1,133 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/fix-tuxedo-backlight.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "cat",
+                                            args: [
+                                                "/sys/class/dmi/id/sys_vendor",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-qi",
+                                            "TUXEDO\\|Slimbook",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-add",
+                                    args: [
+                                        "tuxedo-drivers-nocompatcheck-dkms",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mkdir",
+                                    args: [
+                                        "-p",
+                                        "/etc/modprobe.d",
+                                    ],
+                                },
+                            ),
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "echo",
+                                        args: [
+                                            "blacklist clevo_xsm_wmi",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/etc/modprobe.d/blacklist-clevo-xsm-wmi.conf",
+                                    },
+                                ],
+                            },
+                            For {
+                                variable: "f",
+                                words: Some(
+                                    [
+                                        "/lib/modules/*/extra/clevo-xsm-wmi.ko",
+                                    ],
+                                ),
+                                body: CshAst {
+                                    commands: [
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Test(
+                                                                " -f $f ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "rm",
+                                                                    args: [
+                                                                        "$f",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

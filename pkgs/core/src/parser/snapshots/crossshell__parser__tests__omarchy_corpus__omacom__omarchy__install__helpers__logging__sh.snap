@@ -1,0 +1,599 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/helpers/logging.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Function {
+            name: "omarchy_log_to_stdout",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Test(
+                            " ${OMARCHY_LOG_TO_STDOUT:-} == \"1\" || -z ${OMARCHY_INSTALL_LOG_FILE:-} ",
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "omarchy_log_line",
+            body: Group(
+                CshAst {
+                    commands: [
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "omarchy_log_to_stdout",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "$1",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "$1",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">>",
+                                                    target: "$OMARCHY_INSTALL_LOG_FILE",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "start_install_log",
+            body: Group(
+                CshAst {
+                    commands: [
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "omarchy_log_to_stdout",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "mkdir",
+                                                    args: [
+                                                        "-p",
+                                                        "$(dirname \"$OMARCHY_INSTALL_LOG_FILE\")",
+                                                    ],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "touch",
+                                                    args: [
+                                                        "$OMARCHY_INSTALL_LOG_FILE",
+                                                    ],
+                                                },
+                                            ),
+                                            Binary {
+                                                left: Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "chmod",
+                                                            args: [
+                                                                "666",
+                                                                "$OMARCHY_INSTALL_LOG_FILE",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: Some(
+                                                                "2",
+                                                            ),
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                    ],
+                                                },
+                                                operator: Or,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "true",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "export",
+                                args: [
+                                    "OMARCHY_START_TIME=${OMARCHY_START_TIME:-$(date '+%Y-%m-%d %H:%M:%S')}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "export",
+                                args: [
+                                    "OMARCHY_START_EPOCH=${OMARCHY_START_EPOCH:-$(date +%s)}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "omarchy_log_line",
+                                args: [
+                                    "=== Omarchy Setup Started: $OMARCHY_START_TIME ===",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "stop_install_log",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "end_time",
+                                    "end_epoch",
+                                    "duration",
+                                    "mins",
+                                    "secs",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "end_time",
+                                        value: "$(date '+%Y-%m-%d %H:%M:%S')",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "end_epoch",
+                                        value: "$(date +%s)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "omarchy_log_line",
+                                args: [
+                                    "=== Omarchy Setup Completed: $end_time ===",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -n ${OMARCHY_START_EPOCH:-} ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "duration",
+                                                            value: "$((end_epoch - OMARCHY_START_EPOCH))",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "mins",
+                                                            value: "$((duration / 60))",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "secs",
+                                                            value: "$((duration % 60))",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "omarchy_log_line",
+                                                    args: [
+                                                        "Omarchy setup: ${mins}m ${secs}s",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "run_logged",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "script=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "exit_code",
+                                    "errexit_was_set=0",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "omarchy_log_line",
+                                args: [
+                                    "[$(date '+%Y-%m-%d %H:%M:%S')] Starting: $script",
+                                ],
+                            },
+                        ),
+                        Case {
+                            word: "$-",
+                            arms: [
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "*e*",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "errexit_was_set",
+                                                            value: "1",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "set",
+                                                    args: [
+                                                        "+e",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "runner=(bash -eE)",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " ${OMARCHY_INSTALL_DEBUG:-} == \"1\" ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "runner",
+                                                            value: "(bash -x -eE)",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "omarchy_log_to_stdout",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "PS4",
+                                                                value: "+ ${BASH_SOURCE[0]##*/}:${LINENO}:${FUNCNAME[0]:-main}: ",
+                                                            },
+                                                        ],
+                                                        name: "${runner[@]}",
+                                                        args: [
+                                                            "-c",
+                                                            "source \"$1\"",
+                                                            "bash",
+                                                            "$script",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: "<",
+                                                        target: "/dev/null",
+                                                    },
+                                                    CshAstRedirect {
+                                                        descriptor: Some(
+                                                            "2",
+                                                        ),
+                                                        operator: ">&",
+                                                        target: "1",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "PS4",
+                                                            value: "+ ${BASH_SOURCE[0]##*/}:${LINENO}:${FUNCNAME[0]:-main}: ",
+                                                        },
+                                                    ],
+                                                    name: "${runner[@]}",
+                                                    args: [
+                                                        "-c",
+                                                        "source \"$1\"",
+                                                        "bash",
+                                                        "$script",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: "<",
+                                                    target: "/dev/null",
+                                                },
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">>",
+                                                    target: "$OMARCHY_INSTALL_LOG_FILE",
+                                                },
+                                                CshAstRedirect {
+                                                    descriptor: Some(
+                                                        "2",
+                                                    ),
+                                                    operator: ">&",
+                                                    target: "1",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "exit_code",
+                                        value: "$?",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Arithmetic(
+                                " errexit_was_set ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "set",
+                                    args: [
+                                        "-e",
+                                    ],
+                                },
+                            ),
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Arithmetic(
+                                                " exit_code == 0 ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "omarchy_log_line",
+                                                    args: [
+                                                        "[$(date '+%Y-%m-%d %H:%M:%S')] Completed: $script",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "omarchy_log_line",
+                                                args: [
+                                                    "[$(date '+%Y-%m-%d %H:%M:%S')] Failed: $script (exit code: $exit_code)",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "$exit_code",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+    ],
+}

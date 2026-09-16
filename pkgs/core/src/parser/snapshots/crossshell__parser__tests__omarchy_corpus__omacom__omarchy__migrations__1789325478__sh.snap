@@ -1,0 +1,320 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1789325478.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Install the Omarchy kernel and make it the first Limine boot entry",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(uname -m) == \"x86_64\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "running_kernel",
+                        value: "$(uname -r)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "omarchy-pkg-present",
+                                        args: [
+                                            "linux-t2",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Test(
+                                    " ${running_kernel,,} == *-t2* ",
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "limine_conf",
+                        value: "${OMARCHY_KERNEL_LIMINE_CONF:-/etc/default/limine}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rebuild_marker",
+                        value: "${OMARCHY_KERNEL_REBUILD_MARKER:-/var/lib/omarchy/migrations/1789325478}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "kernel",
+                        value: "linux-omarchy",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $rebuild_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "omarchy-pkg-add",
+                args: [
+                    "$kernel",
+                    "$kernel-headers",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "mkdir",
+                    "-p",
+                    "$(dirname \"$limine_conf\")",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "touch",
+                    "$limine_conf",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "sed",
+                    "-i",
+                    "-E",
+                    "/^[[:space:]]*BOOT_ORDER[[:space:]]*=/d",
+                    "$limine_conf",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "\\n%s\\n",
+                        "BOOT_ORDER=\"linux-omarchy, linux-omarchy-*, *, *fallback, Snapshots\"",
+                    ],
+                },
+            ),
+            operator: Pipe,
+            right: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "sudo",
+                        args: [
+                            "tee",
+                            "-a",
+                            "$limine_conf",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "limine-mkinitcpio",
+                    "$kernel",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Negated(
+                                Binary {
+                                    left: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "sudo",
+                                            args: [
+                                                "limine-entry-tool",
+                                                "--tree",
+                                            ],
+                                        },
+                                    ),
+                                    operator: Pipe,
+                                    right: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "-E",
+                                                    "(^|[^[:alnum:]_-])$kernel([^[:alnum:]_-]|$)",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                        ],
+                                    },
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "echo",
+                                        args: [
+                                            "The Omarchy kernel has no Limine boot entry; rerun omarchy-migrate after fixing the boot image build.",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">&",
+                                        target: "2",
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "omarchy-state",
+                args: [
+                    "set",
+                    "reboot-required",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "install",
+                    "-Dm644",
+                    "/dev/null",
+                    "$rebuild_marker",
+                ],
+            },
+        ),
+    ],
+}

@@ -1,0 +1,383 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/fingerprint-driver-migration-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration",
+                        value: "$ROOT/migrations/1785090473.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "scratch",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$scratch\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$scratch/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "CALL_LOG=$scratch/calls",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "PATH=$scratch/bin:$ROOT/bin:$PATH",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$scratch/bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$scratch/bin/pacman",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$scratch/bin/*",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "INSTALLED_LOG=$scratch/installed",
+                ],
+            },
+        ),
+        Function {
+            name: "run_migration",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$CALL_LOG",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$INSTALLED_LOG",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "bash",
+                                    args: [
+                                        "-euo",
+                                        "pipefail",
+                                        "$migration",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "INSTALLED",
+                        value: "fprintd",
+                    },
+                ],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "pacman -S --noconfirm --needed libfprint-git",
+                        "$CALL_LOG",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "fprintd without a library gets libfprint-git",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "fprintd without a library gets libfprint-git",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "INSTALLED",
+                        value: "$libfprint-git\\nfprintd",
+                    },
+                ],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $CALL_LOG ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an installed libfprint-git is left alone",
+                        "$(<\"$CALL_LOG\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "an installed libfprint-git is left alone",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "INSTALLED",
+                        value: "$libfprint\\nfprintd",
+                    },
+                ],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $CALL_LOG ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an installed stock libfprint is left alone",
+                        "$(<\"$CALL_LOG\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "an installed stock libfprint is left alone",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "INSTALLED",
+                        value: "",
+                    },
+                ],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $CALL_LOG ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a machine without fprintd is left alone",
+                        "$(<\"$CALL_LOG\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a machine without fprintd is left alone",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nexec \"$@\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\ncase \"$1\" in\n  -Q) grep -qx \"$2\" <<< \"${INSTALLED:-}\" || grep -qx \"$2\" \"$INSTALLED_LOG\" ;;\n  -S)\n    printf 'pacman %s\\n' \"$*\" >> \"$CALL_LOG\"\n    for arg in \"$@\"; do\n      [[ $arg == -* ]] || printf '%s\\n' \"$arg\" >> \"$INSTALLED_LOG\"\n    done\n    ;;\n  *) printf 'pacman %s\\n' \"$*\" >> \"$CALL_LOG\" ;;\nesac\n",
+        },
+    ],
+}

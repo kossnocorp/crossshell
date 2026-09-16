@@ -1,0 +1,165 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/apple/fix-suspend-nvme.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "MACBOOK_MODEL",
+                        value: "$(cat /sys/class/dmi/id/product_name 2>/dev/null || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " $MACBOOK_MODEL =~ MacBook(8,1|9,1|10,1)|MacBookPro13,[123]|MacBookPro14,[123] ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "echo",
+                                    args: [
+                                        "Detected MacBook model: $MACBOOK_MODEL",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "NVME_DEVICE",
+                                            value: "/sys/bus/pci/devices/0000:01:00.0/d3cold_allowed",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Test(
+                                                    " -f $NVME_DEVICE ",
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "echo",
+                                                        args: [
+                                                            "Applying NVMe suspend fix...",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "sudo",
+                                                        args: [
+                                                            "mkdir",
+                                                            "-p",
+                                                            "/etc/systemd/system",
+                                                        ],
+                                                    },
+                                                ),
+                                                Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "sudo",
+                                                            args: [
+                                                                "tee",
+                                                                "/etc/systemd/system/omarchy-nvme-suspend-fix.service",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: "<<",
+                                                            target: "EOF",
+                                                            here_document: 0,
+                                                        },
+                                                    ],
+                                                },
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "sudo",
+                                                        args: [
+                                                            "systemctl",
+                                                            "enable",
+                                                            "omarchy-nvme-suspend-fix.service",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: Some(
+                                    CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "Warning: NVMe device not found at expected PCI address (0000:01:00.0)",
+                                                    ],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "This fix may not be needed for this MacBook model",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "[Unit]\nDescription=Omarchy NVMe Suspend Fix for MacBook\n\n[Service]\nExecStart=/bin/bash -c 'echo 0 > /sys/bus/pci/devices/0000\\:01\\:00.0/d3cold_allowed'\n\n[Install]\nWantedBy=multi-user.target\n",
+        },
+    ],
+}

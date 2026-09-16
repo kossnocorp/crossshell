@@ -1,0 +1,241 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1785167800.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Supervise fcitx5 so CapsLock compose sequences can't silently die",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "systemctl",
+                        args: [
+                            "--user",
+                            "daemon-reload",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">&",
+                        target: "1",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Negated(
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "systemctl",
+                                            args: [
+                                                "--user",
+                                                "enable",
+                                                "omarchy-fcitx5.service",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">&",
+                                            target: "1",
+                                        },
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "wants_dir",
+                                            value: "$HOME/.config/systemd/user/graphical-session.target.wants",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mkdir",
+                                    args: [
+                                        "-p",
+                                        "$wants_dir",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "ln",
+                                    args: [
+                                        "-sfn",
+                                        "/usr/lib/systemd/user/omarchy-fcitx5.service",
+                                        "$wants_dir/omarchy-fcitx5.service",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "systemctl",
+                                    args: [
+                                        "--user",
+                                        "is-active",
+                                        "--quiet",
+                                        "graphical-session.target",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "pkill",
+                                            args: [
+                                                "-x",
+                                                "fcitx5",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">&",
+                                            target: "1",
+                                        },
+                                    ],
+                                },
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "true",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [
+                                                                CshAstAssignment {
+                                                                    name: "error",
+                                                                    value: "$(systemctl --user start omarchy-fcitx5.service 2>&1)",
+                                                                },
+                                                            ],
+                                                            name: "",
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "echo",
+                                                        args: [
+                                                            "Could not start omarchy-fcitx5.service: $error",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "echo",
+                                                        args: [
+                                                            "Compose sequences (CapsLock m s) will not work until the next login.",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

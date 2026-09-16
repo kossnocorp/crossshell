@@ -1,0 +1,492 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/chromium-claude-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Negated(
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "command",
+                                                args: [
+                                                    "-v",
+                                                    "bwrap",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Negated(
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "bwrap",
+                                                args: [
+                                                    "--ro-bind",
+                                                    "/",
+                                                    "/",
+                                                    "--unshare-user",
+                                                    "--uid",
+                                                    "0",
+                                                    "--gid",
+                                                    "0",
+                                                    "true",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: Some(
+                                                    "2",
+                                                ),
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "pass",
+                                    args: [
+                                        "user namespaces unavailable; skipping isolated Claude extension installation",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$test_tmp/share",
+                    "$test_tmp/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "installer",
+                        value: "$ROOT/bin/omarchy-install-chromium-claude",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "extension_id",
+                        value: "fcoeoabgfenejglbffodgkkbkcdhcgfn",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "sandbox",
+                        value: "(bwrap --ro-bind / / --bind \"$test_tmp\" \"$test_tmp\" --dev /dev --proc /proc --unshare-user)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "${sandbox[@]}",
+                args: [
+                    "--uid",
+                    "0",
+                    "--gid",
+                    "0",
+                    "--bind",
+                    "$test_tmp/share",
+                    "/usr/share",
+                    "bash",
+                    "$installer",
+                ],
+            },
+        ),
+        For {
+            variable: "browser",
+            words: Some(
+                [
+                    "chromium",
+                    "google-chrome",
+                    "microsoft-edge",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "file",
+                                    value: "$test_tmp/share/$browser/extensions/$extension_id.json",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "jq",
+                                    args: [
+                                        "-e",
+                                        ".external_update_url == \"https://clients2.google.com/service/update2/crx\"",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "$browser registers the official Claude Web Store extension",
+                                ],
+                            },
+                        ),
+                    },
+                    Binary {
+                        left: Test(
+                            " $(stat -c '%a' \"$file\") == \"644\" ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "$browser extension registration is readable",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude extension installer registers all supported browser families",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/bin/pkexec",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$test_tmp/bin/pkexec",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "AUTH_LOG=$test_tmp/auth-log",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "PATH=$test_tmp/bin:$PATH",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "${sandbox[@]}",
+                    args: [
+                        "--uid",
+                        "1000",
+                        "--gid",
+                        "1000",
+                        "--ro-bind",
+                        "$test_tmp/share",
+                        "/usr/share",
+                        "bash",
+                        "$installer",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -e $AUTH_LOG ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "configured Claude extensions need no authentication",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "configured Claude extensions need neither writes nor authentication",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "$test_tmp/share/google-chrome/extensions/$extension_id.json",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "status",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "${sandbox[@]}",
+                        args: [
+                            "--uid",
+                            "1000",
+                            "--gid",
+                            "1000",
+                            "--ro-bind",
+                            "$test_tmp/share",
+                            "/usr/share",
+                            "bash",
+                            "$installer",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "status",
+                            value: "$?",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $status == 42 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude extension installer propagates authentication failure",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(cat \"$AUTH_LOG\") == \"/usr/bin/omarchy-install-chromium-claude\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "menu installation elevates only the packaged installer",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "missing registration uses pkexec and propagates authentication failure",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$@\" >\"$AUTH_LOG\"\nexit 42\n",
+        },
+    ],
+}

@@ -1,0 +1,251 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1788745941.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Update Kitty configuration",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "kitty_config",
+                        value: "$HOME/.config/kitty/kitty.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stock_sha",
+                        value: "856cd466bf568d091cb775c5b90d1852178090a419f492fde02a4eaef6407bf9",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "unrestricted",
+                        value: "^[[:space:]]*allow_remote_control[[:space:]]+(yes|y|true)[[:space:]]*$",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -f $kitty_config ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "changed",
+                                            value: "false",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Test(
+                                                    " $(sha256sum \"$kitty_config\" | cut -d ' ' -f 1) == $stock_sha ",
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "omarchy-refresh-config",
+                                                        args: [
+                                                            "kitty/kitty.conf",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "changed",
+                                                                value: "true",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "grep",
+                                                        args: [
+                                                            "-qE",
+                                                            "$unrestricted",
+                                                            "$kitty_config",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "backup",
+                                                                value: "$(mktemp \"$kitty_config.bak.XXXXXX\")",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "cp",
+                                                        args: [
+                                                            "-p",
+                                                            "$kitty_config",
+                                                            "$backup",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "sed",
+                                                        args: [
+                                                            "--follow-symlinks",
+                                                            "-i",
+                                                            "-E",
+                                                            "s/$unrestricted/# &/",
+                                                            "$kitty_config",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "\\n%s\\n",
+                                                            "Unrestricted remote control disabled.",
+                                                            "Your other Kitty settings were preserved.",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "\\nBackup saved to:\\n  %s\\n",
+                                                            "$backup",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "changed",
+                                                                value: "true",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Test(
+                                                    " $changed == \"true\" ",
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "gum",
+                                                        args: [
+                                                            "style",
+                                                            "--border",
+                                                            "rounded",
+                                                            "--border-foreground",
+                                                            "3",
+                                                            "--padding",
+                                                            "1 2",
+                                                            "--margin",
+                                                            "1 0",
+                                                            "Restart Kitty",
+                                                            "",
+                                                            "Close and reopen all Kitty windows to apply this change.",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

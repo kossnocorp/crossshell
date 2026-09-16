@@ -1,0 +1,202 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hyprland-window-close-all-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mock_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hyprctl_log",
+                        value: "$test_tmp/hyprctl.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$mock_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/hyprctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$mock_bin/hyprctl",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$mock_bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "HYPRCTL_LOG",
+                        value: "$hyprctl_log",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-hyprland-window-close-all",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected_log",
+                        value: "$test_tmp/expected.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$expected_log",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 1,
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "diff",
+                    args: [
+                        "-u",
+                        "$expected_log",
+                        "$hyprctl_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "close-all targets each window with the Lua dispatcher",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "close-all targets each window with the Lua dispatcher",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nif [[ $1 == \"clients\" ]]; then\n  printf '[{\"address\":\"0xabc\"},{\"address\":\"0xdef\"}]\\n'\nelse\n  printf '%s\\n' \"$*\" >>\"$HYPRCTL_LOG\"\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "dispatch hl.dsp.window.close({ window = \"address:0xabc\" })\ndispatch hl.dsp.window.close({ window = \"address:0xdef\" })\ndispatch hl.dsp.focus({ workspace = \"1\" })\n",
+        },
+    ],
+}

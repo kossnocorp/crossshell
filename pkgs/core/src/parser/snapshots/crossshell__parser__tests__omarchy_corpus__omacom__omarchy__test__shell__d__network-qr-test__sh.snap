@@ -1,0 +1,649 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/network-qr-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$tmp/bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp/bin/nmcli",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp/bin/qrencode",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp/bin/nmcli",
+                    "$tmp/bin/qrencode",
+                ],
+            },
+        ),
+        Function {
+            name: "run_success_case",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                    "fields=$2",
+                                    "expected_payload=$3",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "shift",
+                                args: [
+                                    "3",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "output",
+                                    "meta",
+                                    "matrix",
+                                    "payload",
+                                    "arg",
+                                    "with_meta=false",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "expected_matrix",
+                                    "expected_security",
+                                    "expected_ssid",
+                                    "expected_iface=*",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "arg",
+                            words: Some(
+                                [
+                                    "$@",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Binary {
+                                            left: Test(
+                                                " $arg == \"--meta\" ",
+                                            ),
+                                            operator: And,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "with_meta",
+                                                            value: "true",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        },
+                                        operator: Or,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "expected_iface",
+                                                        value: "$arg",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "export",
+                                args: [
+                                    "QR_NMCLI_FIELDS=$fields",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "export",
+                                args: [
+                                    "QR_PAYLOAD_FILE=$tmp/payload",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "output",
+                                        value: "$(PATH=\"$tmp/bin:$PATH\" \"$ROOT/bin/omarchy-network-qr\" \"$@\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "expected_matrix",
+                                        value: "$100\\n010\\n001",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " $with_meta == \"true\" ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "meta",
+                                                            value: "$(head -n1 <<<\"$output\")",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "matrix",
+                                                            value: "$(tail -n +2 <<<\"$output\")",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "expected_security",
+                                                            value: "${expected_payload#WIFI:T:}",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "expected_security",
+                                                            value: "${expected_security%%;*}",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "expected_ssid",
+                                                            value: "$(head -n1 <<<\"$fields\")",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Binary {
+                                                left: Test(
+                                                    " $meta == meta$'\\t'$expected_iface$'\\t'\"$expected_security\"$'\\t'\"$expected_ssid\" ",
+                                                ),
+                                                operator: Or,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail",
+                                                        args: [
+                                                            "$description leads with the interface, security, and SSID",
+                                                            "actual: $meta",
+                                                        ],
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "matrix",
+                                                        value: "$output",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " $matrix == \"$expected_matrix\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$description emits a compact module matrix",
+                                        "expected: $expected_matrix\\nactual: $matrix",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "payload",
+                                        value: "$(<\"$QR_PAYLOAD_FILE\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $payload == \"$expected_payload\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$description generates the Wi-Fi payload",
+                                        "expected: $expected_payload\\nactual: $payload",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_success_case",
+                args: [
+                    "network QR helper escapes WPA credentials through stdin",
+                    "$Cafe;Guest\\\\5G\\nwpa-psk\\np,a:ss;word\\\\42\\nno\\n",
+                    "WIFI:T:WPA;S:Cafe\\;Guest\\\\5G;P:p\\,a\\:ss\\;word\\\\42;;",
+                    "--meta",
+                    "wlan0",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_success_case",
+                args: [
+                    "network QR helper keeps the bare matrix without --meta",
+                    "$Cafe;Guest\\\\5G\\nwpa-psk\\np,a:ss;word\\\\42\\nno\\n",
+                    "WIFI:T:WPA;S:Cafe\\;Guest\\\\5G;P:p\\,a\\:ss\\;word\\\\42;;",
+                    "wlan0",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_success_case",
+                args: [
+                    "network QR helper detects the Wi-Fi interface",
+                    "$Cafe Detected\\nwpa-psk\\nsecret\\nno\\n",
+                    "WIFI:T:WPA;S:Cafe Detected;P:secret;;",
+                    "--meta",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_success_case",
+                args: [
+                    "network QR helper supports open networks",
+                    "$Cafe Open\\nnone\\n\\nno\\n",
+                    "WIFI:T:nopass;S:Cafe Open;P:;;",
+                    "--meta",
+                    "wlan0",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_success_case",
+                args: [
+                    "network QR helper marks hidden networks",
+                    "$Hidden Network\\nwpa-psk\\nsecret\\nyes\\n",
+                    "WIFI:T:WPA;S:Hidden Network;P:secret;H:true;;",
+                    "--meta",
+                    "wlan0",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_success_case",
+                args: [
+                    "network QR helper encodes WEP networks",
+                    "$Old Router\\nnone\\n\\nno\\nwep-secret\\n",
+                    "WIFI:T:WEP;S:Old Router;P:wep-secret;;",
+                    "--meta",
+                    "wlan0",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "QR_NMCLI_FIELDS=$Enterprise\\nwpa-eap\\nsecret\\nno\\n",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "QR_PAYLOAD_FILE=$tmp/enterprise-payload",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "PATH",
+                                                value: "$tmp/bin:$PATH",
+                                            },
+                                        ],
+                                        name: "$ROOT/bin/omarchy-network-qr",
+                                        args: [
+                                            "wlan0",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$tmp/enterprise-output",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "$tmp/enterprise-error",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "network QR helper rejects enterprise networks",
+                                        "helper unexpectedly succeeded",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "enterprise_error",
+                        value: "$(<\"$tmp/enterprise-error\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected_error",
+                        value: "Enterprise Wi-Fi cannot be shared with a password QR code",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $enterprise_error == \"$expected_error\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "network QR helper rejects enterprise networks",
+                        "expected: $expected_error\\nactual: $enterprise_error",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $QR_PAYLOAD_FILE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "network QR helper rejects enterprise networks",
+                        "qrencode unexpectedly ran",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "network QR helper rejects enterprise networks",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nif [[ $* == *\"DEVICE,TYPE,STATE\"* ]]; then\n  printf 'eth0:ethernet:connected\\nwlan0:wifi:connected\\n'\nelif [[ $* == *GENERAL.CON-UUID* ]]; then\n  echo test-uuid\nelse\n  printf '%s' \"$QR_NMCLI_FIELDS\"\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nfor arg in \"$@\"; do\n  [[ $arg != WIFI:* ]] || exit 97\ndone\npayload=$(</dev/stdin)\nprintf '%s' \"$payload\" >\"$QR_PAYLOAD_FILE\"\nprintf '##    \\n  ##  \\n    ##\\n'\n",
+        },
+    ],
+}

@@ -1,0 +1,481 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hw-external-monitors-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "drm_path",
+                        value: "$test_tmp/drm",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "write_connectors",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$drm_path",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mkdir",
+                                args: [
+                                    "-p",
+                                    "$drm_path",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "connector",
+                                    "state",
+                                ],
+                            },
+                        ),
+                        Loop {
+                            until: false,
+                            condition: CshAst {
+                                commands: [
+                                    Arithmetic(
+                                        " $# ",
+                                    ),
+                                ],
+                            },
+                            body: CshAst {
+                                commands: [
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [
+                                                CshAstAssignment {
+                                                    name: "connector",
+                                                    value: "$1",
+                                                },
+                                            ],
+                                            name: "",
+                                            args: [],
+                                        },
+                                    ),
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [
+                                                CshAstAssignment {
+                                                    name: "state",
+                                                    value: "$2",
+                                                },
+                                            ],
+                                            name: "",
+                                            args: [],
+                                        },
+                                    ),
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "mkdir",
+                                            args: [
+                                                "-p",
+                                                "$drm_path/card0-$connector",
+                                            ],
+                                        },
+                                    ),
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "printf",
+                                                args: [
+                                                    "%s\\n",
+                                                    "$state",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "$drm_path/card0-$connector/status",
+                                            },
+                                        ],
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "shift",
+                                            args: [
+                                                "2",
+                                            ],
+                                        },
+                                    ),
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "has_external_monitor",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "OMARCHY_DRM_PATH",
+                                        value: "$drm_path",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-hw-external-monitors",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_connectors",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "+e",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "empty_error",
+                        value: "$(has_external_monitor 2>&1 >/dev/null)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "empty_status",
+                        value: "$?",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-e",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " empty_status != 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an empty DRM tree has no external display",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -z $empty_error ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an empty DRM tree is handled quietly",
+                        "$empty_error",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "physical monitor detection handles an empty DRM tree",
+                ],
+            },
+        ),
+        For {
+            variable: "connector",
+            words: Some(
+                [
+                    "eDP-1",
+                    "LVDS-1",
+                    "DSI-1",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "write_connectors",
+                            args: [
+                                "$connector",
+                                "connected",
+                            ],
+                        },
+                    ),
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "has_external_monitor",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "fail",
+                                                args: [
+                                                    "$connector is treated as an internal display",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "physical monitor detection ignores common internal panel connectors",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_connectors",
+                args: [
+                    "LVDS-1",
+                    "connected",
+                    "DP-1",
+                    "connected",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "has_external_monitor",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "external display is found alongside an LVDS panel",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "physical monitor detection finds an external display alongside an LVDS panel",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_connectors",
+                args: [
+                    "eDP-1",
+                    "connected",
+                    "HDMI-A-1",
+                    "disconnected",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "has_external_monitor",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "a disconnected external display is not reported as connected",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "physical monitor detection ignores disconnected external displays",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_connectors",
+                args: [
+                    "DP-1",
+                    "connected",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "has_external_monitor",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "external-only systems still report a connected display",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "physical monitor detection still supports external-only systems",
+                ],
+            },
+        ),
+    ],
+}

@@ -1,0 +1,105 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1785344985.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Add the agents widget to the bar",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "config_file",
+                        value: "$HOME/.config/omarchy/shell.json",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -s $config_file ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "tmp",
+                                            value: "$(mktemp)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Binary {
+                                left: Binary {
+                                    left: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "jq",
+                                                args: [
+                                                    "\n    def entry_id:\n      if type == \"string\" then\n        .\n      elif type == \"object\" then\n        (.id // \"\")\n      else\n        \"\"\n      end;\n\n    def has_widget($id):\n      [(.bar.layout // {}) | to_entries[] | .value | select(type == \"array\") | .[] | entry_id]\n        | any(. == $id);\n\n    def insert_after($anchor; $entry):\n      if type != \"array\" then\n        [$entry]\n      else\n        ([range(0; length) as $i | select((.[$i] | entry_id) == $anchor) | $i][0]) as $anchor_index |\n        if $anchor_index == null then\n          [$entry] + .\n        else\n          .[0:$anchor_index + 1] + [$entry] + .[$anchor_index + 1:]\n        end\n      end;\n\n    # Respect a bar the user already curated: only place the widget when it is\n    # absent from every section, never a second copy.\n    if has_widget(\"omarchy.agents\") then\n      .\n    else\n      .bar.layout.right |= insert_after(\"omarchy.tray\"; { id: \"omarchy.agents\" })\n    end\n  ",
+                                                    "$config_file",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "$tmp",
+                                            },
+                                        ],
+                                    },
+                                    operator: And,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "mv",
+                                            args: [
+                                                "$tmp",
+                                                "$config_file",
+                                            ],
+                                        },
+                                    ),
+                                },
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "rm",
+                                        args: [
+                                            "-f",
+                                            "$tmp",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

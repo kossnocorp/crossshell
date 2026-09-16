@@ -1,0 +1,402 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hermes-skin-migration-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration",
+                        value: "$ROOT/migrations/1788619462.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $migration ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Hermes skin migration exists",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c %a \"$migration\") == \"644\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration is a plain 0644 file",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mock_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "calls",
+                        value: "$test_tmp/calls",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$mock_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/omarchy-pkg-present",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/omarchy-theme-set-hermes",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$mock_bin/*",
+                ],
+            },
+        ),
+        Function {
+            name: "run_migration",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$calls",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_DESKTOP_INSTALLED",
+                                            value: "${OMARCHY_TEST_DESKTOP_INSTALLED:-1}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_HOOK_FAILS",
+                                            value: "${OMARCHY_TEST_HOOK_FAILS:-0}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_CALLS",
+                                            value: "$calls",
+                                        },
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$mock_bin:$PATH",
+                                        },
+                                        CshAstAssignment {
+                                            name: "HOME",
+                                            value: "$test_tmp/home",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_PATH",
+                                            value: "$ROOT",
+                                        },
+                                    ],
+                                    name: "bash",
+                                    args: [
+                                        "-euo",
+                                        "pipefail",
+                                        "$migration",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_DESKTOP_INSTALLED",
+                            value: "0",
+                        },
+                    ],
+                    name: "run_migration",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration exits clean without Hermes Desktop",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a machine without Hermes Desktop is left alone",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration only applies where Omarchy installed Hermes Desktop",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_migration",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration exits clean with Hermes Desktop installed",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(cat \"$calls\") == \"omarchy-theme-set-hermes --activate\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the skin is rendered, published and activated through the hook's deliberate form",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration hands the skin over through the hook",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_HOOK_FAILS",
+                                            value: "1",
+                                        },
+                                    ],
+                                    name: "run_migration",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "a hand-over that failed on Omarchy's side stays pending",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration stays pending when the hand-over fails",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n[[ $1 == \"hermes-desktop\" && ${OMARCHY_TEST_DESKTOP_INSTALLED:-0} == 1 ]]\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\necho \"omarchy-theme-set-hermes $*\" >>\"$OMARCHY_TEST_CALLS\"\n[[ ${OMARCHY_TEST_HOOK_FAILS:-0} == 0 ]]\n",
+        },
+    ],
+}

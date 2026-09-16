@@ -1,0 +1,1471 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/kitty-config-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"${BASH_SOURCE[0]}\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_home",
+                        value: "$test_dir/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "kitty_config",
+                        value: "$test_home/.config/kitty/kitty.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "legacy",
+                        value: "$ROOT/test/shell.d/fixtures/kitty/legacy.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration",
+                        value: "$ROOT/migrations/1788745941.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$(dirname \"$kitty_config\")",
+                    "$test_dir/bin",
+                ],
+            },
+        ),
+        Function {
+            name: "run_migration",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "env",
+                                args: [
+                                    "HOME=$test_home",
+                                    "OMARCHY_PATH=$ROOT",
+                                    "PATH=$ROOT/bin:$PATH",
+                                    "bash",
+                                    "-euo",
+                                    "pipefail",
+                                    "$migration",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$legacy",
+                    "$kitty_config",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "output",
+                        value: "$(run_migration)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$ROOT/config/kitty/kitty.conf",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "stock config becomes the user template",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "backups",
+                        value: "(\"$kitty_config\".bak.*)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$legacy",
+                        "${backups[0]}",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "refresh backs up the original config",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $output == *\"Close and reopen all Kitty windows\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration requires a full restart",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "stock config is refreshed with a backup and restart guidance",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "output",
+                        value: "$(run_migration)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$ROOT/config/kitty/kitty.conf",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "stock migration is idempotent",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $output != *\"Close and reopen\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "rerun does not repeat restart guidance",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "stock migration is idempotent",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$kitty_config",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "CONF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "allow_remote_control yes  \\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">>",
+                    target: "$kitty_config",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$kitty_config",
+                    "$test_dir/custom-original",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_dir/expected",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "CONF",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "# allow_remote_control yes  \\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">>",
+                    target: "$test_dir/expected",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "600",
+                    "$kitty_config",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_migration",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$test_dir/expected",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "customizations survive the security repair",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c %a \"$kitty_config\") == \"600\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration preserves config permissions",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "backup",
+                        value: "$(rg -l 'allow_remote_control true' \"$kitty_config\".bak.* | tail -1)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$test_dir/custom-original",
+                        "$backup",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "custom config is backed up",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_migration",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$test_dir/expected",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "custom migration is idempotent",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "custom config repair preserves ordering, mappings, theme, permissions, and original backup",
+                ],
+            },
+        ),
+        For {
+            variable: "mode",
+            words: Some(
+                [
+                    "no",
+                    "n",
+                    "false",
+                    "socket-only",
+                    "socket",
+                    "password",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "allow_remote_control %s\\nfont_size 13\\n",
+                                    "$mode",
+                                ],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$kitty_config",
+                            },
+                        ],
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "cp",
+                            args: [
+                                "$kitty_config",
+                                "$test_dir/expected",
+                            ],
+                        },
+                    ),
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "run_migration",
+                                args: [],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "/dev/null",
+                            },
+                        ],
+                    },
+                    Binary {
+                        left: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cmp",
+                                args: [
+                                    "-s",
+                                    "$test_dir/expected",
+                                    "$kitty_config",
+                                ],
+                            },
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "migration preserves $mode",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "explicit restricted remote-control modes are preserved",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "font_size 13\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$kitty_config",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$kitty_config",
+                    "$test_dir/expected",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_migration",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$test_dir/expected",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omitted setting stays omitted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "$kitty_config",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_migration",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -e $kitty_config ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "absent config stays absent",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration leaves omitted settings and absent user configs alone",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "allow_remote_control yes\\nfont_size 13\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_dir/dotfiles.conf",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$test_dir/dotfiles.conf",
+                    "$kitty_config",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_migration",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -L $kitty_config ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration preserves a dotfile symlink",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "# allow_remote_control yes",
+                        "$test_dir/dotfiles.conf",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "symlink target is repaired",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "custom dotfile symlinks survive the repair",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "$kitty_config",
+                ],
+            },
+        ),
+        For {
+            variable: "command",
+            words: Some(
+                [
+                    "pkill",
+                    "omarchy-restart-shell",
+                    "omarchy-hook",
+                    "omarchy-notification-send",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "#!/bin/bash\\nexit 0\\n",
+                                ],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$test_dir/bin/$command",
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "#!/bin/bash\\nexit 1\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_dir/bin/pgrep",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "#!/bin/bash\\nprintf \"Test Font\\\\n\"\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_dir/bin/fc-list",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "#!/bin/bash\\nexit 0\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_dir/bin/kitty",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_dir/bin/gsettings",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$test_dir/bin/*",
+                ],
+            },
+        ),
+        Function {
+            name: "run_command",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "env",
+                                args: [
+                                    "HOME=$test_home",
+                                    "OMARCHY_PATH=$ROOT",
+                                    "PATH=$test_dir/bin:$ROOT/bin:$PATH",
+                                    "$ROOT/bin/$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$ROOT/config/kitty/kitty.conf",
+                    "$kitty_config",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "output",
+                        value: "$(run_command omarchy-display-text-size)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $output == *\"terminal font: 9 pt\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "size report accounts for inherited Kitty default",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_command",
+                args: [
+                    "omarchy-font-set",
+                    "Test Font",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_command",
+                args: [
+                    "omarchy-display-text-size",
+                    "16",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "font_family Test Font",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "font command creates family override",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_command",
+                args: [
+                    "omarchy-font-set",
+                    "Font",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "font_family Font",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "font command updates family override",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(grep -c '^font_family ' \"$kitty_config\") == \"1\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "font update avoids duplicate overrides",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "font_size 12.0",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "size command creates size override",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "# font_size 12",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "font commands keep commented instructions",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_command",
+                args: [
+                    "omarchy-display-text-size",
+                    "18",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(grep -c '^font_size ' \"$kitty_config\") == \"1\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "size update avoids duplicate overrides",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_command",
+                args: [
+                    "omarchy-display-text-size",
+                    "reset",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "font_size 9.0",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "size reset restores default",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "font controls add and update overrides in the minimal template",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "$kitty_config",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "output",
+                        value: "$(run_command omarchy-display-text-size)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $output == *\"terminal font: 9 pt\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "size report handles absent Kitty config",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_command",
+                args: [
+                    "omarchy-font-set",
+                    "Test Font",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_command",
+                args: [
+                    "omarchy-display-text-size",
+                    "16",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "font_family Test Font",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "font command handles absent config",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "font_size 12.0",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "size command handles absent setting",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "^include ",
+                            "$kitty_config",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "font controls must not opt users back into theming",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "$kitty_config",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_command",
+                args: [
+                    "omarchy-display-text-size",
+                    "16",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "font_size 12.0",
+                        "$kitty_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "size command handles absent config",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "font controls create missing Kitty overrides without restoring the theme include",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "$ROOT/bin/omarchy-cmd-present",
+                                    args: [
+                                        "kitty",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "kitty",
+                                    args: [
+                                        "+runpy",
+                                        "$(cat \"$ROOT/test/shell.d/fixtures/kitty/check-config.py\")",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "Kitty not installed; skipping native config parser checks",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "CONF",
+            quoted: true,
+            strip_tabs: false,
+            body: "# Keep this comment and my theme choice\ninclude my-theme.conf\nfont_family My Font\nfont_size 13\nmap ctrl+insert\ninclude shortcuts.conf\nmap shift+insert paste_from_clipboard\n  allow_remote_control   yes\nallow_remote_control y\nallow_remote_control true\n# allow_remote_control yes\nlisten_on unix:/tmp/my-kitty\n",
+        },
+        CshAstHereDocument {
+            delimiter: "CONF",
+            quoted: true,
+            strip_tabs: false,
+            body: "# Keep this comment and my theme choice\ninclude my-theme.conf\nfont_family My Font\nfont_size 13\nmap ctrl+insert\ninclude shortcuts.conf\nmap shift+insert paste_from_clipboard\n#   allow_remote_control   yes\n# allow_remote_control y\n# allow_remote_control true\n# allow_remote_control yes\nlisten_on unix:/tmp/my-kitty\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nif [[ $1 == \"get\" ]]; then\n  if [[ $3 == \"font-name\" ]]; then\n    echo \"'Sans 11'\"\n  else\n    echo 1.0\n  fi\nfi\n",
+        },
+    ],
+}

@@ -1,0 +1,1458 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/plugin-clone-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TMPDIR",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TMPDIR\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$TMPDIR/home/.config/omarchy",
+                    "$TMPDIR/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "CALLS",
+                        value: "$TMPDIR/calls",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/omarchy-shell",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        For {
+            variable: "command",
+            words: Some(
+                [
+                    "omarchy-plugin-enable",
+                    "omarchy-notification-send",
+                    "fake-editor",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cat",
+                                args: [],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$TMPDIR/bin/$command",
+                            },
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: "<<",
+                                target: "SH",
+                                here_document: 1,
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$TMPDIR/bin/*",
+                ],
+            },
+        ),
+        Function {
+            name: "clone_plugin",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "default_config={\n    \"bar\": {\n      \"layout\": {\n        \"left\": [{\"id\": \"omarchy.menu\"}],\n        \"center\": [{\"id\": \"omarchy.clock\", \"format\": \"HH:mm\"}],\n        \"right\": []\n      }\n    }\n  }",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "HOME",
+                                        value: "$TMPDIR/home",
+                                    },
+                                    CshAstAssignment {
+                                        name: "USER",
+                                        value: "tester",
+                                    },
+                                    CshAstAssignment {
+                                        name: "OMARCHY_PATH",
+                                        value: "$ROOT",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$TMPDIR/bin:$ROOT/bin:$PATH",
+                                    },
+                                    CshAstAssignment {
+                                        name: "FAKE_CALLS",
+                                        value: "$CALLS",
+                                    },
+                                    CshAstAssignment {
+                                        name: "OMARCHY_TEST_ROOT",
+                                        value: "$ROOT",
+                                    },
+                                    CshAstAssignment {
+                                        name: "FAKE_SHELL_CONFIG",
+                                        value: "${FAKE_CLONE_CONFIG:-$default_config}",
+                                    },
+                                ],
+                                name: "omarchy-plugin-clone",
+                                args: [
+                                    "$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clone_plugin",
+                    args: [
+                        "omarchy.clock",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "clock",
+                        value: "$TMPDIR/home/.config/omarchy/plugins/tester.clock",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "file",
+            words: Some(
+                [
+                    "manifest.json",
+                    "BarWidget.qml",
+                    "Panel.qml",
+                    "Model.js",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -f $clock/$file ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "clock clone is missing $file",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone copies the complete plugin",
+                ],
+            },
+        ),
+        Binary {
+            left: Binary {
+                left: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "import \"Model.js\"",
+                            "$clock/BarWidget.qml",
+                        ],
+                    },
+                ),
+                operator: And,
+                right: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "Qt.resolvedUrl(\"Panel.qml\")",
+                            "$clock/BarWidget.qml",
+                        ],
+                    },
+                ),
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clock clone does not preserve local dependencies",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone keeps plugin dependencies local",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "rg",
+                    args: [
+                        "-qF",
+                        "omarchy.clock",
+                        "$clock",
+                        "-g",
+                        "*.qml",
+                        "-g",
+                        "*.js",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clock clone does not preserve the stable runtime id",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone preserves the built-in runtime IPC id",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "jq",
+                        args: [
+                            "-e",
+                            "\n  .id == \"tester.clock\" and\n  .name == \"My Clock\" and\n  .barWidget.displayName == \"My Clock\" and\n  .omarchy.clonedFrom == \"omarchy.clock\" and\n  .kinds == [\"bar-widget\"] and\n  .entryPoints.barWidget == \"BarWidget.qml\"\n",
+                            "$clock/manifest.json",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clock clone manifest is incorrect",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone updates identity without replacing the manifest",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "omarchy-plugin-enable tester.clock",
+                        "$CALLS",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clone does not enable the editable copy",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "omarchy-notification-send -g \u{f0431} Editing Cloned Plugin Original plugin has been replace by clone.",
+                        "$CALLS",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clone does not notify that the editable clone is active",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone enables bar widgets and confirms the editable clone",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clone_plugin",
+                    args: [
+                        "omarchy.keyboard-layout",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "omarchy-plugin-enable tester.keyboard-layout",
+                        "$CALLS",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clone does not enable a clone of a legacy string-form bar entry",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone enables clones of legacy string-form bar entries",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clone_plugin",
+                    args: [
+                        "omarchy.menu",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "menu",
+                        value: "$TMPDIR/home/.config/omarchy/plugins/tester.menu",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "file",
+            words: Some(
+                [
+                    "manifest.json",
+                    "Menu.qml",
+                    "MenuModel.js",
+                    "BarWidget.qml",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -f $menu/$file ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "menu clone is missing $file",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "jq",
+                        args: [
+                            "-e",
+                            "\n  .id == \"tester.menu\" and\n  .kinds == [\"menu\", \"bar-widget\"] and\n  .entryPoints.menu == \"Menu.qml\" and\n  .entryPoints.barWidget == \"BarWidget.qml\"\n",
+                            "$menu/manifest.json",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "menu clone loses plugin kinds",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "omarchy-plugin-enable tester.menu",
+                        "$CALLS",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clone does not enable a multi-kind plugin",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone preserves and enables multi-kind plugins",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "remove_output",
+                        value: "$(HOME=\"$TMPDIR/home\" OMARCHY_PATH=\"$ROOT\" PATH=\"$TMPDIR/bin:$ROOT/bin:$PATH\" \\\n  FAKE_CALLS=\"$CALLS\" OMARCHY_TEST_ROOT=\"$ROOT\" \\\n  omarchy-plugin-remove tester.menu --yes)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "omarchy-shell shell setPluginEnabled tester.menu false",
+                        "$CALLS",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removing an enabled clone does not disable it first",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "Restored omarchy.menu.",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$remove_output",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removing a clone does not report its restored source",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "removing an enabled clone goes through plugin disable and reports its source",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clone_plugin",
+                    args: [
+                        "omarchy.active-window",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -f $TMPDIR/home/.config/omarchy/plugins/tester.active-window/ActiveWindow.qml ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "flat bar plugin clone is incomplete",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "flat bar plugins clone from adjacent manifests",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "omarchy-plugin-enable tester.active-window",
+                        "$CALLS",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clone does not activate a bar widget whose source is absent",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone activates an absent bar widget",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clone_plugin",
+                    args: [
+                        "omarchy.indicators",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "indicators",
+                        value: "$TMPDIR/home/.config/omarchy/plugins/tester.indicators",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "file",
+            words: Some(
+                [
+                    "Indicators.qml",
+                    "indicators/Dnd.qml",
+                    "indicators/Reminder.qml",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -f $indicators/$file ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "indicators clone is missing $file",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "Qt.resolvedUrl(\"indicators/\"",
+                        "$indicators/Indicators.qml",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "indicators clone does not point at its copied components",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "flat bar plugins declare extra clone dependencies",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clone_plugin",
+                    args: [
+                        "omarchy.tray",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -f $TMPDIR/home/.config/omarchy/plugins/tester.tray/TrayModel.js ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "tray clone is missing its model",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "flat bar plugins keep local script dependencies",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clone_plugin",
+                    args: [
+                        "omarchy.bar",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "omarchy-plugin-enable tester.bar",
+                        "$CALLS",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clone does not select a cloned bar",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone switches full bars",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clone_plugin",
+                    args: [
+                        "omarchy.background",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "omarchy-plugin-enable tester.background",
+                        "$CALLS",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clone does not enable an ordinary cloned plugin",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone switches ordinary plugins",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "EDITOR",
+                            value: "fake-editor",
+                        },
+                    ],
+                    name: "clone_plugin",
+                    args: [
+                        "omarchy.weather",
+                        "--edit",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "fake-editor $TMPDIR/home/.config/omarchy/plugins/tester.weather",
+                        "$CALLS",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clone --edit does not open the clone in EDITOR",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone --edit opens the clone in EDITOR",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$TMPDIR/home/.config/omarchy/plugins/tester.weather",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$TMPDIR/home/.config/omarchy/plugins/acme.example",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/home/.config/omarchy/plugins/acme.example/manifest.json",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JSON",
+                    here_document: 2,
+                },
+            ],
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "clone_plugin",
+                                        args: [
+                                            "acme.example",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "clone accepts a user plugin",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone is limited to built-in plugins",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "clone_plugin",
+                                        args: [
+                                            "omarchy.weather",
+                                            "custom.weather",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "clone accepts a custom id",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " ! -e $TMPDIR/home/.config/omarchy/plugins/tester.weather ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "rejected custom id leaves a clone behind",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone derives the personal id from the username",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "clone_plugin",
+                                        args: [
+                                            "omarchy.weather",
+                                            "--replace",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "clone still accepts bar layout actions",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " ! -e $TMPDIR/home/.config/omarchy/plugins/tester.weather ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "rejected bar action leaves a clone behind",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone does not accept manual switch options",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "clone_plugin",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "clone opens an interactive picker without a source id",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone requires an explicit source id",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "FAKE_NO_DISCOVERY",
+                                                value: "1",
+                                            },
+                                        ],
+                                        name: "clone_plugin",
+                                        args: [
+                                            "omarchy.osd",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "clone succeeds before the shell discovers it",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " ! -e $TMPDIR/home/.config/omarchy/plugins/tester.osd ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "failed clone discovery leaves a partial clone behind",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clone removes a partial clone when switching fails",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nif [[ $* == *\"listShellConfig\"* ]]; then\n  if [[ -n ${FAKE_SHELL_CONFIG:-} ]]; then\n    printf '%s\\n' \"$FAKE_SHELL_CONFIG\"\n  else\n    printf '{}\\n'\n  fi\nelif [[ $* == *\"listPlugins\"* ]]; then\n  if [[ ${FAKE_NO_DISCOVERY:-0} == 1 ]]; then\n    printf '[]\\n'\n  else\n    find \"$HOME/.config/omarchy/plugins\" -mindepth 2 -maxdepth 2 -name manifest.json -print0 |\n      xargs -0 -r jq -s 'map({id: .id, enabled: true})'\n  fi\nelif [[ $* == *\"setPluginEnabled\"* ]]; then\n  printf 'omarchy-shell %s\\n' \"$*\" >>\"$FAKE_CALLS\"\n  printf 'ok\\n'\nfi\nexit 0\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s %s\\n' \"${0##*/}\" \"$*\" >>\"$FAKE_CALLS\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "JSON",
+            quoted: true,
+            strip_tabs: false,
+            body: "{\"id\":\"acme.example\",\"name\":\"Example\",\"kinds\":[\"bar-widget\"],\"entryPoints\":{\"barWidget\":\"Widget.qml\"}}\n",
+        },
+    ],
+}

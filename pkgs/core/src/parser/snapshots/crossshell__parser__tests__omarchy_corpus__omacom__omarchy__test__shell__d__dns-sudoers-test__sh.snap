@@ -1,0 +1,954 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/dns-sudoers-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dns",
+                        value: "$ROOT/bin/omarchy-dns",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "sudoers_file",
+                        value: "$ROOT/etc/sudoers.d/omarchy-dns",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rule",
+                        value: "%wheel ALL=(root) NOPASSWD: /usr/bin/omarchy-dns Cloudflare, /usr/bin/omarchy-dns Google, /usr/bin/omarchy-dns DHCP",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rules",
+                        value: "$(grep -vE '^[[:space:]]*(#|$)' \"$sudoers_file\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $rules == \"$rule\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "dns sudoers file carries exactly the stock-provider rule and nothing else",
+                        "got: $rules",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "command",
+                                        args: [
+                                            "-v",
+                                            "visudo",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "visudo",
+                                            args: [
+                                                "-cf",
+                                                "$sudoers_file",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "fail",
+                                        args: [
+                                            "dns sudoers rule parses",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "PACKAGED_PATH=/usr/bin/omarchy-dns",
+                            "$dns",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-dns elevates the path the sudoers rule names",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-E",
+                            "sudo -n -l -l",
+                            "$dns",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-dns reads the grant from the long sudo listing",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "dns sudoers rule is scoped to the stock providers",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Eq",
+                        "^\\s*export PATH=/usr/local/sbin:/usr/local/bin:/usr/bin",
+                        "$dns",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-dns pins PATH to trusted system directories when it holds root",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "gated",
+                        value: "$(grep -A1 -E '^if \\(\\( EUID == 0 \\)\\); then$' \"$dns\" || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $gated == *\"export PATH=/usr/local/sbin:/usr/local/bin:/usr/bin\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-dns gates the trusted-PATH pin on holding root",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "root_runner",
+                        value: "()",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " EUID != 0 ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "root_runner",
+                                            value: "(unshare --user --map-root-user)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Arithmetic(
+                                    " EUID == 0 ",
+                                ),
+                                operator: Or,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "unshare",
+                                            args: [
+                                                "--user",
+                                                "--map-root-user",
+                                                "true",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "poison_dir",
+                                            value: "$(mktemp -d)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "poison_ran",
+                                            value: "$poison_dir/ran",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            For {
+                                variable: "helper",
+                                words: Some(
+                                    [
+                                        "tr",
+                                        "awk",
+                                        "dirname",
+                                        "install",
+                                        "tee",
+                                    ],
+                                ),
+                                body: CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "cat",
+                                                    args: [],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">",
+                                                    target: "$poison_dir/$helper",
+                                                },
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: "<<",
+                                                    target: "SH",
+                                                    here_document: 0,
+                                                },
+                                            ],
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "chmod",
+                                                args: [
+                                                    "+x",
+                                                    "$poison_dir/$helper",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [
+                                                                    CshAstAssignment {
+                                                                        name: "PATH",
+                                                                        value: "$poison_dir:$PATH",
+                                                                    },
+                                                                ],
+                                                                name: "${root_runner[@]}",
+                                                                args: [
+                                                                    "bash",
+                                                                    "$dns",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: None,
+                                                                operator: "<",
+                                                                target: "/dev/null",
+                                                            },
+                                                            CshAstRedirect {
+                                                                descriptor: None,
+                                                                operator: ">",
+                                                                target: "/dev/null",
+                                                            },
+                                                            CshAstRedirect {
+                                                                descriptor: Some(
+                                                                    "2",
+                                                                ),
+                                                                operator: ">&",
+                                                                target: "1",
+                                                            },
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "rm",
+                                                        args: [
+                                                            "-rf",
+                                                            "$poison_dir",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail",
+                                                        args: [
+                                                            "root omarchy-dns failed its read-only trusted-PATH probe",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Test(
+                                                    " -e $poison_ran ",
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "rm",
+                                                        args: [
+                                                            "-rf",
+                                                            "$poison_dir",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail",
+                                                        args: [
+                                                            "root omarchy-dns resolved a bare helper from the front of PATH instead of a trusted system path",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "rm",
+                                    args: [
+                                        "-rf",
+                                        "$poison_dir",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "pass",
+                                    args: [
+                                        "root omarchy-dns resolves system helpers from a trusted PATH, not the invocation PATH",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "no unprivileged user namespace; skipping the root trusted-PATH probe",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " EUID == 0 ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "pass",
+                                    args: [
+                                        "running as root; skipping the elevation checks, which would rewrite this machine's DNS",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/pkexec",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/pkexec",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/sudo",
+                ],
+            },
+        ),
+        Function {
+            name: "elevation_for",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$test_tmp/elevation",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "ELEVATION_LOG",
+                                            value: "$test_tmp/elevation",
+                                        },
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$stub_bin:$PATH",
+                                        },
+                                    ],
+                                    name: "bash",
+                                    args: [
+                                        "$dns",
+                                        "$1",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "/dev/null",
+                                },
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cat",
+                                args: [
+                                    "$test_tmp/elevation",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        For {
+            variable: "provider",
+            words: Some(
+                [
+                    "Cloudflare",
+                    "Google",
+                    "DHCP",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "elevation",
+                                    value: "$(elevation_for \"$provider\")",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Test(
+                            " $elevation == \"sudo /usr/bin/omarchy-dns $provider\" ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-dns takes the passwordless sudo grant for $provider without a terminal",
+                                    "got: $elevation",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "omarchy-dns elevates the stock providers through sudo, not polkit",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dev_linked",
+                        value: "$(OMARCHY_PATH=\"$test_tmp/checkout\" elevation_for Cloudflare)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $dev_linked == \"sudo /usr/bin/omarchy-dns Cloudflare\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-dns elevates the system install wherever OMARCHY_PATH points",
+                        "got: $dev_linked",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "custom",
+                        value: "$(elevation_for Custom)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $custom == \"pkexec /usr/bin/omarchy-dns Custom\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-dns leaves Custom on the polkit path, since no sudoers rule covers it",
+                        "got: $custom",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "ungranted",
+                        value: "$(STUB_GRANTED=\"\" elevation_for Cloudflare)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $ungranted == \"pkexec /usr/bin/omarchy-dns Cloudflare\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-dns falls back to polkit where the sudoers grant is not installed",
+                        "got: $ungranted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "omarchy-dns falls back to polkit wherever the grant does not reach",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: false,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'x' >\"$poison_ran\"\nexec \"/usr/bin/$helper\" \"\\$@\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'pkexec %s\\n' \"$*\" >\"$ELEVATION_LOG\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nif [[ $1 == -n && $2 == -l ]]; then\n  for granted in ${STUB_GRANTED-Cloudflare Google DHCP}; do\n    [[ ${!#} == \"$granted\" ]] || continue\n    echo \"    Options: !authenticate\"\n    exit 0\n  done\n  echo \"    Matched: ${!#}\"\n  exit 0\nfi\nprintf 'sudo %s\\n' \"$*\" >\"$ELEVATION_LOG\"\n",
+        },
+    ],
+}

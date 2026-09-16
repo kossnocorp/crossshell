@@ -1,0 +1,230 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/nvidia.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "lspci",
+                                        args: [],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-qi",
+                                            "nvidia",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "omarchy-hw-nvidia-gsp",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "PACKAGES",
+                                                                value: "(nvidia-open-dkms nvidia-utils lib32-nvidia-utils libva-nvidia-driver)",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "omarchy-hw-nvidia-without-gsp",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "PACKAGES",
+                                                                value: "(nvidia-580xx-dkms nvidia-580xx-utils lib32-nvidia-580xx-utils)",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Test(
+                                                    " -z ${PACKAGES+x} ",
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "echo",
+                                                        args: [
+                                                            "No compatible driver for your NVIDIA GPU. See: https://wiki.archlinux.org/title/NVIDIA",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "exit",
+                                                        args: [
+                                                            "0",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-add",
+                                    args: [
+                                        "${PACKAGES[@]}",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mkdir",
+                                    args: [
+                                        "-p",
+                                        "/etc/modprobe.d",
+                                    ],
+                                },
+                            ),
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "cat",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/etc/modprobe.d/nvidia.conf",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<<",
+                                        target: "EOF",
+                                        here_document: 0,
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mkdir",
+                                    args: [
+                                        "-p",
+                                        "/etc/mkinitcpio.conf.d",
+                                    ],
+                                },
+                            ),
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "cat",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/etc/mkinitcpio.conf.d/nvidia.conf",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<<",
+                                        target: "EOF",
+                                        here_document: 1,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "options nvidia_drm modeset=1\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "MODULES+=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)\n",
+        },
+    ],
+}

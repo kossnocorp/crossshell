@@ -1,0 +1,1104 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/preinstalls-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mock_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_home",
+                        value: "$test_tmp/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "marker",
+                        value: "$test_home/.local/state/omarchy/preinstalls-removed",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "pkg_log",
+                        value: "$test_tmp/packages",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$mock_bin",
+                    "$test_home/.local/state/omarchy",
+                ],
+            },
+        ),
+        For {
+            variable: "command",
+            words: Some(
+                [
+                    "omarchy-webapp-remove-all",
+                    "omarchy-tui-remove-all",
+                    "omarchy-refresh-applications",
+                    "hyprctl",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "#!/bin/bash\\nexit 0\\n",
+                                ],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$mock_bin/$command",
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/gum",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/omarchy-pkg-add",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/omarchy-pkg-drop",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$mock_bin/*",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "PATH=$mock_bin:$ROOT/bin:$PATH",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "HOME=$test_home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "OMARCHY_TEST_PKG_LOG=$pkg_log",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "shipped",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "<(sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' \"$ROOT/install/omarchy-base.packages\")",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "$ROOT/bin/omarchy-install-preinstalls",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "restored",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "$pkg_log",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "$ROOT/bin/omarchy-remove-preinstalls",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "dropped",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "$pkg_log",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ${restored[*]} == \"${dropped[*]}\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Install and Remove Preinstalls cover the same packages",
+                        "restored: ${restored[*]}\ndropped:  ${dropped[*]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Install and Remove Preinstalls cover the same packages",
+                ],
+            },
+        ),
+        For {
+            variable: "package",
+            words: Some(
+                [
+                    "${restored[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "%s\\n",
+                                        "${shipped[@]}",
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-qxF",
+                                        "$package",
+                                    ],
+                                },
+                            ),
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "every preinstall is shipped in omarchy-base.packages",
+                                    "$package is not shipped",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "every preinstall is shipped in omarchy-base.packages",
+                ],
+            },
+        ),
+        For {
+            variable: "package",
+            words: Some(
+                [
+                    "omacut",
+                    "omacalc",
+                    "omawrite",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "%s\\n",
+                                        "${restored[@]}",
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-qxF",
+                                        "$package",
+                                    ],
+                                },
+                            ),
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "preinstalls cover the Omacom apps",
+                                    "$package is missing",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "preinstalls cover the Omacom apps",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$marker",
+                ],
+            },
+        ),
+        Binary {
+            left: Binary {
+                left: Redirected {
+                    expression: Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "OMARCHY_TEST_PKG_ADD_STATUS",
+                                    value: "1",
+                                },
+                            ],
+                            name: "$ROOT/bin/omarchy-install-preinstalls",
+                            args: [],
+                        },
+                    ),
+                    redirects: [
+                        CshAstRedirect {
+                            descriptor: None,
+                            operator: ">",
+                            target: "/dev/null",
+                        },
+                    ],
+                },
+                operator: And,
+                right: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "status",
+                                value: "0",
+                            },
+                        ],
+                        name: "",
+                        args: [],
+                    },
+                ),
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "status",
+                            value: "$?",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " status == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "restore reports a failed package transaction",
+                        "exit status was $status",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "restore keeps the opt-out marker when packages fail to install",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "restore keeps the opt-out marker when packages fail to install",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "$ROOT/bin/omarchy-install-preinstalls",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -e $marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "restore clears the opt-out marker once the packages are back",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "restore clears the opt-out marker once the packages are back",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$marker",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_CONFIRM",
+                            value: "1",
+                        },
+                    ],
+                    name: "$ROOT/bin/omarchy-remove-preinstalls",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -e $marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "declining Remove Preinstalls changes nothing",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "declining Remove Preinstalls changes nothing",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "$ROOT/bin/omarchy-remove-preinstalls",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -f $marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Remove Preinstalls records the opt-out",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Remove Preinstalls records the opt-out",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hermes",
+                        value: "$test_home/.local/bin/hermes",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$(dirname \"$hermes\")",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "#!/bin/bash",
+                        "# Written by omarchy-install-hermes-cli.",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hermes",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$hermes",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "$ROOT/bin/omarchy-remove-preinstalls",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -e $hermes ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Remove Preinstalls deletes the Omarchy Hermes wrapper",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Remove Preinstalls deletes the Omarchy Hermes wrapper",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "#!/bin/bash",
+                        "exec $test_home/.hermes/hermes-agent/venv/bin/hermes \"$@\"",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hermes",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$hermes",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "$ROOT/bin/omarchy-remove-preinstalls",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -x $hermes ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Remove Preinstalls keeps the desktop app's Hermes command",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Remove Preinstalls keeps the desktop app's Hermes command",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "official_body",
+                        value: "#!/bin/bash\nunset PYTHONPATH\nunset PYTHONHOME\nexec $test_home/.hermes/hermes-agent/venv/bin/hermes \"$@\"",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "$official_body",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hermes",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$hermes",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "$ROOT/bin/omarchy-remove-preinstalls",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -x $hermes && $(cat \"$hermes\") == \"$official_body\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Remove Preinstalls keeps an official Hermes install",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Remove Preinstalls keeps an official Hermes install",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "#!/bin/bash",
+                        "# Replaces the stub omarchy-install-hermes-cli used to write.",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hermes",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$hermes",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "$ROOT/bin/omarchy-remove-preinstalls",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -x $hermes ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Remove Preinstalls keeps a wrapper that merely mentions the installer",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Remove Preinstalls keeps a wrapper that merely mentions the installer",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$hermes",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$test_home/nowhere/hermes",
+                    "$hermes",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "$ROOT/bin/omarchy-remove-preinstalls",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -L $hermes ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Remove Preinstalls keeps a foreign hermes link",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Remove Preinstalls keeps a foreign hermes link",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n[[ $1 == confirm ]] && exit \"${OMARCHY_TEST_CONFIRM:-0}\"\nexit 0\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$@\" >\"$OMARCHY_TEST_PKG_LOG\"\nexit \"${OMARCHY_TEST_PKG_ADD_STATUS:-0}\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$@\" >\"$OMARCHY_TEST_PKG_LOG\"\n",
+        },
+    ],
+}

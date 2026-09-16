@@ -1,0 +1,105 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1781063758.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Update Hyprland Lua entrypoint to load Omarchy bootstrap",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hyprland_config",
+                        value: "$HOME/.config/hypr/hyprland.lua",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " -f $hyprland_config ",
+                                ),
+                                operator: And,
+                                right: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-Fq",
+                                                "/default/hypr/bootstrap.lua",
+                                                "$hyprland_config",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "tmp",
+                                            value: "$(mktemp)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "awk",
+                                        args: [
+                                            "\n    BEGIN {\n      replaced = 0\n    }\n\n    !replaced && $0 == \"-- Load user modules from ~/.config and Omarchy defaults from $OMARCHY_PATH.\" {\n      comment = $0\n      got_next = getline next_line\n      if (got_next > 0 && next_line == \"package.path = os.getenv(\\\"HOME\\\")\") {\n        print \"-- Omarchy's bootstrap keeps path setup out of this user config.\"\n        print \"dofile((os.getenv(\\\"OMARCHY_PATH\\\") or \\\"/usr/share/omarchy\\\") .. \\\"/default/hypr/bootstrap.lua\\\")\"\n        replaced = 1\n\n        while ((getline line) > 0) {\n          if (line ~ /^[[:space:]]*\\.\\. package\\.path$/) {\n            break\n          }\n        }\n\n        next\n      }\n\n      print comment\n      if (got_next > 0) {\n        print next_line\n      }\n      next\n    }\n\n    { print }\n  ",
+                                            "$hyprland_config",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$tmp",
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mv",
+                                    args: [
+                                        "$tmp",
+                                        "$hyprland_config",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

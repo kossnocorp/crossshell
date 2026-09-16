@@ -1,0 +1,899 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/update-package-conflict-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "script",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/systemd-run",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/pacman",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/sudo",
+                    "$stub_bin/systemd-run",
+                    "$stub_bin/pacman",
+                ],
+            },
+        ),
+        Function {
+            name: "write_conflict_report",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "echo",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$test_tmp/attempts",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$test_tmp/calls",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Group(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "printf",
+                                                args: [
+                                                    "\\e[1;31merror: \\e[0munresolvable package conflicts detected\\n",
+                                                ],
+                                            },
+                                        ),
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "printf",
+                                                args: [
+                                                    "\\e[1;31merror: \\e[0mfailed to prepare transaction (conflicting dependencies)\\n",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$test_tmp/report",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "update_env",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "%s\\n",
+                                    "OMARCHY_REPLACED_DIR=$test_tmp/replaced",
+                                    "PACMAN_ATTEMPTS=$test_tmp/attempts",
+                                    "PACMAN_CALLS=$test_tmp/calls",
+                                    "CONFLICT_REPORT=$test_tmp/report",
+                                    "OWNED_PATHS=",
+                                    "OMARCHY_UPDATE_UNATTENDED=${OMARCHY_UPDATE_UNATTENDED:-}",
+                                    "OMARCHY_UPDATE_INTERACTIVE=${OMARCHY_UPDATE_INTERACTIVE:-}",
+                                    "PATH=$stub_bin:$ROOT/bin:$PATH",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "run_headless",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mapfile",
+                                    args: [
+                                        "-t",
+                                        "environment",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(update_env)",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "env",
+                                    args: [
+                                        "${environment[@]}",
+                                        "bash",
+                                        "$ROOT/bin/omarchy-update-system-pkgs",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "/dev/null",
+                                },
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$test_tmp/out",
+                                },
+                                CshAstRedirect {
+                                    descriptor: Some(
+                                        "2",
+                                    ),
+                                    operator: ">",
+                                    target: "$test_tmp/err",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "run_on_terminal",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mapfile",
+                                    args: [
+                                        "-t",
+                                        "environment",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(update_env)",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "env",
+                                    args: [
+                                        "${environment[@]}",
+                                        "script",
+                                        "-qec",
+                                        "bash '$ROOT/bin/omarchy-update-system-pkgs' ${1:-}",
+                                        "$test_tmp/out",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                                CshAstRedirect {
+                                    descriptor: Some(
+                                        "2",
+                                    ),
+                                    operator: ">&",
+                                    target: "1",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "call_line",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "awk",
+                                args: [
+                                    "-v",
+                                    "call=$1",
+                                    "-v",
+                                    "key=$2",
+                                    "$1 == \"args\" { n++ } n == call && $1 == key { sub(/^[^ ]+ /, \"\"); print }",
+                                    "$test_tmp/calls",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_conflict_report",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_on_terminal",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a package conflict is not resolved on a terminal",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                "$(cat \"$test_tmp/attempts\") == 2",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a package conflict does not get an interactive retry",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(call_line 2 args) == *\"-Syu\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the interactive retry does not upgrade",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(call_line 2 args) != *\"--noconfirm\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the interactive retry still answers pacman's questions itself",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(call_line 2 args) != *\"--ask\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the interactive retry answers pacman's questions from a bitmask instead",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a package conflict is put back to the person running the update",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(call_line 2 tty0) == \"yes\" && $(call_line 2 tty2) == \"yes\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the interactive retry cannot be answered: pacman has no terminal left",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the interactive retry keeps the streams pacman asks and listens on",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_conflict_report",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_on_terminal",
+                    args: [
+                        ">/dev/null",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a redirected progress stream is mistaken for an unattended update",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                "$(cat \"$test_tmp/attempts\") == 2",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a conflict goes unasked when only stdout is redirected",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "an answerable session is not turned away over its progress output",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_conflict_report",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "run_on_terminal",
+                                    args: [
+                                        "2>/dev/null",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "a conflict is asked about on a stream nobody is reading",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Arithmetic(
+                "$(cat \"$test_tmp/attempts\") == 1",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "pacman is left prompting where the question cannot be seen",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a session that cannot show the question is not asked one",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(call_line 1 tty2) == \"no\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the first upgrade no longer captures the error report",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the first upgrade still captures its errors for the handler",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_conflict_report",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "run_headless",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "a package conflict passes for a completed update without a terminal",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Arithmetic(
+                "$(cat \"$test_tmp/attempts\") == 1",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a package conflict is retried with no terminal to answer on",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "omarchy update",
+                        "$test_tmp/err",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a package conflict with no terminal does not say how to answer it",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a package conflict with no terminal reports instead of hanging",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_conflict_report",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "OMARCHY_UPDATE_UNATTENDED",
+                                            value: "1",
+                                        },
+                                    ],
+                                    name: "run_on_terminal",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "an unattended update stops on a prompt nobody answers",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Arithmetic(
+                "$(cat \"$test_tmp/attempts\") == 1",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an unattended update prompts anyway",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "-y is kept: an unattended update never waits on an answer",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_conflict_report",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "OMARCHY_UPDATE_INTERACTIVE",
+                                            value: "1",
+                                        },
+                                    ],
+                                    name: "run_headless",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "a caller reaches the interactive upgrade on its own",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " $(call_line 1 args) == *\"--noconfirm\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a caller can ask for an interactive upgrade directly",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "only the conflict handler can hand the upgrade to a person",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nexec \"$@\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nwhile [[ $1 == -* ]]; do shift; done\nexec \"$@\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nattempt=$(($(cat \"$PACMAN_ATTEMPTS\") + 1))\necho \"$attempt\" >\"$PACMAN_ATTEMPTS\"\n{\n  printf 'args %s\\n' \"$*\"\n  for fd in 0 1 2; do\n    if [[ -t $fd ]]; then printf 'tty%s yes\\n' \"$fd\"; else printf 'tty%s no\\n' \"$fd\"; fi\n  done\n} >>\"$PACMAN_CALLS\"\n\nif ((attempt == 1)); then\n  cat \"$CONFLICT_REPORT\" >&2\n  exit 1\nfi\necho \"upgrade complete\"\n",
+        },
+    ],
+}

@@ -1,0 +1,121 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/vulkan.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "declare",
+                args: [
+                    "-A",
+                    "VULKAN_DRIVERS=(\n  [Intel]=vulkan-intel\n  [AMD]=vulkan-radeon\n  [Apple]=vulkan-asahi\n)",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PACKAGES",
+                        value: "()",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "vendor",
+            words: Some(
+                [
+                    "${!VULKAN_DRIVERS[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "lspci",
+                                                    args: [],
+                                                },
+                                            ),
+                                            operator: Pipe,
+                                            right: Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "grep",
+                                                        args: [
+                                                            "-iE",
+                                                            "(VGA|Display).*$vendor",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "/dev/null",
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "PACKAGES+=(\"${VULKAN_DRIVERS[$vendor]}\")",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " ${#PACKAGES[@]} > 0 ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-add",
+                                    args: [
+                                        "${PACKAGES[@]}",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

@@ -1,0 +1,254 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1786391100.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Run the WPA handshake in software on Macs with Broadcom Wi-Fi",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dmi_vendor",
+                        value: "${OMARCHY_BRCMFMAC_DMI_VENDOR:-/sys/class/dmi/id/sys_vendor}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "conf",
+                        value: "${OMARCHY_BRCMFMAC_CONF:-/etc/modprobe.d/brcmfmac.conf}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "sys_vendor",
+                        value: "$(cat \"$dmi_vendor\" 2>/dev/null || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Negated(
+                                    Binary {
+                                        left: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "lspci",
+                                                args: [
+                                                    "-nn",
+                                                ],
+                                            },
+                                        ),
+                                        operator: Pipe,
+                                        right: Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "grep",
+                                                    args: [
+                                                        "106b:180[12]",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">",
+                                                    target: "/dev/null",
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ),
+                                operator: And,
+                                right: Negated(
+                                    Group(
+                                        CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Test(
+                                                        " $sys_vendor == Apple* ",
+                                                    ),
+                                                    operator: And,
+                                                    right: Binary {
+                                                        left: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "lspci",
+                                                                args: [
+                                                                    "-nn",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        operator: Pipe,
+                                                        right: Redirected {
+                                                            expression: Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "grep",
+                                                                    args: [
+                                                                        "-E",
+                                                                        "14e4:(43ba|43bb|43bc|43a3|43dc|4464|4488|4425|4433)",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                            redirects: [
+                                                                CshAstRedirect {
+                                                                    descriptor: None,
+                                                                    operator: ">",
+                                                                    target: "/dev/null",
+                                                                },
+                                                            ],
+                                                        },
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " -f $conf ",
+                                ),
+                                operator: And,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-Eq",
+                                            "^[[:space:]]*options[[:space:]]+brcmfmac[[:space:]].*feature_disable=0x82000",
+                                            "$conf",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "mkdir",
+                    "-p",
+                    "$(dirname \"$conf\")",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sudo",
+                    args: [
+                        "tee",
+                        "-a",
+                        "$conf",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "omarchy-state",
+                args: [
+                    "set",
+                    "reboot-required",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "\n# Broadcom's firmware supplicant and authenticator fail the WPA four-way\n# handshake on Apple hardware, which surfaces as a rejected password. Disable\n# both so wpa_supplicant performs the handshake instead.\noptions brcmfmac feature_disable=0x82000\n",
+        },
+    ],
+}

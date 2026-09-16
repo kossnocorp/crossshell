@@ -1,0 +1,138 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/clock-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "shell_json",
+                        value: "$(cd \"$ROOT\" && jq -r '[.bar.layout.center[].id] | join(\",\")' config/omarchy/shell.json)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $shell_json == *\"omarchy.clock\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "default bar layout includes the clock widget",
+                        "center: $shell_json",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $shell_json != *\"omarchy.calendar\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clock hosts the calendar instead of a second bar pill",
+                        "center: $shell_json",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "default bar layout includes the clock widget",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "o.bind(\"SUPER + CTRL + ALT + D\", \"Calendar\", \"omarchy-shell shell toggle omarchy.clock\")",
+                        "$ROOT/default/hypr/bindings/utilities.lua",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SUPER+CTRL+ALT+D toggles the calendar panel",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SUPER+CTRL+ALT+D toggles the calendar panel",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const fs = require('fs')\nconst calendar = requireFromRoot('shell/plugins/panels/clock/Model.js')\nconst panelSource = fs.readFileSync(root + '/shell/plugins/panels/clock/Panel.qml', 'utf8')\n// Comments stripped: a wiring assertion that a commented-out line can satisfy\n// passes while the widget is broken.\nconst widgetSource = fs.readFileSync(root + '/shell/plugins/panels/clock/BarWidget.qml', 'utf8')\n  .replace(/^\\s*\\/\\/.*$/gm, '')\n\n// ---- week start resolution\nassertEqual(calendar.normalizedWeekStart('monday', 0), 1, 'calendar reads a named week start')\nassertEqual(calendar.normalizedWeekStart('SUN', 1), 0, 'calendar reads an abbreviated week start')\nassertEqual(calendar.normalizedWeekStart(6, 1), 6, 'calendar reads a numeric week start')\nassertEqual(calendar.normalizedWeekStart(null, 0), 0, 'calendar falls back to the locale first day')\nassertEqual(calendar.normalizedWeekStart('garbage', 0), 0, 'calendar falls back when the setting is unparseable')\nassertEqual(calendar.normalizedWeekStart(undefined, undefined), 1, 'calendar defaults to Monday without a locale')\n\nassertEqual(calendar.weekStartSettingName(0), 'sunday', 'calendar persists Sunday by name')\nassertEqual(calendar.weekStartSettingName(1), 'monday', 'calendar persists Monday by name')\n\nassertEqual(calendar.toggledWeekStart(1), 0, 'calendar toggles Monday to Sunday')\nassertEqual(calendar.toggledWeekStart(0), 1, 'calendar toggles Sunday to Monday')\nassertEqual(calendar.toggledWeekStart(6), 1, 'calendar toggles an exotic week start to Monday')\n\nassertDeepEqual(calendar.weekdayOrder(1), [1, 2, 3, 4, 5, 6, 0], 'calendar orders weekdays from Monday')\nassertDeepEqual(calendar.weekdayOrder(0), [0, 1, 2, 3, 4, 5, 6], 'calendar orders weekdays from Sunday')\n\n// ---- ISO week numbers, matching the clock widget's 'ww' token\nassertEqual(calendar.isoWeek(2026, 0, 1), 1, 'calendar numbers a Thursday January 1 as week 1')\nassertEqual(calendar.isoWeek(2021, 0, 1), 53, 'calendar numbers early January into the previous ISO year')\nassertEqual(calendar.isoWeek(2026, 11, 31), 53, 'calendar numbers the last week of a long year')\nassertEqual(calendar.isoWeek(2026, 6, 26), 30, 'calendar numbers a midsummer Sunday')\n\n// ---- day-of-year arithmetic behind the hero stats\nassertEqual(calendar.dayOfYear(2026, 6, 26), 207, 'calendar counts the day of the year')\nassertEqual(calendar.yearProgressPercent(2026, 0, 1), 0, 'calendar starts the year at zero percent done')\nassertEqual(calendar.yearProgressPercent(2026, 6, 26), 56, 'calendar reports the share of the year behind you')\nassertEqual(calendar.yearProgressPercent(2026, 11, 31), 100, 'calendar finishes the year at a hundred percent')\nassertEqual(calendar.yearProgressPercent(2024, 11, 31), 100, 'calendar finishes a leap year too')\n\n// ---- memento mori\n// A birth year rather than an age, so the bar keeps counting on its own.\nassertEqual(calendar.parseBirthYear('1979', 2026), 1979, 'calendar reads a birth year')\nassertEqual(calendar.parseBirthYear(1979, 2026), 1979, 'calendar reads a numeric birth year')\nassertEqual(calendar.parseBirthYear(' 1979 ', 2026), 1979, 'calendar trims a birth year')\nassertEqual(calendar.parseBirthYear('2026', 2026), 2026, 'calendar accepts the current year')\nassertEqual(calendar.parseBirthYear('2027', 2026), 0, 'calendar rejects a birth year in the future')\nassertEqual(calendar.parseBirthYear('1905', 2026), 0, 'calendar rejects an implausibly distant birth year')\nassertEqual(calendar.parseBirthYear('79', 2026), 0, 'calendar rejects a two-digit year')\nassertEqual(calendar.parseBirthYear('', 2026), 0, 'calendar treats a blank birth year as unset')\nassertEqual(calendar.parseBirthYear('abc', 2026), 0, 'calendar treats a non-numeric birth year as unset')\n\nassertEqual(calendar.ageFromBirthYear('1979', 2026), 47, 'calendar derives an age from a birth year')\nassertEqual(calendar.ageFromBirthYear('1979', 2027), 48, 'calendar keeps counting as the years pass')\nassertEqual(calendar.ageFromBirthYear('2026', 2026), 0, 'calendar makes someone born this year zero')\nassertEqual(calendar.ageFromBirthYear('', 2026), 0, 'calendar derives no age without a birth year')\n\nassertEqual(calendar.parseAge('47'), 47, 'calendar reads an age')\nassertEqual(calendar.parseAge(47), 47, 'calendar reads a numeric age')\nassertEqual(calendar.parseAge(' 47 '), 47, 'calendar trims an age')\nassertEqual(calendar.parseAge(''), 0, 'calendar treats a blank age as unset')\nassertEqual(calendar.parseAge('0'), 0, 'calendar treats zero as unset')\nassertEqual(calendar.parseAge('-3'), 0, 'calendar treats a negative age as unset')\nassertEqual(calendar.parseAge('121'), 0, 'calendar treats an implausible age as unset')\nassertEqual(calendar.parseAge('abc'), 0, 'calendar treats a non-numeric age as unset')\nassertEqual(calendar.parseAge('4.5'), 0, 'calendar treats a fractional age as unset')\nassertEqual(calendar.parseLifeExpectancy('65'), 65, 'calendar reads a life expectancy')\nassertEqual(calendar.parseLifeExpectancy(''), 90, 'calendar defaults the life expectancy to ninety')\nassertEqual(calendar.parseLifeExpectancy(0), 90, 'calendar defaults an unset life expectancy')\nassertEqual(calendar.parseLifeExpectancy('abc'), 90, 'calendar defaults a non-numeric life expectancy')\nassertEqual(calendar.parseLifeExpectancy('200'), 90, 'calendar defaults an implausible life expectancy')\n\nassertEqual(calendar.lifeProgressPercent(45, 90), 50, 'calendar measures a life against the expectancy given')\nassertEqual(calendar.lifeProgressPercent(45, 65), 69, 'calendar honours a shorter expectancy')\nassertEqual(calendar.lifeProgressPercent(45, ''), 50, 'calendar falls back to ninety when no expectancy is set')\nassertEqual(calendar.lifeProgressPercent(90, 90), 100, 'calendar fills the life bar at the expectancy')\nassertEqual(calendar.lifeProgressPercent(80, 65), 100, 'calendar never overfills the life bar')\nassertEqual(calendar.lifeProgressPercent(0, 90), 0, 'calendar leaves the life bar empty when no age is set')\nassertEqual(calendar.daysInYear(2024), 366, 'calendar knows leap years are longer')\nassertEqual(calendar.daysInYear(2026), 365, 'calendar knows common years')\n\n// ---- month grid\nconst july = calendar.monthGrid(2026, 6, 1, '2026-07-26')\nassertEqual(july.length, 6, 'calendar always draws six week rows')\nassert(july.every(week => week.days.length === 7), 'calendar always draws seven day columns')\nassertDeepEqual(july.map(week => week.week), [27, 28, 29, 30, 31, 32], 'calendar numbers every row by ISO week')\nassertDeepEqual(july[0].days.map(day => day.day), [29, 30, 1, 2, 3, 4, 5], 'calendar pads the first row with the previous month')\nassertDeepEqual(july[0].days.map(day => day.inMonth), [false, false, true, true, true, true, true], 'calendar marks padding days as outside the month')\nassertDeepEqual(july[0].days.map(day => day.weekend), [false, false, false, false, false, true, true], 'calendar marks Saturday and Sunday as the weekend')\n\nassertDeepEqual(\n  july.flatMap(week => week.days).filter(day => day.today).map(day => day.key),\n  ['2026-07-26'],\n  'calendar marks exactly one cell as today'\n)\nassert(july.flatMap(week => week.days).every(day => day.cursor === undefined), 'calendar grid carries no selection state')\n\n// Both conventions land on the same ISO week numbers, because every row is\n// numbered by the ISO week owning its Thursday.\nconst julySunday = calendar.monthGrid(2026, 6, 0, '')\nassertDeepEqual(julySunday[0].days.map(day => day.day), [28, 29, 30, 1, 2, 3, 4], 'calendar shifts the grid for a Sunday week start')\nassertDeepEqual(julySunday.map(week => week.week), [27, 28, 29, 30, 31, 32], 'calendar keeps ISO week numbers across week starts')\n\nconst januarySunday = calendar.monthGrid(2021, 0, 0, '')\nassertEqual(januarySunday[0].week, 53, 'calendar carries the previous ISO year into a straddling first row')\n\n// ---- stepping\nassertDeepEqual(calendar.stepMonth(2026, 0, 1), { year: 2026, month: 1 }, 'calendar steps to the next month')\nassertDeepEqual(calendar.stepMonth(2026, 0, -1), { year: 2025, month: 11 }, 'calendar steps back across the new year')\nassertDeepEqual(calendar.stepMonth(2026, 11, 1), { year: 2027, month: 0 }, 'calendar steps forward across the new year')\nassertDeepEqual(calendar.stepMonth(2026, 6, 12), { year: 2027, month: 6 }, 'calendar steps a whole year at a time')\n\nassertEqual(calendar.dateKey(2026, 0, 5), '2026-01-05', 'calendar zero-pads date keys')\nassertEqual(calendar.keyForDate(new Date(2026, 6, 26)), '2026-07-26', 'calendar keys a Date the same way')\n\n// ---- bar label format ring\n// The order must not depend on which entry is current: cycling writes the\n// result back to shell.json, so a self-reordering ring would ping-pong.\nconst ring = calendar.clockFormatRing('dddd HH:mm', \"d MMMM 'W'ww yyyy\", calendar.clockFormats(false))\nassertDeepEqual(ring, calendar.clockFormats(false), 'clock rings the stock presets in their own order')\nassertEqual(new Set(ring).size, ring.length, 'clock never offers the same format twice')\n\nassertDeepEqual(\n  calendar.clockFormatRing(\"d MMMM 'W'ww yyyy\", 'dddd HH:mm', calendar.clockFormats(false)),\n  ring,\n  'clock keeps the ring order steady as the current format moves through it'\n)\nassertDeepEqual(\n  calendar.clockFormatRing('HH:mm:ss', '', ['HH:mm', 'dddd HH:mm']),\n  ['HH:mm', 'dddd HH:mm', 'HH:mm:ss'],\n  'clock appends a hand-written format to the end of the ring'\n)\nassertDeepEqual(calendar.clockFormatRing('', '', []), ['HH:mm'], 'clock keeps a usable format when nothing is configured')\n\nassertEqual(calendar.nextClockFormat(ring, ring[0]), ring[1], 'clock steps to the next format')\nassertEqual(calendar.nextClockFormat(ring, ring[ring.length - 1]), ring[0], 'clock wraps the format ring')\nassertEqual(calendar.nextClockFormat(ring, 'HH:mm:ss'), ring[0], 'clock starts at the top from a format outside the ring')\n// Both rings, contents and order: a right click walks this list and writes\n// the result back to shell.json, so an inserted preset should have to be\n// acknowledged here.\nassertDeepEqual(\n  calendar.clockFormats(false),\n  [\n    'dddd HH:mm', 'dddd h:mm AP',\n    'dddd HH:mm:ss', 'dddd h:mm:ss AP',\n    'HH:mm', 'h:mm AP',\n    'ddd d MMM HH:mm', 'ddd d MMM h:mm AP',\n    \"d MMMM 'W'ww yyyy\",\n    // No twin: ISO 8601 writes time on a 24-hour clock, so an AM/PM variant\n    // would contradict the one thing that format is for.\n    'yyyy-MM-dd HH:mm'\n  ],\n  'clock offers the horizontal presets in this order'\n)\nassertDeepEqual(\n  calendar.clockFormats(true),\n  ['HH\\n\\u2014\\nmm', 'h\\n\\u2014\\nmm\\nAP', \"dd\\nMMM\\n'W'ww\\n''yy\", 'HH\\nmm'],\n  'clock offers the stacked presets in this order'\n)\nassertEqual(\n  calendar.nextClockFormat(ring, 'dddd HH:mm'),\n  'dddd h:mm AP',\n  'clock reaches an AM/PM twin in one right click'\n)\nassertEqual(calendar.isoWeekLiteral(2026, 0, 5), '02', 'clock zero-pads the ISO week token')\n\n// ---- seconds detection, which decides how often the widget's clock ticks\nassert(calendar.clockNeedsSeconds('dddd HH:mm:ss'), 'clock sees seconds in the live preset')\nassert(calendar.clockNeedsSeconds('h:mm:ss AP'), 'clock sees seconds in an AM/PM format')\nassert(!calendar.clockNeedsSeconds('dddd HH:mm'), 'clock sees no seconds in a minute format')\nassert(!calendar.clockNeedsSeconds(\"d MMMM 'W'ww yyyy\"), 'clock sees no seconds in the long date format')\nassert(!calendar.clockNeedsSeconds(\"dd\\nMMM\\n'W'ww\\n''yy\"), 'clock sees no seconds in the stacked date format')\nassert(!calendar.clockNeedsSeconds(\"HH:mm 'since'\"), 'clock reads an s inside a quoted literal as text')\n// Qt reads an opening quote with no closing one as a literal running to the end\n// of the format, so \"HH:mm 'sec\" prints \"09:39 sec\" and never a second count.\nassert(!calendar.clockNeedsSeconds(\"HH:mm 'sec\"), 'clock reads an unterminated literal as text to the end')\nassert(!calendar.clockNeedsSeconds(\"HH:mm's\"), 'clock reads a trailing unterminated literal as text')\n// The doubled quote is a literal apostrophe rather than an empty literal, so\n// the s after it is still the seconds token: Qt prints \"'23\".\nassert(calendar.clockNeedsSeconds(\"''s\"), 'clock still sees seconds after an escaped apostrophe')\nassert(!calendar.clockNeedsSeconds(''), 'clock sees no seconds in an empty format')\nassert(!calendar.clockNeedsSeconds(null), 'clock sees no seconds in a missing format')\n\n// ---- widget wiring\nassert(/moduleName: \"omarchy\\.clock\"/.test(panelSource), 'calendar panel declares its module name')\nassert(/ipcTarget: \"omarchy\\.clock\"/.test(panelSource), 'calendar panel registers its IPC target')\nassert(/manageIpc: false/.test(panelSource), 'calendar panel leaves the IPC target to the bar widget')\nassert(/anchorItem: root\\.anchorItem/.test(panelSource), 'calendar panel anchors to the host widget button')\nassert(/function toggleWeekStart\\(\\)/.test(panelSource), 'calendar panel exposes a week start toggle')\nassert(/function toggleWeekStart\\(\\): void \\{ root\\.toggleWeekStart\\(\\) \\}/.test(widgetSource), 'clock exposes the week start toggle over IPC')\nassert(/precision: root\\.showsSeconds \\? SystemClock\\.Seconds : SystemClock\\.Minutes/.test(widgetSource), 'clock ticks per second only for a format that prints seconds')\n// Both halves of the tick, because either one alone can be true while the\n// label sits frozen: the precision must follow the format, and every tick\n// must reach the label.\nassert(/showsSeconds: Model\\.clockNeedsSeconds\\(activeFormat\\)/.test(widgetSource), 'clock decides its tick rate from the format it is showing')\nassert(/onDateChanged: root\\.displayDate = date/.test(widgetSource), 'clock repaints the label on every tick')\nassert(/setting\\(\"weekStartDay\", null\\)/.test(panelSource) && /persistSettings\\(\\{ weekStartDay:/.test(panelSource), 'calendar reads and writes the week start as weekStartDay')\nassert(/updateEntryInline/.test(panelSource), 'calendar panel persists the week start to shell.json')\nassert(/function moveMonth\\(delta\\)/.test(panelSource), 'calendar panel steps between months')\nassert(!/property bool onToday/.test(panelSource) && !/root\\.onToday/.test(panelSource), 'calendar panel avoids the on-prefixed property name QML reads as a signal handler')\nassert(/readonly property bool viewingCurrentMonth:/.test(panelSource), 'calendar panel tracks whether the current month is on screen')\nassert(!/MouseArea/.test(panelSource.slice(panelSource.indexOf('model: modelData.days'), panelSource.indexOf('// Hairline'))), 'calendar day cells are not selectable')\nassert(/yearDone: Model\\.yearProgress\\(today\\./.test(panelSource), 'calendar year bar stays pinned to today while months are stepped')\nassert(/Qt\\.callLater\\(function\\(\\) \\{\\s*\\n\\s*if \\(root\\.opened\\) setCenterHoverRevealSuppressed\\(true\\)/.test(panelSource), 'calendar claims the shared hover-reveal flag after the popout handoff, so the panel taking over wins')\nassert(/function close\\(\\) \\{\\s*\\n\\s*setCenterHoverRevealSuppressed\\(false\\)/.test(panelSource), 'calendar always releases the shared hover-reveal flag on close')\nassert(/width: Math\\.max\\(calendarScroll\\.width, gridColumn\\.width\\)/.test(panelSource), 'calendar scrolls rather than clipping the grid on a narrow popup')\nassert(/enabled: !root\\.viewingCurrentMonth/.test(panelSource) && /onClicked: root\\.goToToday\\(\\)/.test(panelSource), 'calendar hero returns to today once the view has stepped away')\nassert(!/clampMonth/.test(panelSource), 'calendar steps freely into future months')\nassert(/Qt\\.formatDate\\(root\\.today, \"MMMM d\"\\)/.test(panelSource), 'calendar hero spells out today')\nassert(/id: yearLabel/.test(panelSource) && /root\\.yearDone/.test(panelSource), 'calendar panel shows the year progress bar')\n\n// The memento mori bar is opt-in: double-tapping the year bar asks for an age,\n// and nothing shows until one has been given.\nassert(/onDoubleTapped: root\\.startEditingLife\\(\\)/.test(panelSource), 'calendar asks for an age when the year bar is double-tapped')\nassert(/persistSettings\\(\\{ birthYear: born, lifeExpectancy: span \\}\\)/.test(panelSource), 'calendar saves birth year and expectancy together, so neither lands on a stale copy')\nassert(/readonly property int birthYear: Model\\.parseBirthYear\\(setting\\(\"birthYear\", 0\\)/.test(panelSource), 'calendar reads the saved birth year back')\nassert(/readonly property int age: Model\\.ageFromBirthYear\\(birthYear/.test(panelSource), 'calendar derives the age from the stored birth year')\nassert(/readonly property int lifeExpectancy: Model\\.parseLifeExpectancy\\(setting\\(\"lifeExpectancy\", 0\\)\\)/.test(panelSource), 'calendar reads the saved expectancy back')\nassert(/id: expectancyField/.test(panelSource) && /id: bornField/.test(panelSource), 'calendar offers both inputs')\nassert(/visible: root\\.editingLife\\s*\\n\\s*anchors\\.horizontalCenter: parent\\.horizontalCenter/.test(panelSource), 'calendar centers the inputs over the bar they replace')\nassert(/visible: root\\.birthYear > 0/.test(panelSource), 'calendar hides the life bar until a birth year is known')\nassert(/text: \"LIFE\"/.test(panelSource) && /root\\.lifeDone/.test(panelSource), 'calendar shows the life bar')\nassert(/text: \"Memento Mori\"/.test(panelSource), 'calendar names the life bar on hover')\nassert(/onDoubleTapped: root\\.clearLife\\(\\)/.test(panelSource), 'calendar puts the life bar away when it is double-tapped')\nassert(/persistSettings\\(\\{ birthYear: 0 \\}\\)/.test(panelSource), 'calendar clears the birth year to hide the life bar')\nassertEqual(calendar.parseBirthYear(0, 2026), 0, 'a cleared birth year reads back as unset')\nassert(/blocked: root\\.editingLife/.test(panelSource), 'calendar lets the inputs have the keyboard while they are up')\nassert(/if \\(root\\.editingLife\\) root\\.cancelEditingLife\\(\\)/.test(panelSource), 'calendar drops a half-finished edit when the panel closes')\n\nassert(/source: Qt\\.resolvedUrl\\(\"Panel\\.qml\"\\)/.test(widgetSource), 'clock widget hosts the calendar panel')\nassert(/readonly property bool opened:/.test(widgetSource), 'clock widget exposes the panel open state to shell routing')\nassert(/Qt\\.RightButton\\) root\\.cycleFormat\\(\\)/.test(widgetSource), 'clock right click cycles the label format')\nassert(/readonly property string activeFormat: configuredFormat/.test(widgetSource), 'clock shows the format it has stored')\nassert(/entry\\[vertical \\? \"verticalFormat\" : \"format\"\\] = next/.test(widgetSource) && /updateEntryInline/.test(widgetSource), 'clock writes a cycled format back to shell.json')\nassert(!/formatIndex/.test(widgetSource), 'clock keeps no session-only format position')\nassert(/else root\\.togglePanel\\(\\)/.test(widgetSource), 'clock left click reveals the calendar')\nassert(/omarchy-menu-timezone/.test(widgetSource), 'clock keeps the timezone picker on middle click')\n\n// The bar identifies a panel by the widget in its slot, so the nested panel\n// has to present the host widget rather than itself.\nassert(/owner: root\\.barIdentity/.test(panelSource), 'calendar panel gives the bar its host widget as popout identity')\nassert(/switchPanelFrom\\(root\\.barIdentity, direction\\)/.test(panelSource), 'calendar panel switches panels as its host widget')\nassert(/hostWidget\" in target\\) target\\.hostWidget = root/.test(widgetSource), 'clock widget injects itself as the panel host')\nassert(/readonly property bool popoutSwitchClosing:/.test(widgetSource) && /function closeForPopoutSwitch\\(\\)/.test(widgetSource), 'clock widget forwards the popout-switch handshake')\nassert(/openPanelIndicatorWidth: button\\.labelWidth/.test(widgetSource), 'clock sizes the open-panel dot to its label')\nassert(/openPanelIndicatorHeight: Math\\.max/.test(widgetSource), 'clock sizes the vertical open-panel dot to one stacked line')\nconst barSource = fs.readFileSync(root + '/shell/plugins/bar/Bar.qml', 'utf8')\nassert(/openPanelIndicatorWidth/.test(barSource) && /openPanelIndicatorHeight/.test(barSource), 'bar honours a widget-supplied open-panel dot size on both axes')\nassert(/height: root\\.vertical \\? slot\\.panelIndicatorExtent : Style\\.space\\(2\\)/.test(barSource), 'bar sizes the vertical dot from the same hint as the horizontal one')\nassert(/readonly property real labelWidth:/.test(fs.readFileSync(root + '/shell/Ui/WidgetButton.qml', 'utf8')), 'widget buttons expose their painted label width')\n\n// A horizontal wheel reports angleDelta.y === 0; without the guard every one\n// of them would read as a forward step.\nassert(/if \\(event\\.angleDelta\\.y === 0\\) return/.test(panelSource), 'calendar ignores wheel events with no vertical delta')\n",
+        },
+    ],
+}

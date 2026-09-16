@@ -1,0 +1,74 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/chromium-whatsapp-slim-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"${BASH_SOURCE[0]}\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "node",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "whatsapp_slim_id",
+                        value: "$(node - <<'JS' \"$ROOT/default/chromium/extensions/whatsapp-slim/manifest.json\"\nconst crypto = require('crypto')\nconst fs = require('fs')\n\nconst manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))\nconst hash = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest()\nconst alphabet = 'abcdefghijklmnop'\nlet id = ''\n\nfor (const byte of hash.subarray(0, 16)) {\n  id += alphabet[byte >> 4]\n  id += alphabet[byte & 0x0f]\n}\n\nprocess.stdout.write(id)\nJS\n)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $whatsapp_slim_id == \"amhpgjbcfakkmkeojmoaoiochhifohdi\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "whatsapp-slim extension manifest has the stable id",
+                        "$whatsapp_slim_id",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "whatsapp-slim extension manifest has the stable id",
+                ],
+            },
+        ),
+    ],
+}

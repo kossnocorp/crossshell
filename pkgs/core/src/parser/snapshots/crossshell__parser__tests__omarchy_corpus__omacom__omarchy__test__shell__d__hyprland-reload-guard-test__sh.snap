@@ -1,0 +1,621 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hyprland-reload-guard-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "run_root",
+                        value: "$test_tmp/run-user",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "state_dir",
+                        value: "$test_tmp/state",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hyprctl_log",
+                        value: "$test_tmp/hyprctl.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fake_hyprctl",
+                        value: "$test_tmp/hyprctl",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "signature",
+                        value: "test-signature",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "runtime_dir",
+                        value: "$run_root/1000",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dead_signature",
+                        value: "dead-signature",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$runtime_dir/hypr/$signature",
+                    "$runtime_dir/hypr/$dead_signature",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fake_hyprctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "BASH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0755",
+                    "$fake_hyprctl",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "FAKE_HYPRCTL_LOG",
+                            value: "$hyprctl_log",
+                        },
+                        CshAstAssignment {
+                            name: "HYPRCTL",
+                            value: "$fake_hyprctl",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_HYPRLAND_RELOAD_GUARD_RUN_ROOT",
+                            value: "$run_root",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_HYPRLAND_RELOAD_GUARD_STATE_DIR",
+                            value: "$state_dir",
+                        },
+                    ],
+                    name: "$ROOT/bin/omarchy-hyprland-reload-guard",
+                    args: [
+                        "pause",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: Some(
+                        "2",
+                    ),
+                    operator: ">",
+                    target: "$test_tmp/pause-stderr",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "state_file",
+                        value: "$state_dir/$signature",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $state_file ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "reload guard stores Hyprland state on pause",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected_state",
+                        value: "$(printf '%s\\tfalse\\tfalse' \"$runtime_dir\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "$expected_state",
+                            "$state_file",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "reload guard records previous Hyprland reload settings",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "hl.config({ misc = { disable_autoreload = true }, debug = { suppress_errors = true } })",
+                            "$hyprctl_log",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "reload guard pauses autoreload with hyprctl eval",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "reload guard pauses live Hyprland reloads",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $state_dir/$dead_signature ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "reload guard skips instances hyprctl cannot reach",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $test_tmp/pause-stderr ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "reload guard pauses dead Hyprland instances quietly",
+                        "$(cat \"$test_tmp/pause-stderr\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "reload guard skips dead Hyprland instances quietly",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hyprctl_log",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "FAKE_HYPRCTL_LOG",
+                        value: "$hyprctl_log",
+                    },
+                    CshAstAssignment {
+                        name: "HYPRCTL",
+                        value: "$fake_hyprctl",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_HYPRLAND_RELOAD_GUARD_RUN_ROOT",
+                        value: "$run_root",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_HYPRLAND_RELOAD_GUARD_STATE_DIR",
+                        value: "$state_dir",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-hyprland-reload-guard",
+                args: [
+                    "resume",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $state_file ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "reload guard clears Hyprland state after resume",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "--",
+                            "--instance test-signature reload",
+                            "$hyprctl_log",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "reload guard forces one Hyprland reload after package transaction",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "hl.config({ misc = { disable_autoreload = false }, debug = { suppress_errors = false } })",
+                            "$hyprctl_log",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "reload guard restores previous Hyprland reload settings",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "reload guard resumes live Hyprland reloads",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$state_dir",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "OMARCHY_HYPRLAND_RELOAD_GUARD_STATE_DIR",
+                            value: "$state_dir",
+                        },
+                    ],
+                    name: "$ROOT/bin/omarchy-hyprland-reload-guard",
+                    args: [
+                        "paused",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "reload guard reports itself unpaused before any transaction",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$state_dir",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "OMARCHY_HYPRLAND_RELOAD_GUARD_STATE_DIR",
+                            value: "$state_dir",
+                        },
+                    ],
+                    name: "$ROOT/bin/omarchy-hyprland-reload-guard",
+                    args: [
+                        "paused",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an empty state directory is not a paused transaction",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$state_dir/some-signature",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "OMARCHY_HYPRLAND_RELOAD_GUARD_STATE_DIR",
+                            value: "$state_dir",
+                        },
+                    ],
+                    name: "$ROOT/bin/omarchy-hyprland-reload-guard",
+                    args: [
+                        "paused",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "reload guard reports itself paused during a transaction",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "reload guard reports whether a transaction is holding reloads",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "BASH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf '%s\\t%s\\n' \"$XDG_RUNTIME_DIR\" \"$*\" >>\"$FAKE_HYPRCTL_LOG\"\n\ncase \"$*\" in\n  *'--instance dead-signature '*)\n    printf \"Couldn't connect to %s/hypr/dead-signature/.socket.sock. (4)\\n\" \"$XDG_RUNTIME_DIR\"\n    exit 4\n    ;;\n  *'getoption misc.disable_autoreload'*)\n    printf '{\"option\":\"misc.disable_autoreload\",\"bool\":%s,\"set\":true}\\n' \"${FAKE_DISABLE_AUTORELOAD:-false}\"\n    ;;\n  *'getoption debug.suppress_errors'*)\n    printf '{\"option\":\"debug.suppress_errors\",\"bool\":%s,\"set\":true}\\n' \"${FAKE_SUPPRESS_ERRORS:-false}\"\n    ;;\n  *)\n    printf 'ok\\n'\n    ;;\nesac\n",
+        },
+    ],
+}

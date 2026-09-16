@@ -1,0 +1,488 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/logging-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname -- \"${BASH_SOURCE[0]}\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "work_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$work_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "failing_script",
+                        value: "$work_dir/fail.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "log_file",
+                        value: "$work_dir/install.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$failing_script",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SCRIPT",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "+e",
+                ],
+            },
+        ),
+        Subshell(
+            CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "set",
+                            args: [
+                                "-euo",
+                                "pipefail",
+                            ],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "export",
+                            args: [
+                                "OMARCHY_INSTALL_LOG_FILE=$log_file",
+                            ],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "source",
+                            args: [
+                                "$ROOT/install/helpers/logging.sh",
+                            ],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "run_logged",
+                            args: [
+                                "$failing_script",
+                            ],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "echo",
+                            args: [
+                                "unreachable",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "status",
+                        value: "$?",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-e",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " status != 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "run_logged returns failing script status",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "Starting: $failing_script",
+                        "$log_file",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "run_logged logs script start",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "about to fail",
+                        "$log_file",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "run_logged captures script output",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "Failed: $failing_script (exit code: 1)",
+                        "$log_file",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "run_logged logs failed script before errexit exits",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stdout_log",
+                        value: "$work_dir/stdout.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "+e",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Subshell(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "set",
+                                args: [
+                                    "-euo",
+                                    "pipefail",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "export",
+                                args: [
+                                    "OMARCHY_INSTALL_LOG_FILE=$work_dir/iso-owned.log",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "export",
+                                args: [
+                                    "OMARCHY_LOG_TO_STDOUT=1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "source",
+                                args: [
+                                    "$ROOT/install/helpers/logging.sh",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "run_logged",
+                                args: [
+                                    "$failing_script",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stdout_log",
+                },
+                CshAstRedirect {
+                    descriptor: Some(
+                        "2",
+                    ),
+                    operator: ">&",
+                    target: "1",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stdout_status",
+                        value: "$?",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-e",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " stdout_status != 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "stdout run_logged returns failing script status",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $work_dir/iso-owned.log ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "stdout logging mode does not write directly to install log",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "Starting: $failing_script",
+                        "$stdout_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "stdout logging mode emits script start",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "about to fail",
+                        "$stdout_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "stdout logging mode emits script output",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "Failed: $failing_script (exit code: 1)",
+                        "$stdout_log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "stdout logging mode emits failure marker",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "run_logged records failures under errexit",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SCRIPT",
+            quoted: true,
+            strip_tabs: false,
+            body: "echo \"about to fail\"\nfalse\n",
+        },
+    ],
+}

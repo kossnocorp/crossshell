@@ -1,0 +1,500 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/kernel-headers-migration-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmp_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmp_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$tmp_dir/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "INSTALLED_PACKAGES=$tmp_dir/installed",
+                    "CALL_LOG=$tmp_dir/calls",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "PATH=$tmp_dir/bin:$ROOT/bin:$PATH",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/pacman",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/bin/*",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration",
+                        value: "$ROOT/migrations/1789444024.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "kernels",
+            words: Some(
+                [
+                    "linux-omarchy",
+                    "linux-t2",
+                    "linux-omarchy linux-t2",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "read",
+                                args: [
+                                    "-ra",
+                                    "installed",
+                                ],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: "<<<",
+                                target: "$kernels",
+                            },
+                        ],
+                    },
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "%s\\n",
+                                    "linux",
+                                    "linux-headers",
+                                    "${installed[@]}",
+                                ],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$INSTALLED_PACKAGES",
+                            },
+                        ],
+                    },
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$CALL_LOG",
+                            },
+                        ],
+                    },
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "bash",
+                                args: [
+                                    "-euo",
+                                    "pipefail",
+                                    "$migration",
+                                ],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "/dev/null",
+                            },
+                        ],
+                    },
+                    For {
+                        variable: "kernel",
+                        words: Some(
+                            [
+                                "${installed[@]}",
+                            ],
+                        ),
+                        body: CshAst {
+                            commands: [
+                                Binary {
+                                    left: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-Fxq",
+                                                "$kernel-headers",
+                                                "$INSTALLED_PACKAGES",
+                                            ],
+                                        },
+                                    ),
+                                    operator: Or,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "fail",
+                                            args: [
+                                                "$kernel gets its headers",
+                                            ],
+                                        },
+                                    ),
+                                },
+                            ],
+                        },
+                    },
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$CALL_LOG",
+                            },
+                        ],
+                    },
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "bash",
+                                args: [
+                                    "-euo",
+                                    "pipefail",
+                                    "$migration",
+                                ],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "/dev/null",
+                            },
+                        ],
+                    },
+                    Binary {
+                        left: Test(
+                            " ! -s $CALL_LOG ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "header repair is idempotent",
+                                ],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "pass",
+                            args: [
+                                "missing headers are repaired once for $kernels",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "linux",
+                        "linux-aarch64",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$INSTALLED_PACKAGES",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$CALL_LOG",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "bash",
+                    args: [
+                        "-euo",
+                        "pipefail",
+                        "$migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -s $CALL_LOG ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "header repair skips unrelated kernels",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "header repair skips unrelated kernels",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "echo",
+                    args: [
+                        "linux-omarchy",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$INSTALLED_PACKAGES",
+                },
+            ],
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "FAIL_INSTALL",
+                                                value: "1",
+                                            },
+                                        ],
+                                        name: "bash",
+                                        args: [
+                                            "-euo",
+                                            "pipefail",
+                                            "$migration",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "a failed header installation must leave the migration pending",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "header installation failure is propagated",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\ncase \"$1\" in\n  -Q) grep -Fxq -- \"$2\" \"$INSTALLED_PACKAGES\" ;;\n  -S)\n    [[ ${FAIL_INSTALL:-0} == 0 ]] || exit 1\n    shift 3 # -S --noconfirm --needed\n    printf '%s\\n' \"$@\" >> \"$INSTALLED_PACKAGES\"\n    printf '%s\\n' \"$@\" >> \"$CALL_LOG\"\n    ;;\n  *) exit 1 ;;\nesac\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n[[ $1 == \"pacman\" ]] || exit 1\n\"$@\"\n",
+        },
+    ],
+}

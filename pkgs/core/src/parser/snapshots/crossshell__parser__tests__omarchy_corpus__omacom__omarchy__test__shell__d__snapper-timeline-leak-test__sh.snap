@@ -1,0 +1,810 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/snapper-timeline-leak-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "leak_migration",
+                        value: "$(grep -rl 'timeline snapshots leaked by earlier defaults' \"$ROOT/migrations\" | head -n 1 || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -n $leak_migration ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Snapper timeline leak migration exists",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fake_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$fake_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fake_bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$fake_bin/sudo",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fake_bin/snapper",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$fake_bin/snapper",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "snapper_config",
+                        value: "$test_tmp/root",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "TIMELINE_CREATE=\"no\"",
+                        "NUMBER_CLEANUP=\"yes\"",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$snapper_config",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "TEST_LOG",
+                            value: "$test_tmp/calls.log",
+                        },
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$fake_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_SNAPPER_CONFIG_PATH",
+                            value: "$snapper_config",
+                        },
+                    ],
+                    name: "bash",
+                    args: [
+                        "-euo",
+                        "pipefail",
+                        "$leak_migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "deletes",
+                        value: "$(grep -c '^snapper -c root delete ' \"$test_tmp/calls.log\" || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $deletes -eq 3 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "leak migration deletes snapshots in batches",
+                        "expected 3 delete calls, got $deletes",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "first_batch",
+                        value: "$(grep -m1 '^snapper -c root delete ' \"$test_tmp/calls.log\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $first_batch == \"snapper -c root delete $(seq -s ' ' 1 20)\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "leak migration caps delete batches at 20 snapshots",
+                        "$first_batch",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "last_batch",
+                        value: "$(grep '^snapper -c root delete ' \"$test_tmp/calls.log\" | tail -n 1)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $last_batch == \"snapper -c root delete $(seq -s ' ' 41 45)\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "leak migration deletes the final partial batch",
+                        "$last_batch",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-E",
+                            "^snapper -c root delete .*\\b(100|101)\\b",
+                            "$test_tmp/calls.log",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "leak migration only deletes timeline snapshots",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "leak migration removes leaked timeline snapshots in batches and keeps the rest",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/calls.log",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "TIMELINE_CREATE=\"no\"",
+                        "NUMBER_CLEANUP=\"yes\"",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$snapper_config",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fake_bin/snapper",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 2,
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "output",
+                            value: "$(TEST_LOG=\"$test_tmp/calls.log\" \\\n  PATH=\"$fake_bin:$PATH\" \\\n  OMARCHY_SNAPPER_CONFIG_PATH=\"$snapper_config\" \\\n  bash -euo pipefail \"$leak_migration\" 2>/dev/null)",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "leak migration survives a failed delete batch",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "deletes",
+                        value: "$(grep -c '^snapper -c root delete ' \"$test_tmp/calls.log\" || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $deletes -eq 3 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "leak migration keeps draining after a failed batch",
+                        "expected 3 delete calls, got $deletes",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-qF",
+                            "45 snapshots could not be deleted",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$output",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "leak migration reports the snapshots it could not delete",
+                        "$output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "leak migration tolerates a batch that fails partway",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/calls.log",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "TIMELINE_CREATE=\"yes\"",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$snapper_config",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "TEST_LOG",
+                            value: "$test_tmp/calls.log",
+                        },
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$fake_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_SNAPPER_CONFIG_PATH",
+                            value: "$snapper_config",
+                        },
+                    ],
+                    name: "bash",
+                    args: [
+                        "-euo",
+                        "pipefail",
+                        "$leak_migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -s $test_tmp/calls.log ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "leak migration leaves deliberate timeline setups alone",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "leak migration skips systems where timeline snapshots are intentional",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/calls.log",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "TEST_LOG",
+                            value: "$test_tmp/calls.log",
+                        },
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$fake_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_SNAPPER_CONFIG_PATH",
+                            value: "$test_tmp/missing",
+                        },
+                    ],
+                    name: "bash",
+                    args: [
+                        "-euo",
+                        "pipefail",
+                        "$leak_migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -s $test_tmp/calls.log ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "leak migration skips systems without a Snapper root config",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "leak migration is a no-op without Snapper configured",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/calls.log",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "TIMELINE_CREATE=\"no\"",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$snapper_config",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "000",
+                    "$snapper_config",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "TEST_LOG",
+                            value: "$test_tmp/calls.log",
+                        },
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$fake_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_SNAPPER_CONFIG_PATH",
+                            value: "$snapper_config",
+                        },
+                    ],
+                    name: "bash",
+                    args: [
+                        "-euo",
+                        "pipefail",
+                        "$leak_migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+                CshAstRedirect {
+                    descriptor: Some(
+                        "2",
+                    ),
+                    operator: ">&",
+                    target: "1",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "600",
+                    "$snapper_config",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qF",
+                        "sudo grep -qFx TIMELINE_CREATE=\"no\" $snapper_config",
+                        "$test_tmp/calls.log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "leak migration reads a root-only Snapper config as root",
+                        "$(cat \"$test_tmp/calls.log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "leak migration does not mistake an unreadable Snapper config for an intentional one",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'sudo %s\\n' \"$*\" >>\"$TEST_LOG\"\nexec \"$@\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'snapper %s\\n' \"$*\" >>\"$TEST_LOG\"\nif [[ \"$*\" == *\"--csvout list\"* ]]; then\n  echo \"number,cleanup\"\n  for i in $(seq 1 45); do\n    echo \"$i,timeline\"\n  done\n  echo \"100,number\"\n  echo \"101,\"\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'snapper %s\\n' \"$*\" >>\"$TEST_LOG\"\nif [[ \"$*\" == *\"--csvout list\"* ]]; then\n  echo \"number,cleanup\"\n  for i in $(seq 1 45); do\n    echo \"$i,timeline\"\n  done\n  exit 0\nfi\necho \"failure: dbus timeout\" >&2\nexit 1\n",
+        },
+    ],
+}

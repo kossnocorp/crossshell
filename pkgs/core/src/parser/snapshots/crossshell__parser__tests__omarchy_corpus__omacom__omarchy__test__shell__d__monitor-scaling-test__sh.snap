@@ -1,0 +1,1455 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/monitor-scaling-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "eval_out",
+                        value: "$test_tmp/hyprctl-eval",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "home_dir",
+                        value: "$test_tmp/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "monitor_lua",
+                        value: "$home_dir/.config/hypr/monitors.lua",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "scale_log",
+                        value: "$home_dir/.local/state/omarchy/monitor-scaling.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_bin",
+                    "$home_dir/.config/hypr",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/hyprctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/hyprctl",
+                ],
+            },
+        ),
+        Function {
+            name: "write_monitor_config",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cat",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$monitor_lua",
+                                },
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<",
+                                    target: "LUA",
+                                    here_document: 1,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "run_scaling",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "HOME",
+                                        value: "$home_dir",
+                                    },
+                                    CshAstAssignment {
+                                        name: "XDG_STATE_HOME",
+                                        value: "$home_dir/.local/state",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$stub_bin:$PATH",
+                                    },
+                                    CshAstAssignment {
+                                        name: "OMARCHY_TEST_HYPRCTL_EVAL_OUT",
+                                        value: "$eval_out",
+                                    },
+                                    CshAstAssignment {
+                                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                                        value: "${OMARCHY_TEST_MONITOR_SCALE:-2}",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-hyprland-monitor-scaling",
+                                args: [
+                                    "$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "2",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "up",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 3",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling up reaches 3x",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_monitor_scale = 3",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling up persists 3x",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "$requested=up\\tcurrent=2\\tnew=3\\tmonitor=eDP-1",
+                            "$scale_log",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling up writes audit log",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling up reaches 3x",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "3",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "down",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 2",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling down recovers 3x to 2x",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_monitor_scale = 2",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling down persists 2x from 3x",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling down recovers 3x to 2x",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "3.0000000000000004",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "down",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 2",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling down snaps floating point 3x to 2x",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_monitor_scale = 2",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling down persists 2x from floating point 3x",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling down snaps floating point 3x to 2x",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "2",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "3",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 3",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling explicit 3x remains available",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_monitor_scale = 3",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling explicit 3x persists",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_gdk_scale = 3",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling explicit 3x persists GDK scale",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling explicit 3x remains available",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "2",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "1.6",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 1.6",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling explicit 1.6x remains available",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_monitor_scale = 1.6",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling explicit 1.6x persists",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_gdk_scale = 2",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling 1.6x persists integer GDK scale 2",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling 1.6x persists integer GDK scale 2",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "2",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "1.25",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_monitor_scale = 1.25",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling explicit 1.25x persists",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_gdk_scale = 1",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling 1.25x persists integer GDK scale 1",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling 1.25x persists integer GDK scale 1",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "scale",
+                        value: "$(OMARCHY_TEST_MONITOR_SCALE=3 run_scaling)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $scale == \"3\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling reports explicit 3x scale",
+                        "actual: $scale",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling reports explicit 3x scale",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "scale",
+                        value: "$(OMARCHY_TEST_MONITOR_SCALE=3.2 run_scaling)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $scale == \"3.2\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling reports the actual non-preset scale",
+                        "actual: $scale",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling reports the actual non-preset scale",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "2",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_WIDTH",
+                        value: "1280",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_HEIGHT",
+                        value: "800",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "3",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 3.2",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling approximates explicit 3x as 3.2x",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_monitor_scale = 3.2",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling persists approximated 3.2x",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling approximates explicit 3x as 3.2x",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "2",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_WIDTH",
+                        value: "1280",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_HEIGHT",
+                        value: "800",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "up",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 3.2",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling up reaches approximated 3.2x",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling up reaches approximated 3.2x",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "4",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_WIDTH",
+                        value: "1280",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_HEIGHT",
+                        value: "800",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "down",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 3.2",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling down reaches approximated 3.2x",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling down reaches approximated 3.2x",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "2",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_WIDTH",
+                        value: "6016",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_HEIGHT",
+                        value: "3384",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "1.25",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 1.33333",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling approximates explicit 1.25x",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling approximates explicit 1.25x",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "2",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_WIDTH",
+                        value: "1280",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_HEIGHT",
+                        value: "800",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "3.2",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 3.2",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling accepts displayed approximate values",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling accepts displayed approximate values",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_monitor_config",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_SCALE",
+                        value: "4",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_WIDTH",
+                        value: "1280",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_MONITOR_HEIGHT",
+                        value: "804",
+                    },
+                ],
+                name: "run_scaling",
+                args: [
+                    "down",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "scale = 2",
+                            "$eval_out",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling down skips duplicate 4x approximation",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "local omarchy_monitor_scale = 2",
+                            "$monitor_lua",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor scaling down persists 2x after skipping duplicate approximation",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor scaling down skips duplicate approximation",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nif [[ $1 == \"monitors\" && $2 == \"-j\" ]]; then\n  printf '[{\"name\":\"eDP-1\",\"focused\":true,\"scale\":%s,\"width\":%s,\"height\":%s,\"refreshRate\":120.0}]' \\\n    \"${OMARCHY_TEST_MONITOR_SCALE:-2}\" \"${OMARCHY_TEST_MONITOR_WIDTH:-2880}\" \"${OMARCHY_TEST_MONITOR_HEIGHT:-1800}\"\nelif [[ $1 == \"eval\" ]]; then\n  printf '%s\\n' \"$2\" >\"$OMARCHY_TEST_HYPRCTL_EVAL_OUT\"\nelse\n  exit 1\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "LUA",
+            quoted: true,
+            strip_tabs: false,
+            body: "local omarchy_gdk_scale = 2\nlocal omarchy_monitor_scale = 2\n",
+        },
+    ],
+}

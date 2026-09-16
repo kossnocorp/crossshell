@@ -1,0 +1,449 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/system-power-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mock_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "call_log",
+                        value: "$test_tmp/calls.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$mock_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$mock_bin/systemd-run",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        For {
+            variable: "command",
+            words: Some(
+                [
+                    "omarchy-state",
+                    "omarchy-hyprland-window-close-all",
+                    "sleep",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cat",
+                                args: [],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$mock_bin/$command",
+                            },
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: "<<",
+                                target: "SH",
+                                here_document: 1,
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$mock_bin/*",
+                ],
+            },
+        ),
+        Function {
+            name: "run_power_command",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "action=$1",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$call_log",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$mock_bin:$PATH",
+                                    },
+                                    CshAstAssignment {
+                                        name: "CALL_LOG",
+                                        value: "$call_log",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-system-$action",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "assert_power_calls",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "action=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "systemctl_action=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "expected_log=$test_tmp/$action-expected.log",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cat",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$expected_log",
+                                },
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<",
+                                    target: "EOF",
+                                    here_document: 2,
+                                },
+                            ],
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "diff",
+                                    args: [
+                                        "-u",
+                                        "$expected_log",
+                                        "$call_log",
+                                    ],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$action runs after being scheduled outside the terminal scope",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$action runs after being scheduled outside the terminal scope",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_power_command",
+                args: [
+                    "reboot",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_power_calls",
+                args: [
+                    "reboot",
+                    "reboot",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_power_command",
+                args: [
+                    "shutdown",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_power_calls",
+                args: [
+                    "shutdown",
+                    "poweroff",
+                ],
+            },
+        ),
+        For {
+            variable: "action",
+            words: Some(
+                [
+                    "reboot",
+                    "shutdown",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$call_log",
+                            },
+                        ],
+                    },
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "PATH",
+                                                        value: "$mock_bin:$PATH",
+                                                    },
+                                                    CshAstAssignment {
+                                                        name: "CALL_LOG",
+                                                        value: "$call_log",
+                                                    },
+                                                    CshAstAssignment {
+                                                        name: "FAIL_SYSTEMD_RUN",
+                                                        value: "true",
+                                                    },
+                                                ],
+                                                name: "$ROOT/bin/omarchy-system-$action",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "fail",
+                                                args: [
+                                                    "$action aborts when scheduling fails",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Arithmetic(
+                                            " $(wc -l <\"$call_log\") != 1 ",
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "fail",
+                                                args: [
+                                                    "$action leaves state and windows alone when scheduling fails",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "pass",
+                            args: [
+                                "$action leaves state and windows alone when scheduling fails",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf 'systemd-run %s\\n' \"$*\" >>\"$CALL_LOG\"\n[[ ${FAIL_SYSTEMD_RUN:-false} == \"true\" ]] && exit 1\nexit 0\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf '%s %s\\n' \"$(basename \"$0\")\" \"$*\" >>\"$CALL_LOG\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: false,
+            strip_tabs: false,
+            body: "systemd-run --user --collect --quiet --on-active=2s --timer-property=AccuracySec=100ms systemctl $systemctl_action --no-wall\nomarchy-state clear re*-required\nomarchy-hyprland-window-close-all \nsleep 1\n",
+        },
+    ],
+}

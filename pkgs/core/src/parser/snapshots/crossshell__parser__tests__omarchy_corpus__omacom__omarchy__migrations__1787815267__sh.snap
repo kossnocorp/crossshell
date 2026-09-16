@@ -1,0 +1,442 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1787815267.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Separate printer discovery from root and print-filter access",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "machine_marker",
+                        value: "${OMARCHY_CUPS_MIGRATION_MARKER:-/var/lib/omarchy/migrations/1787815267}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $machine_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-present",
+                                    args: [
+                                        "cups",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "cups_browsed_account",
+                                            value: "$(getent passwd cups-browsed || true)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "cups_browsed_group",
+                                            value: "$(getent group cups-browsed || true)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Test(
+                                                    " -n $cups_browsed_account || -n $cups_browsed_group ",
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [
+                                                                CshAstAssignment {
+                                                                    name: "IFS",
+                                                                    value: ":",
+                                                                },
+                                                            ],
+                                                            name: "read",
+                                                            args: [
+                                                                "-r",
+                                                                "_",
+                                                                "_",
+                                                                "cups_browsed_uid",
+                                                                "cups_browsed_gid",
+                                                                "cups_browsed_description",
+                                                                "cups_browsed_home",
+                                                                "cups_browsed_shell",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: "<<<",
+                                                            target: "$cups_browsed_account",
+                                                        },
+                                                    ],
+                                                },
+                                                Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [
+                                                                CshAstAssignment {
+                                                                    name: "IFS",
+                                                                    value: ":",
+                                                                },
+                                                            ],
+                                                            name: "read",
+                                                            args: [
+                                                                "-r",
+                                                                "_",
+                                                                "_",
+                                                                "cups_browsed_group_gid",
+                                                                "cups_browsed_group_members",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: "<<<",
+                                                            target: "$cups_browsed_group",
+                                                        },
+                                                    ],
+                                                },
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "other_primary_user",
+                                                                value: "$(getent passwd | awk -F: -v gid=\"$cups_browsed_gid\" '$1 != \"cups-browsed\" && $4 == gid { print $1; exit }')",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                                If {
+                                                    branches: [
+                                                        CshAstBranch {
+                                                            condition: CshAst {
+                                                                commands: [
+                                                                    Binary {
+                                                                        left: Binary {
+                                                                            left: Binary {
+                                                                                left: Binary {
+                                                                                    left: Test(
+                                                                                        " ! $cups_browsed_uid =~ ^[0-9]+$ || ! $cups_browsed_group_gid =~ ^[0-9]+$ ",
+                                                                                    ),
+                                                                                    operator: Or,
+                                                                                    right: Arithmetic(
+                                                                                        "cups_browsed_uid <= 0 || cups_browsed_uid >= 1000",
+                                                                                    ),
+                                                                                },
+                                                                                operator: Or,
+                                                                                right: Test(
+                                                                                    " $cups_browsed_gid != $cups_browsed_group_gid ",
+                                                                                ),
+                                                                            },
+                                                                            operator: Or,
+                                                                            right: Test(
+                                                                                " $cups_browsed_description != \"CUPS printer discovery\" || $cups_browsed_home != \"/\" || $cups_browsed_shell != \"/usr/bin/nologin\" ",
+                                                                            ),
+                                                                        },
+                                                                        operator: Or,
+                                                                        right: Test(
+                                                                            " -n $cups_browsed_group_members || -n $other_primary_user ",
+                                                                        ),
+                                                                    },
+                                                                ],
+                                                            },
+                                                            body: CshAst {
+                                                                commands: [
+                                                                    Redirected {
+                                                                        expression: Command(
+                                                                            CshAstCommand {
+                                                                                assignments: [],
+                                                                                name: "echo",
+                                                                                args: [
+                                                                                    "Cannot harden printer discovery: the existing cups-browsed user or group is not a dedicated system account.",
+                                                                                ],
+                                                                            },
+                                                                        ),
+                                                                        redirects: [
+                                                                            CshAstRedirect {
+                                                                                descriptor: None,
+                                                                                operator: ">&",
+                                                                                target: "2",
+                                                                            },
+                                                                        ],
+                                                                    },
+                                                                    Command(
+                                                                        CshAstCommand {
+                                                                            assignments: [],
+                                                                            name: "false",
+                                                                            args: [],
+                                                                        },
+                                                                    ),
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                    otherwise: None,
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "omarchy-pkg-drop",
+                args: [
+                    "cups-pdf",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-present",
+                                    args: [
+                                        "cups",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-add",
+                                    args: [
+                                        "cups-pk-helper",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "systemctl",
+                                        args: [
+                                            "is-active",
+                                            "--quiet",
+                                            "cups-browsed.service",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "systemctl",
+                                        "stop",
+                                        "cups-browsed.service",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-present",
+                                    args: [
+                                        "cups",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "systemctl",
+                                        "daemon-reload",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "systemctl",
+                                        "try-reload-or-restart",
+                                        "cups.service",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "systemctl",
+                                        args: [
+                                            "is-enabled",
+                                            "--quiet",
+                                            "cups-browsed.service",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "systemctl",
+                                        "restart",
+                                        "cups-browsed.service",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "install",
+                    "-Dm644",
+                    "/dev/null",
+                    "$machine_marker",
+                ],
+            },
+        ),
+    ],
+}

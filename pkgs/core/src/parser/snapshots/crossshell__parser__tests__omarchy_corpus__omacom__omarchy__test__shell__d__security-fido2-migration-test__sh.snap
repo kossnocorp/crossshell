@@ -1,0 +1,3114 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/security-fido2-migration-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration",
+                        value: "$ROOT/migrations/1787494718.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "calls",
+                        value: "$test_tmp/calls.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stages",
+                        value: "$test_tmp/stages.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "notifications",
+                        value: "$test_tmp/notifications.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "authdir",
+                        value: "$test_tmp/etc-fido2",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "authfile",
+                        value: "$authdir/fido2",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration_copy",
+                        value: "$test_tmp/migration.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_bin",
+                    "$authdir",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stages",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$notifications",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "occurrences",
+                            value: "$(grep -Fo /etc/fido2/fido2 \"$migration\" | wc -l)",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "occurrences",
+                            value: "0",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " occurrences == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the migration names its authfile exactly once, so the test can retarget a copy",
+                        "found $occurrences occurrences",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "authfile=\"/etc/fido2/fido2\"",
+                        "$migration",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the production authfile path is a fixed literal, not caller-controlled",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration names its authfile once, and the test drives a retargeted copy",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/sudo",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/stat",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/stat",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/omarchy-notification-send",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/omarchy-notification-send",
+                ],
+            },
+        ),
+        Function {
+            name: "run_migration",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "fail_install=${1:-0}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "fail_mv=${2:-0}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "stat_owner=${3:-}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "stat_group=${4:-}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "stat_mode=${5:-}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "mktemp_mode=${6:-normal}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "notify_status=${7:-0}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "fake_stat=0",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -n $stat_owner || -n $stat_group || -n $stat_mode ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Binary {
+                                                left: Test(
+                                                    " -n $stat_owner && -n $stat_group && -n $stat_mode ",
+                                                ),
+                                                operator: Or,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail",
+                                                        args: [
+                                                            "a fake stat fixture supplies owner, group and mode together",
+                                                        ],
+                                                    },
+                                                ),
+                                            },
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "fake_stat",
+                                                            value: "1",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$calls",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$notifications",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sed",
+                                    args: [
+                                        "s|/etc/fido2/fido2|$authfile|",
+                                        "$migration",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$migration_copy",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$stub_bin:$PATH",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_AUTHDIR",
+                                            value: "$authdir",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_AUTHFILE",
+                                            value: "$authfile",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_FAIL_INSTALL",
+                                            value: "$fail_install",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_FAIL_MV",
+                                            value: "$fail_mv",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_FAKE_STAT",
+                                            value: "$fake_stat",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_LOG",
+                                            value: "$calls",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_MKTEMP_MODE",
+                                            value: "$mktemp_mode",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_NOTIFICATIONS",
+                                            value: "$notifications",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_NOTIFY_STATUS",
+                                            value: "$notify_status",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_STAGES",
+                                            value: "$stages",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_STAT_GROUP",
+                                            value: "$stat_group",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_STAT_MODE",
+                                            value: "$stat_mode",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_STAT_OWNER",
+                                            value: "$stat_owner",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TEST_TMP",
+                                            value: "$test_tmp",
+                                        },
+                                    ],
+                                    name: "bash",
+                                    args: [
+                                        "-euo",
+                                        "pipefail",
+                                        "$migration_copy",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "safe_fixture_stage_path",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "candidate=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "prefix=$authfile.new.",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "suffix",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $candidate == \"$prefix\"* ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "suffix",
+                                        value: "${candidate#\"$prefix\"}",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Test(
+                            " $suffix =~ ^[[:alnum:]]{6}$ ",
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "write_authfile",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "tester:credential-handle,public-key,es256,+presence\\n",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$authfile",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "chmod",
+                                args: [
+                                    "$1",
+                                    "$authfile",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$authfile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a machine with no authfile escalates nothing",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration skips a machine that never set FIDO2 up",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "644",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can stage a non-root-owned authfile",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_inode",
+                        value: "$(stat -c %i \"$authfile\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "0",
+                    "0",
+                    "caller",
+                    "caller",
+                    "644",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\tmktemp\\t$authfile.new.XXXXXX",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the repair asks root for a unique sibling stage",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\tinstall\\t-T\\t-m\\t644\\t-o\\troot\\t-g\\troot\\t$authfile$\\t",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a user-owned authfile is reinstalled root:root and mode 644",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\tmv\\t-Tf\\t",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the staged authfile is atomically renamed over the live path",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-Fq",
+                                        "$sudo\\tchown\\t",
+                                        "$calls",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "the repair replaces the authfile rather than chowning it",
+                                        "$(cat \"$calls\")",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-Fq",
+                                        "$sudo\\trm\\t",
+                                        "$calls",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "a successful repair disarms its EXIT cleanup",
+                                        "$(cat \"$calls\")",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration stages and atomically installs a root-owned authfile",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(stat -c %a \"$authfile\") == \"644\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the repaired authfile is mode 644",
+                        "got: $(stat -c %a \"$authfile\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(cat \"$authfile\") == \"tester:credential-handle,public-key,es256,+presence\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the repaired authfile keeps its credential",
+                        "got: $(cat \"$authfile\")",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Arithmetic(
+                                    " EUID == 0 ",
+                                ),
+                                operator: And,
+                                right: Test(
+                                    " $(stat -c %U:%G \"$authfile\") != \"root:root\" ",
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "the repaired authfile is root:root",
+                                        "got: $(stat -c %U:%G \"$authfile\")",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration preserves the credential with its PAM-readable mode",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(stat -c %i \"$authfile\") != \"$before_inode\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the repair lands on a new inode, orphaning any descriptor already open on the old one",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration replaces the inode a pre-existing writer would still hold",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "staged_paths",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "$stages",
+                },
+            ],
+        },
+        Binary {
+            left: Arithmetic(
+                " ${#staged_paths[@]} == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the first repair creates exactly one stage",
+                        "got: ${staged_paths[*]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "first_stage",
+                        value: "${staged_paths[0]}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "safe_fixture_stage_path",
+                    args: [
+                        "$first_stage",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the stage is a unique sibling of the authfile",
+                        "got: $first_stage",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $first_stage && ! -L $first_stage ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the staged copy does not outlive the repair",
+                        "left behind: $first_stage",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration uses a unique sibling and leaves no staged copy behind",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "644",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can stage the malformed-output fixture",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_inode",
+                        value: "$(stat -c %i \"$authfile\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "malformed_parent",
+                        value: "$authfile.new.A",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "malformed_stage",
+                        value: "$malformed_parent/BCDE",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "run_migration",
+                                    args: [
+                                        "0",
+                                        "0",
+                                        "caller",
+                                        "caller",
+                                        "644",
+                                        "malformed",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "malformed mktemp output fails the migration",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\tmktemp\\t",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the malformed-output fixture reaches mktemp",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Binary {
+                                    left: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-Fq",
+                                                "$sudo\\tinstall\\t",
+                                                "$calls",
+                                            ],
+                                        },
+                                    ),
+                                    operator: Or,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-Fq",
+                                                "$sudo\\tmv\\t",
+                                                "$calls",
+                                            ],
+                                        },
+                                    ),
+                                },
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-Fq",
+                                            "$sudo\\trm\\t",
+                                            "$calls",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "malformed mktemp output reaches no install, rename or cleanup",
+                                        "$(cat \"$calls\")",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " $(stat -c %i \"$authfile\") == \"$before_inode\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "malformed mktemp output leaves the live authfile inode alone",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $malformed_stage && ! -L $malformed_stage ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the malformed-output fixture remains a regular scratch file",
+                        "got: $malformed_stage",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "/usr/bin/rm",
+                args: [
+                    "--",
+                    "$malformed_stage",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "/usr/bin/rmdir",
+                args: [
+                    "--",
+                    "$malformed_parent",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration rejects malformed mktemp output before any privileged write",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "644",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can stage the nonregular-output fixture",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_inode",
+                        value: "$(stat -c %i \"$authfile\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "nonregular_stage",
+                        value: "$authfile.new.BAD123",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "run_migration",
+                                    args: [
+                                        "0",
+                                        "0",
+                                        "caller",
+                                        "caller",
+                                        "644",
+                                        "nonregular",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "nonregular mktemp output fails the migration",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "safe_fixture_stage_path",
+                    args: [
+                        "$nonregular_stage",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the nonregular fixture uses a syntactically valid stage name",
+                        "got: $nonregular_stage",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-Fq",
+                                            "$sudo\\tinstall\\t",
+                                            "$calls",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-Fq",
+                                            "$sudo\\tmv\\t",
+                                            "$calls",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "nonregular mktemp output is rejected before install or rename",
+                                        "$(cat \"$calls\")",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\trm\\t-f\\t--\\t$nonregular_stage",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "cleanup addresses only the validated nonregular sibling",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -d $nonregular_stage && ! -L $nonregular_stage ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "cleanup does not recursively remove a nonregular stage",
+                        "got: $nonregular_stage",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c %i \"$authfile\") == \"$before_inode\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "nonregular mktemp output leaves the live authfile inode alone",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "/usr/bin/rmdir",
+                args: [
+                    "--",
+                    "$nonregular_stage",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration rejects and safely handles nonregular mktemp output",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "600",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can restage a non-root-owned authfile",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "0",
+                    "0",
+                    "caller",
+                    "caller",
+                    "600",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\tinstall\\t-T\\t",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a mode-600 authfile the user still owns is repaired",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "staged_paths",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "$stages",
+                },
+            ],
+        },
+        Binary {
+            left: Arithmetic(
+                " ${#staged_paths[@]} == 2 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "two repairs create two stages",
+                        "got: ${staged_paths[*]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "second_stage",
+                        value: "${staged_paths[1]}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $second_stage && ! -L $second_stage ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the second staged copy does not outlive the repair",
+                        "left behind: $second_stage",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration repairs a user-owned authfile whatever its mode and cleans its stage",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "644",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can stage the cleanup fixture",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_inode",
+                        value: "$(stat -c %i \"$authfile\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "run_migration",
+                                    args: [
+                                        "1",
+                                        "0",
+                                        "caller",
+                                        "caller",
+                                        "644",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "an install failure propagates out of the migration",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "staged_paths",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "$stages",
+                },
+            ],
+        },
+        Binary {
+            left: Arithmetic(
+                " ${#staged_paths[@]} == 3 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the failed repair creates one stage",
+                        "got: ${staged_paths[*]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "failed_stage",
+                        value: "${staged_paths[2]}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\trm\\t-f\\t--\\t$failed_stage",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the EXIT trap removes the failed repair's exact stage",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $failed_stage && ! -L $failed_stage ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the failed stage is cleaned up",
+                        "left behind: $failed_stage",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c %i \"$authfile\") == \"$before_inode\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a failed repair leaves the live authfile inode alone",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration cleans its unique stage after a failed repair",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "644",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can stage the mv-failure fixture",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_inode",
+                        value: "$(stat -c %i \"$authfile\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "run_migration",
+                                    args: [
+                                        "0",
+                                        "1",
+                                        "caller",
+                                        "caller",
+                                        "644",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "an mv failure propagates out of the migration",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "staged_paths",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "$stages",
+                },
+            ],
+        },
+        Binary {
+            left: Arithmetic(
+                " ${#staged_paths[@]} == 4 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the mv-failed repair creates one stage",
+                        "got: ${staged_paths[*]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "failed_mv_stage",
+                        value: "${staged_paths[3]}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\tmv\\t-Tf\\t$failed_mv_stage$\\t$authfile",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the injected mv failure occurs after install",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\trm\\t-f\\t--\\t$failed_mv_stage",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the EXIT trap removes the mv-failed repair's exact stage",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $failed_mv_stage && ! -L $failed_mv_stage ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the mv-failed stage is cleaned up",
+                        "left behind: $failed_mv_stage",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c %i \"$authfile\") == \"$before_inode\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an mv failure leaves the live authfile inode alone",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration cleans its unique stage after a failed rename",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "644",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can stage the settled-state fixture",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "0",
+                    "0",
+                    "root",
+                    "root",
+                    "644",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an already root:root mode-644 authfile escalates nothing",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration deterministically no-ops on its settled state",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "644",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can stage the wrong-owner fixture",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "0",
+                    "0",
+                    "nobody",
+                    "root",
+                    "644",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\tinstall\\t-T\\t",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a non-root-owned authfile is repaired even when group and mode are settled",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration repairs an authfile with the wrong owner",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "644",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can stage the wrong-group fixture",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "0",
+                    "0",
+                    "root",
+                    "nobody",
+                    "644",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\tinstall\\t-T\\t",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a non-root-group authfile is repaired even when owner and mode are settled",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration repairs an authfile with the wrong group",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "644",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can stage the wrong-mode fixture",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "0",
+                    "0",
+                    "root",
+                    "root",
+                    "600",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\tinstall\\t-T\\t",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a mode-600 authfile is repaired even when owner and group are settled",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration repairs an authfile with the wrong mode",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$authfile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$test_tmp/elsewhere",
+                    "$authfile",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/elsewhere",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a symlinked authfile escalates nothing",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -s $notifications ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a symlinked authfile is raised where the update terminal cannot swallow it",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$authfile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$test_tmp/missing",
+                    "$authfile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a dangling symlink escalates nothing",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -s $notifications ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a dangling symlink is raised the same way",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration reports a symlinked authfile and repairs nothing",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$authfile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$authfile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a directory at the authfile path escalates nothing",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -s $notifications ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a non-regular authfile is raised the same way",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration reports a non-regular authfile and repairs nothing",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "awk",
+                    args: [
+                        "-F\\t",
+                        "\n  $1 == \"notify\" && NF == 7 && $2 == \"-u\" && $3 == \"critical\" && $4 == \"-g\" &&\n    $5 != \"\" && $6 == \"FIDO2 authfile needs attention\" && $7 != \"\" { found = 1 }\n  END { exit !found }\n",
+                        "$notifications",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the notification passes a glyph, headline and body as separate arguments",
+                        "$(cat -A \"$notifications\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration raises its unrepairable states as a desktop notification",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$authfile",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "write_authfile",
+                    args: [
+                        "644",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the test can stage the untraversable-directory fixture",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_inode",
+                        value: "$(stat -c %i \"$authfile\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "000",
+                    "$authdir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "0",
+                    "0",
+                    "caller",
+                    "caller",
+                    "644",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(stat -c %a \"$authdir\") == \"755\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the migration reopens the directory the old umask closed",
+                        "got: $(stat -c %a \"$authdir\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "$sudo\\tchmod\\t755\\t$authdir",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the migration asks root to reopen the FIDO2 directory",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$sudo\\tinstall\\t-T\\t",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an authfile hidden behind an untraversable directory is still repaired",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c %i \"$authfile\") != \"$before_inode\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the repair behind an untraversable directory still replaces the inode",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration repairs an authfile an unreadable directory hid from it",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$authfile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$authdir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a machine with no FIDO2 directory still escalates nothing",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$authdir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an empty readable FIDO2 directory escalates nothing",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration still costs no password prompt on a machine that never set FIDO2 up",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$authfile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "000",
+                    "$authdir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(stat -c %a \"$authdir\") == \"0\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an empty inaccessible FIDO2 directory keeps its mode",
+                        "got: $(stat -c %a \"$authdir\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fq",
+                            "$sudo\\tchmod\\t",
+                            "$calls",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an empty inaccessible FIDO2 directory is never reopened",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-Fq",
+                                            "$sudo\\tinstall\\t",
+                                            "$calls",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-Fq",
+                                            "$sudo\\tmv\\t",
+                                            "$calls",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "an empty inaccessible FIDO2 directory is never repaired",
+                                        "$(cat \"$calls\")",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "755",
+                    "$authdir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration looks behind an inaccessible FIDO2 directory without widening it",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$authfile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$test_tmp/missing",
+                    "$authfile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "0",
+                    "0",
+                    "",
+                    "",
+                    "",
+                    "normal",
+                    "1",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -s $notifications ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the failing notification was still attempted",
+                        "$(cat \"$notifications\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration survives a notification it could not deliver",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$authfile",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nset -euo pipefail\n\nreject() {\n  printf 'refusing unexpected sudo invocation:' >&2\n  printf ' %q' \"$@\" >&2\n  printf '\\n' >&2\n  exit 97\n}\n\nif [[ ${TEST_TMP:-} != /* || ${TEST_AUTHDIR:-} != \"$TEST_TMP/etc-fido2\" || ${TEST_AUTHFILE:-} != \"$TEST_AUTHDIR/fido2\" || ${TEST_LOG:-} != \"$TEST_TMP/calls.log\" || ${TEST_STAGES:-} != \"$TEST_TMP/stages.log\" ]]; then\n  reject \"$@\"\nfi\n\nprintf 'sudo' >>\"$TEST_LOG\"\nprintf '\\t%s' \"$@\" >>\"$TEST_LOG\"\nprintf '\\n' >>\"$TEST_LOG\"\n\nsafe_stage_path() {\n  local candidate=$1\n  local prefix=\"$TEST_AUTHFILE.new.\"\n  local suffix\n\n  [[ $candidate == \"$prefix\"* ]] || return 1\n  suffix=${candidate#\"$prefix\"}\n  [[ $suffix =~ ^[[:alnum:]]{6}$ ]]\n}\n\nrecorded_stage() {\n  local candidate=$1\n\n  safe_stage_path \"$candidate\" || return 1\n  [[ -f $candidate && ! -L $candidate ]] || return 1\n  /usr/bin/grep -Fxq -- \"$candidate\" \"$TEST_STAGES\"\n}\n\ncase \"$1\" in\n  mktemp)\n    if (( $# != 2 )) || [[ $2 != \"$TEST_AUTHFILE.new.XXXXXX\" ]]; then\n      reject \"$@\"\n    fi\n\n    case ${TEST_MKTEMP_MODE:-normal} in\n      normal)\n        stage=$(/usr/bin/mktemp -- \"$2\")\n        if ! safe_stage_path \"$stage\" || [[ ! -f $stage || -L $stage ]]; then\n          reject \"$@\"\n        fi\n\n        printf '%s\\n' \"$stage\" >>\"$TEST_STAGES\"\n        printf '%s\\n' \"$stage\"\n        ;;\n      malformed)\n        stage=\"$TEST_AUTHFILE.new.A/BCDE\"\n        /usr/bin/mkdir -- \"${stage%/*}\"\n        : >\"$stage\"\n        printf '%s\\n' \"$stage\"\n        ;;\n      nonregular)\n        stage=\"$TEST_AUTHFILE.new.BAD123\"\n        /usr/bin/mkdir -- \"$stage\"\n        printf '%s\\n' \"$stage\"\n        ;;\n      *)\n        reject \"$@\"\n        ;;\n    esac\n    ;;\n  install)\n    if (( $# != 10 )) || [[ $2 != \"-T\" || $3 != \"-m\" || $4 != \"644\" || $5 != \"-o\" || $6 != \"root\" || $7 != \"-g\" || $8 != \"root\" || $9 != \"$TEST_AUTHFILE\" ]] || ! recorded_stage \"${10}\"; then\n      reject \"$@\"\n    fi\n\n    if [[ ${TEST_FAIL_INSTALL:-0} == \"1\" ]]; then\n      exit 71\n    fi\n\n    if (( EUID == 0 )); then\n      exec /usr/bin/install -T -m 644 -o root -g root \"$9\" \"${10}\"\n    else\n      exec /usr/bin/install -T -m 644 \"$9\" \"${10}\"\n    fi\n    ;;\n  mv)\n    if (( $# != 4 )) || [[ $2 != \"-Tf\" || $4 != \"$TEST_AUTHFILE\" ]] || ! recorded_stage \"$3\"; then\n      reject \"$@\"\n    fi\n\n    if [[ ${TEST_FAIL_MV:-0} == \"1\" ]]; then\n      exit 72\n    fi\n\n    exec /usr/bin/mv -Tf -- \"$3\" \"$4\"\n    ;;\n  chmod)\n    # Only ever the FIDO2 directory, and only back to the mode the setup\n    # installs. Nothing here may reopen the authfile itself.\n    if (( $# != 3 )) || [[ $2 != \"755\" || $3 != \"$TEST_AUTHDIR\" ]]; then\n      reject \"$@\"\n    fi\n\n    exec /usr/bin/chmod 755 \"$TEST_AUTHDIR\"\n    ;;\n  test)\n    # Looking behind an untraversable directory, never a write. This stub is not\n    # really root, so open the directory just long enough to answer the way root\n    # would and put its mode straight back -- the suite then still sees whether\n    # production left the mode alone.\n    if (( $# != 3 )) || [[ $2 != \"-e\" && $2 != \"-L\" ]] || [[ $3 != \"$TEST_AUTHFILE\" ]]; then\n      reject \"$@\"\n    fi\n\n    saved_mode=$(/usr/bin/stat -c %a \"$TEST_AUTHDIR\")\n    /usr/bin/chmod 755 \"$TEST_AUTHDIR\"\n    probe_status=0\n    /usr/bin/test \"$2\" \"$3\" || probe_status=$?\n    /usr/bin/chmod \"$saved_mode\" \"$TEST_AUTHDIR\"\n    exit \"$probe_status\"\n    ;;\n  rm)\n    if (( $# != 4 )) || [[ $2 != \"-f\" || $3 != \"--\" ]]; then\n      reject \"$@\"\n    fi\n\n    if [[ ${TEST_MKTEMP_MODE:-normal} == \"nonregular\" && $4 == \"$TEST_AUTHFILE.new.BAD123\" && -d $4 && ! -L $4 ]]; then\n      exit 73\n    fi\n\n    recorded_stage \"$4\" || reject \"$@\"\n    exec /usr/bin/rm -f -- \"$4\"\n    ;;\n  *)\n    reject \"$@\"\n    ;;\nesac\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nset -euo pipefail\n\nif [[ ${TEST_FAKE_STAT:-0} == \"1\" && ${TEST_AUTHFILE:-} == \"${TEST_AUTHDIR:-}/fido2\" ]] &&\n  (( $# == 3 )) && [[ $1 == \"-c\" && $3 == \"$TEST_AUTHFILE\" ]]; then\n  case \"$2\" in\n    %U) printf '%s\\n' \"$TEST_STAT_OWNER\" ;;\n    %G) printf '%s\\n' \"$TEST_STAT_GROUP\" ;;\n    %a) printf '%s\\n' \"$TEST_STAT_MODE\" ;;\n    *) exec /usr/bin/stat \"$@\" ;;\n  esac\nelse\n  exec /usr/bin/stat \"$@\"\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf 'notify' >>\"$TEST_NOTIFICATIONS\"\nprintf '\\t%s' \"$@\" >>\"$TEST_NOTIFICATIONS\"\nprintf '\\n' >>\"$TEST_NOTIFICATIONS\"\nexit \"${TEST_NOTIFY_STATUS:-0}\"\n",
+        },
+    ],
+}

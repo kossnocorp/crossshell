@@ -1,0 +1,212 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hyprland-window-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmpdir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmpdir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmpdir/hyprctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "BASH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmpdir/hyprctl",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "log",
+                        value: "$tmpdir/hyprctl.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$tmpdir:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "HYPRCTL_LOG",
+                        value: "$log",
+                    },
+                    CshAstAssignment {
+                        name: "HYPR_FULLSCREEN_CLIENT",
+                        value: "0",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-hyprland-window-tiled-fullscreen-toggle",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "hl.dsp.window.fullscreen_state({ internal = 0, client = 2 })",
+                        "$log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "tiled fullscreen enables client fullscreen",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "tiled fullscreen enables client fullscreen",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$log",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$tmpdir:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "HYPRCTL_LOG",
+                        value: "$log",
+                    },
+                    CshAstAssignment {
+                        name: "HYPR_FULLSCREEN_CLIENT",
+                        value: "2",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-hyprland-window-tiled-fullscreen-toggle",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "hl.dsp.window.fullscreen_state({ internal = 0, client = 0 })",
+                        "$log",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "tiled fullscreen disables client fullscreen",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "tiled fullscreen disables client fullscreen",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "BASH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nif [[ $1 == \"activewindow\" && $2 == \"-j\" ]]; then\n  printf '{\"fullscreenClient\":%s}\\n' \"${HYPR_FULLSCREEN_CLIENT:-0}\"\n  exit 0\nfi\n\nif [[ $1 == \"dispatch\" ]]; then\n  printf '%s\\n' \"$*\" >>\"$HYPRCTL_LOG\"\n  exit 0\nfi\n\nexit 1\n",
+        },
+    ],
+}

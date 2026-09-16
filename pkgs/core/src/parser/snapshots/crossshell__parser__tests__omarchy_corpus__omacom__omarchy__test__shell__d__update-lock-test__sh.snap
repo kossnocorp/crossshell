@@ -1,0 +1,1497 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/update-lock-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_home",
+                        value: "$test_tmp/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "runtime_dir",
+                        value: "$test_tmp/runtime",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_bin",
+                    "$test_home",
+                    "$runtime_dir",
+                ],
+            },
+        ),
+        Function {
+            name: "run_with_lock_env",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "HOME",
+                                        value: "$test_home",
+                                    },
+                                    CshAstAssignment {
+                                        name: "XDG_RUNTIME_DIR",
+                                        value: "$runtime_dir",
+                                    },
+                                    CshAstAssignment {
+                                        name: "XDG_STATE_HOME",
+                                        value: "$test_tmp/state",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$stub_bin:$ROOT/bin:$PATH",
+                                    },
+                                ],
+                                name: "$@",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "write_stub",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "name=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "body=$2",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cat",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$stub_bin/$name",
+                                },
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<",
+                                    target: "SH",
+                                    here_document: 0,
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "chmod",
+                                args: [
+                                    "+x",
+                                    "$stub_bin/$name",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        For {
+            variable: "command",
+            words: Some(
+                [
+                    "omarchy-toggle-idle",
+                    "pkexec",
+                    "systemd-inhibit",
+                    "omarchy-update-pkg-prune",
+                    "omarchy-update-dev",
+                    "omarchy-update-keyring",
+                    "omarchy-update-system-pkgs",
+                    "omarchy-migrate",
+                    "omarchy-update-aur-pkgs",
+                    "omarchy-update-mise",
+                    "omarchy-update-orphan-pkgs",
+                    "omarchy-hook",
+                    "omarchy-update-analyze-logs",
+                    "omarchy-shell",
+                    "omarchy-update-restart",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "write_stub",
+                            args: [
+                                "$command",
+                                "exit 0",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_stub",
+                args: [
+                    "omarchy-update-available",
+                    "exit 1",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_stub",
+                args: [
+                    "pkexec",
+                    "exec \"$@\"",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "update_snapshot_marker",
+                        value: "$test_tmp/update-snapshot-started",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_stub",
+                args: [
+                    "omarchy-snapshot",
+                    "echo started >\"$TEST_MARKER\"; sleep 2; exit 0",
+                ],
+            },
+        ),
+        Background(
+            Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "OMARCHY_UPDATE_LOGGED",
+                                value: "1",
+                            },
+                            CshAstAssignment {
+                                name: "TEST_MARKER",
+                                value: "$update_snapshot_marker",
+                            },
+                        ],
+                        name: "run_with_lock_env",
+                        args: [
+                            "$ROOT/bin/omarchy-update",
+                            "-y",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "$test_tmp/update-first.out",
+                    },
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">&",
+                        target: "1",
+                    },
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "update_pid",
+                        value: "$!",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "_",
+            words: Some(
+                [
+                    "{1..50}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -f $update_snapshot_marker ",
+                        ),
+                        operator: And,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "break",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "sleep",
+                            args: [
+                                "0.05",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Binary {
+            left: Test(
+                " -f $update_snapshot_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "first omarchy-update reached snapshot under lock",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "+e",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "OMARCHY_UPDATE_LOGGED",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "TEST_MARKER",
+                            value: "$test_tmp/update-second-snapshot-started",
+                        },
+                    ],
+                    name: "run_with_lock_env",
+                    args: [
+                        "$ROOT/bin/omarchy-update",
+                        "-y",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/update-second.out",
+                },
+                CshAstRedirect {
+                    descriptor: Some(
+                        "2",
+                    ),
+                    operator: ">&",
+                    target: "1",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "update_second_status",
+                        value: "$?",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-e",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait",
+                args: [
+                    "$update_pid",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $update_second_status -ne 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "second omarchy-update exits non-zero while update lock is held",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "already running",
+                        "$test_tmp/update-second.out",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "second omarchy-update reports held update lock",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -f $test_tmp/update-second-snapshot-started ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "second omarchy-update did not snapshot while lock was held",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "omarchy-update prevents overlapping top-level updates",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "inhibit_pid_file",
+                        value: "$test_tmp/inhibit-pid",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "keyring_marker",
+                        value: "$test_tmp/keyring-started",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_stub",
+                args: [
+                    "omarchy-snapshot",
+                    "exit 0",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_stub",
+                args: [
+                    "systemd-inhibit",
+                    "echo \"$$\" >\"$INHIBIT_PID_FILE\"; exec sleep 30",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_stub",
+                args: [
+                    "omarchy-update-keyring",
+                    "echo started >\"$TEST_MARKER\"; sleep 3; exit 0",
+                ],
+            },
+        ),
+        Background(
+            Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "OMARCHY_UPDATE_LOGGED",
+                                value: "1",
+                            },
+                            CshAstAssignment {
+                                name: "TEST_MARKER",
+                                value: "$keyring_marker",
+                            },
+                            CshAstAssignment {
+                                name: "INHIBIT_PID_FILE",
+                                value: "$inhibit_pid_file",
+                            },
+                        ],
+                        name: "run_with_lock_env",
+                        args: [
+                            "$ROOT/bin/omarchy-update",
+                            "-y",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "$test_tmp/update-inhibit.out",
+                    },
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">&",
+                        target: "1",
+                    },
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "inhibit_update_pid",
+                        value: "$!",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "_",
+            words: Some(
+                [
+                    "{1..100}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -s $inhibit_pid_file && -f $keyring_marker ",
+                        ),
+                        operator: And,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "break",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "sleep",
+                            args: [
+                                "0.05",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Binary {
+            left: Test(
+                " -s $inhibit_pid_file ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "update starts its sleep inhibitor",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "inhibitor_pid",
+                        value: "$(<\"$inhibit_pid_file\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "kill",
+                        args: [
+                            "-0",
+                            "$inhibitor_pid",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "sleep inhibitor is still running when its descriptors are inspected",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "lock_target",
+                        value: "$(readlink -f \"$runtime_dir/omarchy-update.lock\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "inhibitor_holds_lock",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "fd",
+            words: Some(
+                [
+                    "/proc/$inhibitor_pid/fd/*",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -e $fd ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Binary {
+                        left: Test(
+                            " $(readlink -f \"$fd\" 2>/dev/null) == \"$lock_target\" ",
+                        ),
+                        operator: And,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "inhibitor_holds_lock",
+                                        value: "1",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait",
+                args: [
+                    "$inhibit_update_pid",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " inhibitor_holds_lock == 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "update keeps the update lock out of the sleep inhibitor it leaves running",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "omarchy-update keeps the update lock out of its sleep inhibitor",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "kill",
+                        args: [
+                            "-0",
+                            "$inhibitor_pid",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "update waits for its sleep inhibitor to stop before continuing",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "omarchy-update waits for its sleep inhibitor to stop",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " EUID != 0 ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "sudo_log",
+                                            value: "$test_tmp/sudo.log",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "pkexec_marker",
+                                            value: "$test_tmp/pkexec-used",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "terminal_inhibit_pid_file",
+                                            value: "$test_tmp/terminal-inhibit-pid",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "write_stub",
+                                    args: [
+                                        "sudo",
+                                        "\nprintf \"%s\\n\" \"$*\" >>\"$SUDO_LOG\"\nif [[ $1 == \"-v\" ]]; then\n  exit 0\nfi\nexec \"$@\"",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "write_stub",
+                                    args: [
+                                        "pkexec",
+                                        "touch \"$PKEXEC_MARKER\"; exec \"$@\"",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "terminal_driver",
+                                            value: "$test_tmp/terminal-stay-awake",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "cat",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$terminal_driver",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<<",
+                                        target: "SH",
+                                        here_document: 1,
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "chmod",
+                                    args: [
+                                        "+x",
+                                        "$terminal_driver",
+                                    ],
+                                },
+                            ),
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "SUDO_LOG",
+                                                value: "$sudo_log",
+                                            },
+                                            CshAstAssignment {
+                                                name: "PKEXEC_MARKER",
+                                                value: "$pkexec_marker",
+                                            },
+                                            CshAstAssignment {
+                                                name: "INHIBIT_PID_FILE",
+                                                value: "$terminal_inhibit_pid_file",
+                                            },
+                                        ],
+                                        name: "run_with_lock_env",
+                                        args: [
+                                            "script",
+                                            "-qefc",
+                                            "$terminal_driver",
+                                            "/dev/null",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-qx",
+                                            "--",
+                                            "-v",
+                                            "$sudo_log",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "fail",
+                                        args: [
+                                            "terminal sleep inhibition validates sudo in the foreground",
+                                        ],
+                                    },
+                                ),
+                            },
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-q",
+                                            "^systemd-inhibit ",
+                                            "$sudo_log",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "fail",
+                                        args: [
+                                            "terminal sleep inhibition runs through sudo",
+                                        ],
+                                    },
+                                ),
+                            },
+                            Binary {
+                                left: Test(
+                                    " ! -e $pkexec_marker ",
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "fail",
+                                        args: [
+                                            "terminal sleep inhibition does not use pkexec",
+                                        ],
+                                    },
+                                ),
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "run_with_lock_env",
+                                    args: [
+                                        "$ROOT/bin/omarchy-update-stay-awake",
+                                        "stop",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "pass",
+                                    args: [
+                                        "terminal updates use sudo instead of Polkit for sleep inhibition",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_stub",
+                args: [
+                    "omarchy-snapshot",
+                    "exit 0",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_stub",
+                args: [
+                    "omarchy-update-keyring",
+                    "exit 0",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_stub",
+                args: [
+                    "omarchy-toggle-idle",
+                    "\nstate_file=\"$HOME/.local/state/omarchy/indicators/stay-awake\"\ncase \"$1\" in\n  stay-awake)\n    mkdir -p \"$(dirname \"$state_file\")\"\n    touch \"$state_file\"\n    ;;\n  allow-idle)\n    rm -f \"$state_file\"\n    ;;\nesac",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_stub",
+                args: [
+                    "omarchy-update-restart",
+                    "\nstate_file=\"$HOME/.local/state/omarchy/indicators/stay-awake\"\nif [[ ${EXPECT_STAY_AWAKE:-0} == \"1\" ]]; then\n  [[ -f $state_file ]]\nelse\n  [[ ! -f $state_file ]]\nfi",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$test_home/.local/state/omarchy/indicators/stay-awake",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_UPDATE_LOGGED",
+                        value: "1",
+                    },
+                ],
+                name: "run_with_lock_env",
+                args: [
+                    "$ROOT/bin/omarchy-update",
+                    "-y",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -f $test_home/.local/state/omarchy/indicators/stay-awake ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "update clears its Stay Awake state before restart handling",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$test_home/.local/state/omarchy/indicators",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$test_home/.local/state/omarchy/indicators/stay-awake",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_UPDATE_LOGGED",
+                        value: "1",
+                    },
+                    CshAstAssignment {
+                        name: "EXPECT_STAY_AWAKE",
+                        value: "1",
+                    },
+                ],
+                name: "run_with_lock_env",
+                args: [
+                    "$ROOT/bin/omarchy-update",
+                    "-y",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $test_home/.local/state/omarchy/indicators/stay-awake ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "update preserves pre-existing Stay Awake state",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "omarchy-update restores only its own Stay Awake state before restart handling",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stay_awake_helper_state",
+                        value: "$runtime_dir/omarchy-update-stay-awake",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stay_awake_state",
+                        value: "$test_home/.local/state/omarchy/indicators/stay-awake",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stay_awake_helper_state",
+                    "$(dirname \"$stay_awake_state\")",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "old-update-owner",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stay_awake_helper_state/idle-owner",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "user-choice",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stay_awake_state",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_with_lock_env",
+                args: [
+                    "$ROOT/bin/omarchy-update-stay-awake",
+                    "stop",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$stay_awake_state\") == \"user-choice\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "stale update ownership does not remove a newer Stay Awake choice",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "stale update ownership preserves a newer Stay Awake choice",
+                ],
+            },
+        ),
+        Background(
+            Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sleep",
+                    args: [
+                        "30",
+                    ],
+                },
+            ),
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "unrelated_pid",
+                        value: "$!",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "unrelated_start_time",
+                        value: "$(awk '{ print $22 }' \"/proc/$unrelated_pid/stat\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stay_awake_helper_state",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s %s\\n",
+                        "$unrelated_pid",
+                        "$((unrelated_start_time + 1))",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stay_awake_helper_state/inhibit-pid",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_with_lock_env",
+                args: [
+                    "$ROOT/bin/omarchy-update-stay-awake",
+                    "stop",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "kill",
+                        args: [
+                            "-0",
+                            "$unrelated_pid",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "stale inhibitor state does not terminate a reused PID",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "kill",
+                args: [
+                    "$unrelated_pid",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "wait",
+                        args: [
+                            "$unrelated_pid",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "stale inhibitor state does not terminate a reused PID",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: false,
+            strip_tabs: false,
+            body: "#!/bin/bash\n$body\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nomarchy-update-stay-awake start\nfor _ in {1..200}; do\n  grep -q '^systemd-inhibit ' \"$SUDO_LOG\" && break\n  sleep 0.05\ndone\n",
+        },
+    ],
+}

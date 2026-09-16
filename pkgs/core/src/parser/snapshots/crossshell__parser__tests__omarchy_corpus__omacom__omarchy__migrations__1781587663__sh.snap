@@ -1,0 +1,260 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1781587663.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Enable secure remote Neovim clipboard support",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "nvim_config_dir",
+                        value: "$HOME/.config/nvim",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "nvim_options",
+                        value: "$nvim_config_dir/lua/config/options.lua",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "nvim_provider",
+                        value: "$nvim_config_dir/lua/config/remote_clipboard.lua",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "provider_source",
+                        value: "/usr/share/omarchy-nvim/config/lua/config/remote_clipboard.lua",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -d $nvim_config_dir ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mkdir",
+                                    args: [
+                                        "-p",
+                                        "$(dirname \"$nvim_provider\")",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "install",
+                                    args: [
+                                        "-m",
+                                        "0644",
+                                        "$provider_source",
+                                        "$nvim_provider",
+                                    ],
+                                },
+                            ),
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Test(
+                                                        " -f $nvim_options ",
+                                                    ),
+                                                    operator: And,
+                                                    right: Negated(
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "grep",
+                                                                args: [
+                                                                    "-qF",
+                                                                    "config.remote_clipboard",
+                                                                    "$nvim_options",
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "tmp",
+                                                                value: "$(mktemp)",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                                Redirected {
+                                                    expression: Group(
+                                                        CshAst {
+                                                            commands: [
+                                                                Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "printf",
+                                                                        args: [
+                                                                            "%s\\n",
+                                                                            "require(\"config.remote_clipboard\").setup()",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                                Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "cat",
+                                                                        args: [
+                                                                            "$nvim_options",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: ">",
+                                                            target: "$tmp",
+                                                        },
+                                                    ],
+                                                },
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "mv",
+                                                        args: [
+                                                            "$tmp",
+                                                            "$nvim_options",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmux_config",
+                        value: "$HOME/.config/tmux/tmux.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " -f $tmux_config ",
+                                ),
+                                operator: And,
+                                right: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-Eq",
+                                                "(^|[[:space:],\"])\\*:clipboard([[:space:]\",]|$)",
+                                                "$tmux_config",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "printf",
+                                        args: [
+                                            "\\n# Enable OSC 52 clipboard forwarding for remote Neovim yanks.\\nset -as terminal-features \",*:clipboard\"\\n",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">>",
+                                        target: "$tmux_config",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

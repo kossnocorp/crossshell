@@ -1,0 +1,664 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/monitor-state-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_bin",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "monitors_file",
+                        value: "$(mktemp)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "cleanup",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$test_bin",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$monitors_file",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "cleanup",
+                    "EXIT",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_bin/hyprctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_bin/omarchy-brightness-display",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_bin/omarchy-hyprland-monitor-scaling",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$test_bin/*",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "state_lines",
+                        value: "()",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "monitor_state",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "%s\\n",
+                                        "$1",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$monitors_file",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mapfile",
+                                    args: [
+                                        "-t",
+                                        "state_lines",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(\n    FAKE_MONITORS=\"$monitors_file\" PATH=\"$test_bin:$PATH\" \\\n      bash \"$ROOT/bin/omarchy-monitor-state\" 2>/dev/null\n  )",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "assert_line",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "index=$1",
+                                    "expected=$2",
+                                    "description=$3",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " ${state_lines[index]-} == \"$expected\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$description",
+                                        "line $index expected: $expected$\\nline $index actual:   ${state_lines[index]-<missing>}",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "assert_line_count",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Arithmetic(
+                                " ${#state_lines[@]} == 8 ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$description",
+                                        "expected 8 lines, got ${#state_lines[@]}",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "extended",
+                        value: "[\n  { \"name\": \"eDP-1\", \"mirrorOf\": \"none\", \"disabled\": false, \"focused\": false, \"width\": 1920, \"height\": 1080 },\n  { \"name\": \"DP-1\", \"mirrorOf\": \"none\", \"disabled\": false, \"focused\": true, \"width\": 2560, \"height\": 1440 }\n]",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mirrored",
+                        value: "[\n  { \"name\": \"eDP-1\", \"mirrorOf\": \"none\", \"disabled\": false, \"focused\": true, \"width\": 1920, \"height\": 1080 },\n  { \"name\": \"DP-1\", \"mirrorOf\": \"eDP-1\", \"disabled\": false, \"focused\": false, \"width\": 1920, \"height\": 1080 }\n]",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "reverse_mirrored",
+                        value: "[\n  { \"name\": \"eDP-1\", \"mirrorOf\": \"DP-1\", \"disabled\": false, \"focused\": false, \"width\": 2560, \"height\": 1440 },\n  { \"name\": \"DP-1\", \"mirrorOf\": \"none\", \"disabled\": false, \"focused\": true, \"width\": 2560, \"height\": 1440 }\n]",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "clamshell",
+                        value: "[\n  { \"name\": \"eDP-1\", \"mirrorOf\": \"none\", \"disabled\": true, \"focused\": false, \"width\": 0, \"height\": 0 },\n  { \"name\": \"DP-1\", \"mirrorOf\": \"none\", \"disabled\": false, \"focused\": true, \"width\": 2560, \"height\": 1440 }\n]",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "monitor_state",
+                args: [
+                    "$extended",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line_count",
+                args: [
+                    "monitor state answers every line while extended",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "0",
+                    "42",
+                    "monitor state reports brightness",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "1",
+                    "eDP-1",
+                    "monitor state names the internal monitor",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "2",
+                    "DP-1",
+                    "monitor state names the external monitor",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "3",
+                    "eDP-1",
+                    "monitor state reports the internal monitor enabled",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "4",
+                    "",
+                    "monitor state reports no mirror while extended",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "5",
+                    "DP-1",
+                    "monitor state reports the focused monitor",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "6",
+                    "1.5",
+                    "monitor state reports the scale",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor state keeps its lines aligned when nothing is mirrored",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "monitor_state",
+                args: [
+                    "$mirrored",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line_count",
+                args: [
+                    "monitor state answers every line while mirroring",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "4",
+                    "DP-1",
+                    "monitor state names the mirroring external monitor",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "5",
+                    "eDP-1",
+                    "monitor state still reports the focused monitor while mirroring",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor state reports the external monitor when it mirrors the internal",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "monitor_state",
+                args: [
+                    "$reverse_mirrored",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line_count",
+                args: [
+                    "monitor state answers every line while mirroring in reverse",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "4",
+                    "DP-1",
+                    "monitor state names the external monitor either way round",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor state reports the external monitor when the internal mirrors it",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "monitor_state",
+                args: [
+                    "$clamshell",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line_count",
+                args: [
+                    "monitor state answers every line while clamshelled",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "1",
+                    "eDP-1",
+                    "monitor state still names a disabled internal monitor",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "3",
+                    "",
+                    "monitor state reports the internal monitor disabled",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_line",
+                args: [
+                    "4",
+                    "",
+                    "monitor state reports no mirror while clamshelled",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor state separates a disabled internal monitor from a missing one",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "monitor_state",
+                args: [
+                    "$extended",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${state_lines[7]-} == '[{\"name\":\"eDP-1\",\"enabled\":true,\"focused\":false,\"width\":1920,\"height\":1080},{\"name\":\"DP-1\",\"enabled\":true,\"focused\":true,\"width\":2560,\"height\":1440}]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor state lists every display for the panel",
+                        "actual: ${state_lines[7]-<missing>}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "monitor_state",
+                args: [
+                    "$clamshell",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${state_lines[7]-} == '[{\"name\":\"eDP-1\",\"enabled\":false,\"focused\":false,\"width\":0,\"height\":0},{\"name\":\"DP-1\",\"enabled\":true,\"focused\":true,\"width\":2560,\"height\":1440}]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "monitor state lists every display for the panel",
+                        "actual: ${state_lines[7]-<missing>}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "monitor state lists every display with its enabled and focused state",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n[[ $* == \"monitors all -j\" ]] || exit 1\ncat \"$FAKE_MONITORS\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\necho 42\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\necho 1.5\n",
+        },
+    ],
+}

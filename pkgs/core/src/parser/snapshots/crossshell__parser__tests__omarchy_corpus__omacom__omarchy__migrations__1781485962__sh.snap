@@ -1,0 +1,623 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1781485962.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Move stock Hyprland user overrides into package defaults",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stock_input_sha",
+                        value: "bf7602d679a31da028528d9b7dac64463217a9df42b254d3baefb7ce35674be5",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stock_bindings_sha",
+                        value: "932d647b07d24907d46c0b7752bb81ad87276ccd057670be6c3a5c5e950c19aa",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "plain_bindings_sha",
+                        value: "cde93672f53dad31c13c1a81cad6aae162ab95e0592d362dbf99ca7eabe76d43",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "file_sha",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sha256sum",
+                                    args: [
+                                        "$1",
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "awk",
+                                    args: [
+                                        "{ print $1 }",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "packaged_hypr_config",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "omarchy_config=$OMARCHY_PATH/config/hypr/$1",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -f $omarchy_config ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "printf",
+                                                    args: [
+                                                        "%s\\n",
+                                                        "$omarchy_config",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "printf",
+                                                args: [
+                                                    "/etc/skel/.config/hypr/%s\\n",
+                                                    "$1",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "replace_with_packaged_config",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "name=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "user_file=$HOME/.config/hypr/$name",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "packaged_file",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "packaged_file",
+                                        value: "$(packaged_hypr_config \"$name\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -f $user_file && -f $packaged_file ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cp",
+                                args: [
+                                    "$packaged_file",
+                                    "$user_file",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "vconsole_value",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "key=$1",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -f /etc/vconsole.conf ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "awk",
+                                args: [
+                                    "-F=",
+                                    "-v",
+                                    "key=$key",
+                                    "\n    $1 == key {\n      value = $2\n      sub(/^[[:space:]]*/, \"\", value)\n      sub(/[[:space:]]*$/, \"\", value)\n      gsub(/^\"/, \"\", value)\n      gsub(/\"$/, \"\", value)\n      print value\n      exit\n    }\n  ",
+                                    "/etc/vconsole.conf",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "active_lua_string_value",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "key=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "awk",
+                                args: [
+                                    "-F=",
+                                    "-v",
+                                    "key=$key",
+                                    "\n    $0 ~ \"^[[:space:]]*\" key \"[[:space:]]*=\" {\n      value = $2\n      sub(/^[[:space:]]*/, \"\", value)\n      sub(/[[:space:]]*,?[[:space:]]*$/, \"\", value)\n      gsub(/^\"/, \"\", value)\n      gsub(/\"$/, \"\", value)\n      print value\n      exit\n    }\n  ",
+                                    "$file",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "normalized_input_sha",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "sed",
+                                        args: [
+                                            "-e",
+                                            "/^[[:space:]]*kb_layout[[:space:]]*=/d",
+                                            "-e",
+                                            "/^[[:space:]]*kb_variant[[:space:]]*=/d",
+                                            "$1",
+                                        ],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "sha256sum",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "awk",
+                                    args: [
+                                        "{ print $1 }",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "input_is_stock_or_installer_synced",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "input_file=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "layout",
+                                    "variant",
+                                    "vconsole_layout",
+                                    "vconsole_variant",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $(normalized_input_sha \"$input_file\") == $stock_input_sha ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "layout",
+                                        value: "$(active_lua_string_value kb_layout \"$input_file\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "variant",
+                                        value: "$(active_lua_string_value kb_variant \"$input_file\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "vconsole_layout",
+                                        value: "$(vconsole_value XKBLAYOUT)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "vconsole_variant",
+                                        value: "$(vconsole_value XKBVARIANT)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -n $layout && $layout != $vconsole_layout ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " -n $variant && $variant != $vconsole_variant ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "0",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "input_file",
+                        value: "$HOME/.config/hypr/input.lua",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " -f $input_file ",
+                                ),
+                                operator: And,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "input_is_stock_or_installer_synced",
+                                        args: [
+                                            "$input_file",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "replace_with_packaged_config",
+                                    args: [
+                                        "input.lua",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "bindings_file",
+                        value: "$HOME/.config/hypr/bindings.lua",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -f $bindings_file ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Case {
+                                word: "$(file_sha \"$bindings_file\")",
+                                arms: [
+                                    CshAstCaseArm {
+                                        patterns: [
+                                            "$stock_bindings_sha",
+                                        ],
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "replace_with_packaged_config",
+                                                        args: [
+                                                            "bindings.lua",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                        terminator: ";;",
+                                    },
+                                    CshAstCaseArm {
+                                        patterns: [
+                                            "$plain_bindings_sha",
+                                        ],
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "mkdir",
+                                                        args: [
+                                                            "-p",
+                                                            "$HOME/.local/state/omarchy",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "touch",
+                                                        args: [
+                                                            "$HOME/.local/state/omarchy/preinstalls-removed",
+                                                        ],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "replace_with_packaged_config",
+                                                        args: [
+                                                            "bindings.lua",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                        terminator: ";;",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

@@ -1,0 +1,918 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/acceptance.d/base-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " ${BASH_SOURCE[0]} == \"$0\" ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "echo",
+                                        args: [
+                                            "source test/acceptance.d/base-test.sh from an acceptance test; do not run it directly",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">&",
+                                        target: "2",
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "ROOT",
+                        value: "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")/../..\" && pwd)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "ARTIFACTS",
+                        value: "${OMARCHY_ACCEPTANCE_DIR:-/tmp/omarchy-acceptance}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$ARTIFACTS",
+                ],
+            },
+        ),
+        Function {
+            name: "pass",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "ok - %s\\n",
+                                    "$1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "fail",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "detail=${2:-}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "step=${description,,}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "step",
+                                        value: "${step// /-}",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "step",
+                                        value: "${step//[^a-z0-9-]/}",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -n $detail ",
+                            ),
+                            operator: And,
+                            right: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "printf",
+                                        args: [
+                                            "%s\\n",
+                                            "$detail",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">&",
+                                        target: "2",
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "screenshot",
+                                args: [
+                                    "failure-$step",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "not ok - %s\\n",
+                                        "$description",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">&",
+                                    target: "2",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "exit",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "screenshot",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "timeout",
+                                        args: [
+                                            "10",
+                                            "grim",
+                                            "$ARTIFACTS/$1.png",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "true",
+                                    args: [],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "screen_contains",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "text=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "snapshot=/tmp/omarchy-acceptance-ocr-$$.png",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "timeout",
+                                                            args: [
+                                                                "10",
+                                                                "grim",
+                                                                "-s",
+                                                                "2",
+                                                                "$snapshot",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: Some(
+                                                                "2",
+                                                            ),
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "rm",
+                                                    args: [
+                                                        "-f",
+                                                        "$snapshot",
+                                                    ],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "return",
+                                                    args: [
+                                                        "1",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "tesseract",
+                                        args: [
+                                            "$snapshot",
+                                            "stdout",
+                                            "--psm",
+                                            "11",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                            operator: Pipe,
+                            right: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-Fi",
+                                            "--",
+                                            "$text",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "status=$?",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$snapshot",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "$status",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "wait_until",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                    "timeout=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "shift",
+                                args: [
+                                    "2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "deadline=$((SECONDS + timeout))",
+                                ],
+                            },
+                        ),
+                        Loop {
+                            until: true,
+                            condition: CshAst {
+                                commands: [
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "$@",
+                                                args: [],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                            CshAstRedirect {
+                                                descriptor: Some(
+                                                    "2",
+                                                ),
+                                                operator: ">&",
+                                                target: "1",
+                                            },
+                                        ],
+                                    },
+                                ],
+                            },
+                            body: CshAst {
+                                commands: [
+                                    If {
+                                        branches: [
+                                            CshAstBranch {
+                                                condition: CshAst {
+                                                    commands: [
+                                                        Arithmetic(
+                                                            "SECONDS >= deadline",
+                                                        ),
+                                                    ],
+                                                },
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "fail",
+                                                                args: [
+                                                                    "$description",
+                                                                    "timed out after ${timeout}s waiting for: $*",
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        otherwise: None,
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "sleep",
+                                            args: [
+                                                "1",
+                                            ],
+                                        },
+                                    ),
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "window_present",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "hyprctl",
+                                    args: [
+                                        "-j",
+                                        "clients",
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "jq",
+                                    args: [
+                                        "-e",
+                                        "--arg",
+                                        "class",
+                                        "$1",
+                                        "[.[] | select(.class | test($class))] | length > 0",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "window_absent",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Negated(
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "window_present",
+                                    args: [
+                                        "$1",
+                                    ],
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "layer_present",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "hyprctl",
+                                    args: [
+                                        "-j",
+                                        "layers",
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "jq",
+                                    args: [
+                                        "-e",
+                                        "--arg",
+                                        "ns",
+                                        "$1",
+                                        "[.. | objects | select(.namespace? == $ns)] | length > 0",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "layer_absent",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Negated(
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "layer_present",
+                                    args: [
+                                        "$1",
+                                    ],
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "layer_on_screen",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "monitors",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "monitors",
+                                            value: "$(hyprctl -j monitors)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "hyprctl",
+                                    args: [
+                                        "-j",
+                                        "layers",
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "jq",
+                                        args: [
+                                            "-e",
+                                            "--arg",
+                                            "ns",
+                                            "$1",
+                                            "--argjson",
+                                            "monitors",
+                                            "$monitors",
+                                            "\n    to_entries[]\n    | .key as $name\n    | .value as $levels\n    | ($monitors[] | select(.name == $name)) as $m\n    | (if ($m.transform // 0) % 2 == 1 then $m.height else $m.width end) / $m.scale | round as $width\n    | (if ($m.transform // 0) % 2 == 1 then $m.width else $m.height end) / $m.scale | round as $height\n    | [$levels | .. | objects | select(.namespace? == $ns)][]\n    | select(\n        .x + .w > 0 and .x < $width and\n        .y + .h > 0 and .y < $height\n      )\n  ",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "layer_off_screen",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Negated(
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "layer_on_screen",
+                                    args: [
+                                        "$1",
+                                    ],
+                                },
+                            ),
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "close_windows",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "class=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "addr",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Loop {
+                                until: false,
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "read",
+                                                args: [
+                                                    "-r",
+                                                    "addr",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Binary {
+                                                left: Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "hyprctl",
+                                                            args: [
+                                                                "dispatch",
+                                                                "hl.dsp.window.close({ window = \"address:$addr\" })",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                        CshAstRedirect {
+                                                            descriptor: Some(
+                                                                "2",
+                                                            ),
+                                                            operator: ">&",
+                                                            target: "1",
+                                                        },
+                                                    ],
+                                                },
+                                                operator: Or,
+                                                right: Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "hyprctl",
+                                                            args: [
+                                                                "dispatch",
+                                                                "closewindow",
+                                                                "address:$addr",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                        CshAstRedirect {
+                                                            descriptor: Some(
+                                                                "2",
+                                                            ),
+                                                            operator: ">&",
+                                                            target: "1",
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            operator: Or,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "true",
+                                                    args: [],
+                                                },
+                                            ),
+                                        },
+                                    ],
+                                },
+                            },
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(hyprctl -j clients | jq -r --arg class \"$class\" '.[] | select(.class | test($class)) | .address')",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "launch_app",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "setsid",
+                                    args: [
+                                        "-f",
+                                        "bash",
+                                        "-c",
+                                        "$1",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                                CshAstRedirect {
+                                    descriptor: Some(
+                                        "2",
+                                    ),
+                                    operator: ">&",
+                                    target: "1",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+    ],
+}

@@ -1,0 +1,744 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/dev-env-path-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Function {
+            name: "run_bootstrap",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "shell_bin=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "bootstrap=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "home=$3",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "path_value=$4",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "shell_bin",
+                                        value: "$(command -v \"$shell_bin\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "HOME",
+                                        value: "$home",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$path_value",
+                                    },
+                                ],
+                                name: "$shell_bin",
+                                args: [
+                                    "-c",
+                                    "\n    . \"$1\"\n    printf \"%s\\n%s\\n\" \"$OMARCHY_PATH\" \"$PATH\"\n  ",
+                                    "sh",
+                                    "$bootstrap",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "assert_path_first",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "path_value=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "entry=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$3",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " ${path_value%%:*} == \"$entry\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$description",
+                                        "expected first PATH entry: $entry\\nactual PATH: $path_value",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "assert_path_present",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "path_value=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "entry=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$3",
+                                ],
+                            },
+                        ),
+                        Case {
+                            word: ":$path_value:",
+                            arms: [
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "*:$entry:*",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "pass",
+                                                    args: [
+                                                        "$description",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "*",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "fail",
+                                                    args: [
+                                                        "$description",
+                                                        "PATH does not contain $entry in $path_value",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmpdir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmpdir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "home",
+                        value: "$tmpdir/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$tmpdir/active/bin",
+                    "$tmpdir/unrelated/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "bootstrap",
+                        value: "$tmpdir/env-bootstrap",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sed",
+                    args: [
+                        "s#/etc/omarchy.conf#$tmpdir/omarchy.conf#g",
+                        "$ROOT/default/bash/env-bootstrap",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$bootstrap",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "export OMARCHY_PATH=\"/usr/share/omarchy\"\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmpdir/omarchy.conf",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "default_result",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "<(run_bootstrap bash \"$bootstrap\" \"$home\" \"$tmpdir/unrelated/bin:/usr/bin\")",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "default_path",
+                        value: "${default_result[1]}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${default_result[0]} == /usr/share/omarchy ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "env-bootstrap resolves default OMARCHY_PATH",
+                        "actual: ${default_result[0]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "env-bootstrap resolves default OMARCHY_PATH",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_path_present",
+                args: [
+                    "$default_path",
+                    "$tmpdir/unrelated/bin",
+                    "env-bootstrap preserves PATH entries in default mode",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_path_present",
+                args: [
+                    "$default_path",
+                    "$home/.local/share/mise/shims",
+                    "env-bootstrap appends mise shims",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_path_present",
+                args: [
+                    "$default_path",
+                    "$home/.local/bin",
+                    "env-bootstrap appends ~/.local/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_path_first",
+                args: [
+                    "$default_path",
+                    "$tmpdir/unrelated/bin",
+                    "env-bootstrap appends user-level paths after existing entries",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "export OMARCHY_PATH=\"%s\"\\n",
+                        "$tmpdir/active",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmpdir/omarchy.conf",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "linked_result",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "<(run_bootstrap bash \"$bootstrap\" \"$home\" \"$tmpdir/unrelated/bin:/usr/bin\")",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "linked_path",
+                        value: "${linked_result[1]}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ${linked_result[0]} == \"$tmpdir/active\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "env-bootstrap resolves linked OMARCHY_PATH",
+                        "actual: ${linked_result[0]}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "env-bootstrap resolves linked OMARCHY_PATH",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_path_first",
+                args: [
+                    "$linked_path",
+                    "$tmpdir/active/bin",
+                    "env-bootstrap prepends active checkout bin in linked mode",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_path_present",
+                args: [
+                    "$linked_path",
+                    "$tmpdir/unrelated/bin",
+                    "env-bootstrap preserves unrelated PATH entries in linked mode",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "linked_duplicate_result",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "<(run_bootstrap bash \"$bootstrap\" \"$home\" \"$tmpdir/active/bin:/usr/bin:$home/.local/share/mise/shims:$home/.local/bin\")",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "linked_duplicate_path",
+                        value: "${linked_duplicate_result[1]}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $linked_duplicate_path == \"$tmpdir/active/bin:/usr/bin:$home/.local/share/mise/shims:$home/.local/bin\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "env-bootstrap does not duplicate PATH entries",
+                        "actual PATH: $linked_duplicate_path",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "env-bootstrap does not duplicate PATH entries",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-t",
+                        "empty_path_result",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "<(run_bootstrap bash \"$bootstrap\" \"$home\" \"\")",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "empty_path",
+                        value: "${empty_path_result[1]}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $empty_path == \"$tmpdir/active/bin:$home/.local/share/mise/shims:$home/.local/bin\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "env-bootstrap builds a clean PATH from an empty one",
+                        "actual PATH: $empty_path",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "env-bootstrap builds a clean PATH from an empty one",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "command",
+                                        args: [
+                                            "-v",
+                                            "zsh",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "mapfile",
+                                        args: [
+                                            "-t",
+                                            "zsh_result",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<",
+                                        target: "<(run_bootstrap zsh \"$bootstrap\" \"$home\" \"$tmpdir/unrelated/bin:/usr/bin\")",
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "zsh_path",
+                                            value: "${zsh_result[1]}",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "assert_path_first",
+                                    args: [
+                                        "$zsh_path",
+                                        "$tmpdir/active/bin",
+                                        "env-bootstrap works when sourced by zsh",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "assert_path_present",
+                                    args: [
+                                        "$zsh_path",
+                                        "$tmpdir/unrelated/bin",
+                                        "env-bootstrap zsh mode preserves unrelated PATH entries",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

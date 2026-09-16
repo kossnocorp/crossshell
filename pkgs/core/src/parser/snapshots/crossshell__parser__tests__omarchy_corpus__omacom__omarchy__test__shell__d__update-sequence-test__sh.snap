@@ -1,0 +1,534 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/update-sequence-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "steps",
+                        value: "(\n  omarchy-update-lock\n  omarchy-update-requires-free-space\n  omarchy-update-confirm\n  omarchy-update-pkg-prune\n  omarchy-snapshot\n  omarchy-update-stay-awake\n  omarchy-update-dev\n  omarchy-update-keyring\n  omarchy-update-system-pkgs\n  omarchy-migrate\n  omarchy-hook\n  omarchy-update-aur-pkgs\n  omarchy-update-mise\n  omarchy-update-orphan-pkgs\n  omarchy-update-analyze-logs\n  omarchy-update-status\n  omarchy-update-restart\n)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "step",
+            words: Some(
+                [
+                    "${steps[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cat",
+                                args: [],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$stub_bin/$step",
+                            },
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: "<<",
+                                target: "STUB",
+                                here_document: 0,
+                            },
+                        ],
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "chmod",
+                            args: [
+                                "+x",
+                                "$stub_bin/$step",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Function {
+            name: "run_update",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$test_tmp/steps",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "STEP_LOG",
+                                            value: "$test_tmp/steps",
+                                        },
+                                        CshAstAssignment {
+                                            name: "FAILING_STEP",
+                                            value: "${FAILING_STEP:-}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_UPDATE_LOGGED",
+                                            value: "1",
+                                        },
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$stub_bin:$PATH",
+                                        },
+                                    ],
+                                    name: "bash",
+                                    args: [
+                                        "$ROOT/bin/omarchy-update",
+                                        "$@",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$test_tmp/out",
+                                },
+                                CshAstRedirect {
+                                    descriptor: Some(
+                                        "2",
+                                    ),
+                                    operator: ">",
+                                    target: "$test_tmp/err",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "steps_run",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cut",
+                                args: [
+                                    "-d ",
+                                    "-f1",
+                                    "$test_tmp/steps",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "expected_steps",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "%s\\n",
+                                    "omarchy-update-lock",
+                                    "omarchy-update-requires-free-space",
+                                    "${1:+omarchy-update-confirm}",
+                                    "omarchy-update-pkg-prune",
+                                    "omarchy-snapshot",
+                                    "omarchy-update-stay-awake",
+                                    "omarchy-update-dev",
+                                    "omarchy-update-keyring",
+                                    "omarchy-update-system-pkgs",
+                                    "omarchy-migrate",
+                                    "omarchy-hook",
+                                    "omarchy-update-aur-pkgs",
+                                    "omarchy-update-mise",
+                                    "omarchy-update-orphan-pkgs",
+                                    "omarchy-update-analyze-logs",
+                                    "omarchy-update-status",
+                                    "omarchy-update-stay-awake",
+                                    "omarchy-update-restart",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_update",
+                    args: [
+                        "-y",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an update where everything works reports a failure",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "diff",
+                        args: [
+                            "<(expected_steps)",
+                            "<(steps_run)",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "$test_tmp/order",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an update where everything works does not run every step in order",
+                        "$(cat \"$test_tmp/order\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "an update where every step works runs all of them, in order",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^omarchy-update-system-pkgs unattended=1$",
+                        "$test_tmp/steps",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "-y does not mark the update unattended",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "run_update",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a confirmed update reports a failure",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "diff",
+                        args: [
+                            "<(expected_steps confirmed)",
+                            "<(steps_run)",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "$test_tmp/order",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a confirmed update runs a different set of steps",
+                        "$(cat \"$test_tmp/order\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "^omarchy-update-system-pkgs unattended=$",
+                        "$test_tmp/steps",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an update a person confirmed is treated as unattended",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "-y is what marks an update unattended, not the update itself",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "FAILING_STEP",
+                                            value: "omarchy-update-system-pkgs",
+                                        },
+                                    ],
+                                    name: "run_update",
+                                    args: [
+                                        "-y",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "an update whose packages did not upgrade passes for a whole one",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        For {
+            variable: "step",
+            words: Some(
+                [
+                    "omarchy-migrate",
+                    "omarchy-hook",
+                    "omarchy-update-aur-pkgs",
+                    "omarchy-update-restart",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "-q",
+                                                    "^$step ",
+                                                    "$test_tmp/steps",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "fail",
+                                                args: [
+                                                    "a blocked package upgrade still runs $step",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a blocked package upgrade stops the update before it migrates",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s unattended=%s\\n' \"${0##*/}\" \"${OMARCHY_UPDATE_UNATTENDED:-}\" >>\"$STEP_LOG\"\n[[ ${FAILING_STEP:-} != \"${0##*/}\" ]] || exit 1\n",
+        },
+    ],
+}

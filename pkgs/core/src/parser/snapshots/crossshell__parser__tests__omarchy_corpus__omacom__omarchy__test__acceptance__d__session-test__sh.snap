@@ -1,0 +1,534 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/acceptance.d/session-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "monitors",
+                        value: "$(hyprctl -j monitors | jq 'length')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " monitors >= 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "compositor reports a monitor",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "compositor reports a monitor",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "omarchy-shell responds to ping",
+                    "60",
+                    "omarchy-shell",
+                    "shell",
+                    "ping",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "plugins",
+                        value: "$(omarchy-shell shell listPlugins)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "plugin",
+            words: Some(
+                [
+                    "omarchy.audio",
+                    "omarchy.background",
+                    "omarchy.bar",
+                    "omarchy.bluetooth",
+                    "omarchy.clipboard",
+                    "omarchy.emojis",
+                    "omarchy.menu",
+                    "omarchy.monitor",
+                    "omarchy.network",
+                    "omarchy.notifications",
+                    "omarchy.power",
+                    "omarchy.reminders",
+                    "omarchy.weather",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " $plugins == *\"$plugin\"* ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "shell plugin is loaded: $plugin",
+                                    "loaded plugins: $plugins",
+                                ],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "pass",
+                            args: [
+                                "shell plugin is loaded: $plugin",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "bar layer is on screen",
+                    "30",
+                    "layer_on_screen",
+                    "omarchy-bar",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "background layer is on screen",
+                    "30",
+                    "layer_on_screen",
+                    "omarchy-background",
+                ],
+            },
+        ),
+        Function {
+            name: "restore_bar_visibility",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "omarchy-toggle-bar",
+                                        args: [
+                                            "off",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "true",
+                                    args: [],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "restore_bar_visibility",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "omarchy-toggle-bar",
+                args: [
+                    "on",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "hidden bar layer stays mapped",
+                    "15",
+                    "layer_present",
+                    "omarchy-bar",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "hidden bar layer parks off screen",
+                    "15",
+                    "layer_off_screen",
+                    "omarchy-bar",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-bar-hidden",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "omarchy-toggle-bar",
+                args: [
+                    "off",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "revealed bar layer returns on screen",
+                    "15",
+                    "layer_on_screen",
+                    "omarchy-bar",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-bar-revealed",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "-",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "pipewire is running",
+                    "30",
+                    "wpctl",
+                    "status",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(findmnt -no FSTYPE /) == \"btrfs\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "root filesystem is btrfs",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "root filesystem is btrfs",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "omarchy-version",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-version works",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "omarchy-version works",
+                ],
+            },
+        ),
+        Function {
+            name: "failed_units",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Binary {
+                                left: Binary {
+                                    left: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "systemctl",
+                                            args: [
+                                                "$@",
+                                                "--failed",
+                                                "--no-legend",
+                                                "--plain",
+                                            ],
+                                        },
+                                    ),
+                                    operator: Pipe,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "awk",
+                                            args: [
+                                                "{print $1}",
+                                            ],
+                                        },
+                                    ),
+                                },
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-Ev",
+                                            "${OMARCHY_ACCEPTANCE_IGNORE_UNITS:-^$}",
+                                        ],
+                                    },
+                                ),
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "true",
+                                    args: [],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "failed_system",
+                        value: "$(failed_units --system)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -n $failed_system ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "no failed system units",
+                                        "failed units: $failed_system",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "no failed system units",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "failed_user",
+                        value: "$(failed_units --user)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -n $failed_user ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "no failed user units",
+                                        "failed units: $failed_user",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "no failed user units",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-desktop",
+                ],
+            },
+        ),
+    ],
+}

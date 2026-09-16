@@ -531,7 +531,7 @@ b # comment"#).unwrap();
 
     #[test]
     fn bounds_recursive_nesting_but_handles_long_operator_chains() {
-        let nested = format!("{}echo{}", "(".repeat(128), ")".repeat(128));
+        let nested = format!("{}echo{}", "( ".repeat(128), " )".repeat(128));
         let error = CshParser::parse(&nested).unwrap_err();
         assert!(matches!(
             error.errors[0],
@@ -590,7 +590,200 @@ b # comment"#).unwrap();
     }
 
     #[test]
-    fn parses_smoke_test_data() {
+    fn parses_functions_and_arithmetic_loops() {
+        let ast = CshParser::parse(
+            "function bump { (( count += 1 )); }\nfor ((i=0; i<2; i++)); do bump; done",
+        )
+        .unwrap();
+        assert_debug_snapshot!(ast, @r#"
+        CshAst {
+            commands: [
+                Function {
+                    name: "bump",
+                    body: Group(
+                        CshAst {
+                            commands: [
+                                Arithmetic(
+                                    " count += 1 ",
+                                ),
+                            ],
+                        },
+                    ),
+                },
+                ArithmeticFor {
+                    clauses: "i=0; i<2; i++",
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "bump",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+        }
+        "#);
+    }
+
+    #[test]
+    fn parses_ordered_heredocs_without_parsing_their_contents() {
+        let ast = CshParser::parse(
+            "cat <<'EOF' 3<<-END\n$(not shell |) ' \"\nEOF\n\tvalue\n\tEND\necho done",
+        )
+        .unwrap();
+        assert_debug_snapshot!(ast, @r#"
+        CshAst {
+            commands: [
+                Redirected {
+                    expression: Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "cat",
+                            args: [],
+                        },
+                    ),
+                    redirects: [
+                        CshAstRedirect {
+                            descriptor: None,
+                            operator: "<<",
+                            target: "EOF",
+                            here_document: 0,
+                        },
+                        CshAstRedirect {
+                            descriptor: Some(
+                                "3",
+                            ),
+                            operator: "<<-",
+                            target: "END",
+                            here_document: 1,
+                        },
+                    ],
+                },
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "echo",
+                        args: [
+                            "done",
+                        ],
+                    },
+                ),
+            ],
+            here_documents: [
+                CshAstHereDocument {
+                    delimiter: "EOF",
+                    quoted: true,
+                    strip_tabs: false,
+                    body: "$(not shell |) ' \"\n",
+                },
+                CshAstHereDocument {
+                    delimiter: "END",
+                    quoted: false,
+                    strip_tabs: true,
+                    body: "value\n",
+                },
+            ],
+        }
+        "#);
+    }
+
+    #[test]
+    fn scopes_heredocs_inside_substitutions() {
+        let source = "cat <<OUT \"$(cat <<'IN'\ninner\nIN\n)\"\nouter\nOUT\n";
+        let ast = CshParser::parse(source).unwrap();
+        assert_eq!(ast.here_documents.len(), 1);
+        assert_eq!(ast.here_documents[0].delimiter, "OUT");
+        assert_eq!(ast.here_documents[0].body, "outer\n");
+        assert_eq!(ast.nodes.len(), 2);
+    }
+
+    #[test]
+    fn preserves_array_and_test_expression_syntax() {
+        let ast = CshParser::parse("items=('one two' $(pwd)\n# comment\nthree)\n[[ ${items[0]} =~ ^(one|two)$ && -n \"$HOME\" ]]").unwrap();
+        let CshAstExpression::Command(command) = &ast[ast.commands[0]] else {
+            panic!("expected assignment");
+        };
+        assert_eq!(
+            command.assignments[0].value,
+            "('one two' $(pwd)\n# comment\nthree)"
+        );
+        assert!(
+            matches!(&ast[ast.commands[1]], CshAstExpression::Test(text) if text == " ${items[0]} =~ ^(one|two)$ && -n \"$HOME\" ")
+        );
+        for source in [
+            "f()",
+            "function",
+            "function f",
+            "a=(one",
+            "[[ -f x",
+            "cat <<EOF",
+            "cat <<EOF\nnot closed\n",
+            "cat <<'EOF'\n EOF\n",
+        ] {
+            // `function` alone is reserved by Bash, but is not a complete definition.
+            assert!(CshParser::parse(source).is_err(), "accepted {source:?}");
+        }
+    }
+
+    #[test]
+    fn parses_omarchy_corpus() {
+        let vendor = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("vendor");
+        let pattern = vendor.join("@omacom/omarchy/**/*.sh");
+        let mut paths = glob::glob(pattern.to_str().unwrap())
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        paths.sort();
+        assert!(
+            !paths.is_empty(),
+            "No shell scripts found at {}",
+            pattern.display()
+        );
+        let mut parsed = Vec::new();
+        let mut failures = Vec::new();
+        let mut names = std::collections::BTreeSet::new();
+        for path in &paths {
+            let relative = path.strip_prefix(&vendor).unwrap().to_str().unwrap();
+            let name = format!(
+                "omarchy_corpus__{}",
+                relative.trim_start_matches('@').replace(['/', '.'], "__")
+            );
+            assert!(
+                names.insert(name.clone()),
+                "Snapshot name collision: {relative}"
+            );
+            let source = std::fs::read_to_string(path).unwrap();
+            match CshParser::parse(&source) {
+                Ok(ast) => parsed.push((name, relative, ast)),
+                Err(error) => {
+                    let mut report = Vec::new();
+                    CshErrorReport::new(&source, relative, &error.errors, false)
+                        .write(&mut report)
+                        .unwrap();
+                    failures.push(String::from_utf8(report).unwrap());
+                }
+            }
+        }
+        assert!(
+            failures.is_empty(),
+            "{} of {} corpus files failed:\n{}",
+            failures.len(),
+            paths.len(),
+            failures.join("\n")
+        );
+        for (name, relative, ast) in parsed {
+            insta::with_settings!({ description => relative }, {
+                assert_debug_snapshot!(name, ast);
+            });
+        }
+    }
+
+    #[test]
+    fn parses_npm_scripts_corpus() {
         let scripts = include_str!("../../test/smoke/data/top-npm-scripts.jsonl").lines();
         let mut asts = std::collections::BTreeMap::new();
         let mut rejections = std::collections::BTreeMap::new();
@@ -635,7 +828,7 @@ b # comment"#).unwrap();
         )
         ");
         // Debug snapshots preserve map iteration order; BTreeMap sorts by script.
-        assert_debug_snapshot!("smoke_test_data", asts);
+        assert_debug_snapshot!("npm_scripts_corpus_asts", asts);
         // Debug/YAML escape embedded newlines by default. Keep Ariadne's layout
         // intact in a text mapping so the reports can be read directly.
         let reports = rejections
@@ -650,7 +843,7 @@ b # comment"#).unwrap();
             })
             .collect::<Vec<_>>()
             .join("\n\n");
-        assert_snapshot!("smoke_test_rejections", reports);
+        assert_snapshot!("npm_scripts_corpus_rejections", reports);
     }
 
     #[test]

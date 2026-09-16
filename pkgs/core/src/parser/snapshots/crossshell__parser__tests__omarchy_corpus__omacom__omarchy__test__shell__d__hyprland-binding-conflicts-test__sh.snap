@@ -1,0 +1,766 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hyprland-binding-conflicts-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"${BASH_SOURCE[0]}\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "lua",
+                ],
+            },
+        ),
+        Function {
+            name: "list_bindings",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "home=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "epilogue=${2:-}",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "HOME",
+                                            value: "$home",
+                                        },
+                                        CshAstAssignment {
+                                            name: "XDG_CONFIG_HOME",
+                                            value: "$home/.config",
+                                        },
+                                        CshAstAssignment {
+                                            name: "XDG_STATE_HOME",
+                                            value: "$home/.local/state",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_PATH",
+                                            value: "$ROOT",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_BINDING_EPILOGUE",
+                                            value: "$epilogue",
+                                        },
+                                    ],
+                                    name: "lua",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<",
+                                    target: "LUA",
+                                    here_document: 0,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "duplicate_signatures",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "cut",
+                                        args: [
+                                            "-f1",
+                                        ],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "sort",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "uniq",
+                                    args: [
+                                        "-d",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "allowed_duplicates",
+                        value: "(\n  \"ALT+SHIFT+TAB\"\n  \"ALT+TAB\"\n)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "is_allowed_duplicate",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "signature=$1",
+                                    "allowed",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "allowed",
+                            words: Some(
+                                [
+                                    "${allowed_duplicates[@]}",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Test(
+                                            " $signature == \"$allowed\" ",
+                                        ),
+                                        operator: And,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "return",
+                                                args: [
+                                                    "0",
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmpdir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmpdir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "home",
+                        value: "$tmpdir/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$tmpdir/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$home",
+                    "$stub_bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$stub_bin/voxtype",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/voxtype",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "bindings",
+                        value: "$(PATH=\"$stub_bin:$PATH\" list_bindings \"$home\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -n $bindings ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "default bindings load for the conflict check",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fq",
+                            "$SUPER + RETURN\\tTerminal",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$bindings",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "conflict check sees the essential bindings",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fq",
+                            "$SUPER + SHIFT + A\\tChatGPT",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$bindings",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "conflict check sees the preinstalled bindings",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fq",
+                            "$F9\\tStart dictation (push-to-talk)",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$bindings",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "conflict check sees the Voxtype bindings",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "conflict check covers the full default binding set",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "duplicates",
+                        value: "$(duplicate_signatures <<<\"$bindings\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Loop {
+                until: false,
+                condition: CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "read",
+                                args: [
+                                    "-r",
+                                    "signature",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+                body: CshAst {
+                    commands: [
+                        Binary {
+                            left: Test(
+                                " -n $signature ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "continue",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "is_allowed_duplicate",
+                                    args: [
+                                        "$signature",
+                                    ],
+                                },
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "continue",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "no two default bindings claim the same chord",
+                                    "$(awk -F'\\t' -v signature=\"$signature\" '$1 == signature { print $2 \" -> \" $3 }' <<<\"$bindings\")",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            },
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<<",
+                    target: "$duplicates",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "no two default bindings claim the same chord",
+                ],
+            },
+        ),
+        For {
+            variable: "allowed",
+            words: Some(
+                [
+                    "${allowed_duplicates[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-Fqx",
+                                        "$allowed",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<<",
+                                    target: "$duplicates",
+                                },
+                            ],
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "every allowed duplicate chord is still stacked on purpose",
+                                    "$allowed",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "allowed duplicate chords are still stacked on purpose",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " $(grep -c $'^F9\\t' <<<\"$bindings\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "press and release bindings on one key do not read as a conflict",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " $(grep -c $'^F9 (release)\\t' <<<\"$bindings\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "release bindings keep their own signature",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "press and release bindings on one key do not read as a conflict",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "probe",
+                        value: "$(PATH=\"$stub_bin:$PATH\" list_bindings \"$home\" \\\n  'o.bind(\"SUPER + 1\", \"Conflict probe\", \"true\")' | duplicate_signatures)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fqx",
+                            "SUPER+1",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$probe",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the conflict check catches a keysym colliding with a bound keycode",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "probe",
+                        value: "$(PATH=\"$stub_bin:$PATH\" list_bindings \"$home\" \\\n  'o.bind(\"SUPER + ALT + SHIFT + RIGHT\", \"Conflict probe\", \"true\")' | duplicate_signatures)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fqx",
+                            "ALT+SHIFT+SUPER+RIGHT",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$probe",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the conflict check ignores modifier order",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the conflict check catches collisions across keycodes and modifier order",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rebound",
+                        value: "$(PATH=\"$stub_bin:$PATH\" list_bindings \"$home\" \\\n  'o.rebind(\"SUPER + SHIFT + F\", \"Flea\", { launch = \"flea\" })' | \\\n  awk -F'\\t' '$1 == \"SHIFT+SUPER+F\"')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $rebound == $'SHIFT+SUPER+F\\tSUPER + SHIFT + F\\tFlea' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "rebinding replaces the default file manager without stacking actions",
+                        "$rebound",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "rebinding replaces the default file manager without stacking actions",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rebound",
+                        value: "$(PATH=\"$stub_bin:$PATH\" list_bindings \"$home\" \\\n  'o.rebind(\"F9\", \"Dictation on release\", \"voxtype record toggle\", { release = true })' | \\\n  awk -F'\\t' '$2 == \"F9\"')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $rebound == $'F9 (release)\\tF9\\tDictation on release' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "rebinding replaces all bindings for a key and preserves binding options",
+                        "$rebound",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "rebinding replaces all bindings for a key and preserves binding options",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "LUA",
+            quoted: true,
+            strip_tabs: false,
+            body: "package.path = os.getenv(\"HOME\") .. \"/.config/?.lua;\" .. os.getenv(\"OMARCHY_PATH\") .. \"/?.lua;\" .. package.path\n\nlocal function proxy()\n  return setmetatable({}, {\n    __index = function(self, key)\n      local value = proxy()\n      rawset(self, key, value)\n      return value\n    end,\n    __call = function()\n      return {}\n    end,\n  })\nend\n\nlocal bindings = {}\n\nhl = setmetatable({\n  dsp = proxy(),\n  bind = function(keys, dispatcher, opts)\n    opts = opts or {}\n    table.insert(bindings, {\n      keys = keys,\n      description = opts.description or \"(no description)\",\n      release = opts.release == true,\n    })\n  end,\n  unbind = function(keys)\n    for index = #bindings, 1, -1 do\n      if bindings[index].keys == keys then\n        table.remove(bindings, index)\n      end\n    end\n  end,\n  config = function() end,\n  env = function() end,\n  monitor = function() end,\n  window_rule = function() end,\n  workspace_rule = function() end,\n  layer_rule = function() end,\n  gesture = function() end,\n  animation = function() end,\n  curve = function() end,\n  exec_cmd = function() end,\n  dispatch = function() end,\n  on = function() end,\n  timer = function() end,\n  get_config = function() return nil end,\n  get_active_window = function() return nil end,\n}, {\n  __index = function()\n    return function()\n      return {}\n    end\n  end,\n})\n\nrequire(\"default.hypr.omarchy\")\n\nlocal epilogue = os.getenv(\"OMARCHY_BINDING_EPILOGUE\") or \"\"\nif epilogue ~= \"\" then\n  assert(load(epilogue))()\nend\n\n-- X11 keycodes are evdev codes plus 8. Only the rows Omarchy binds by code\n-- need naming; anything else keeps its code: form and still compares exactly.\nlocal keycode_keysyms = {\n  [10] = \"1\", [11] = \"2\", [12] = \"3\", [13] = \"4\", [14] = \"5\",\n  [15] = \"6\", [16] = \"7\", [17] = \"8\", [18] = \"9\", [19] = \"0\",\n  [20] = \"MINUS\", [21] = \"EQUAL\",\n  [34] = \"BRACKETLEFT\", [35] = \"BRACKETRIGHT\",\n  [47] = \"SEMICOLON\", [48] = \"APOSTROPHE\", [49] = \"GRAVE\", [51] = \"BACKSLASH\",\n  [59] = \"COMMA\", [60] = \"PERIOD\", [61] = \"SLASH\",\n}\n\nlocal function signature(binding)\n  local parts = {}\n  for raw in (binding.keys .. \"+\"):gmatch(\"([^+]*)%+\") do\n    local part = raw:match(\"^%s*(.-)%s*$\")\n    if part ~= \"\" then\n      table.insert(parts, part)\n    end\n  end\n\n  local key = table.remove(parts) or \"\"\n  local code = tonumber(key:match(\"^[Cc][Oo][Dd][Ee]:(%d+)$\") or \"\")\n  if code and keycode_keysyms[code] then\n    key = keycode_keysyms[code]\n  end\n\n  for index, modifier in ipairs(parts) do\n    parts[index] = modifier:upper()\n  end\n  table.sort(parts)\n  table.insert(parts, key:upper())\n\n  return table.concat(parts, \"+\") .. (binding.release and \" (release)\" or \"\")\nend\n\nfor _, binding in ipairs(bindings) do\n  print(signature(binding) .. \"\\t\" .. binding.keys .. \"\\t\" .. binding.description)\nend\n",
+        },
+    ],
+}

@@ -1,0 +1,1864 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/monitor-modeless-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "jq",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "watch_pid",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "events_fd",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "stop_watcher",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "child",
+                                    "descendants",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -n $watch_pid ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "descendants",
+                                                            value: "$(pgrep -P \"$watch_pid\" 2>/dev/null || true)",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            For {
+                                                variable: "child",
+                                                words: Some(
+                                                    [
+                                                        "$descendants",
+                                                    ],
+                                                ),
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "descendants+= $(pgrep -P \"$child\" 2>/dev/null || true)",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                            Binary {
+                                                left: Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "kill",
+                                                            args: [
+                                                                "-KILL",
+                                                                "$watch_pid",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: Some(
+                                                                "2",
+                                                            ),
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                    ],
+                                                },
+                                                operator: Or,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "true",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            },
+                                            Binary {
+                                                left: Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "wait",
+                                                            args: [
+                                                                "$watch_pid",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: Some(
+                                                                "2",
+                                                            ),
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                    ],
+                                                },
+                                                operator: Or,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "true",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            },
+                                            For {
+                                                variable: "child",
+                                                words: Some(
+                                                    [
+                                                        "$descendants",
+                                                    ],
+                                                ),
+                                                body: CshAst {
+                                                    commands: [
+                                                        Binary {
+                                                            left: Redirected {
+                                                                expression: Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "kill",
+                                                                        args: [
+                                                                            "-KILL",
+                                                                            "$child",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                                redirects: [
+                                                                    CshAstRedirect {
+                                                                        descriptor: Some(
+                                                                            "2",
+                                                                        ),
+                                                                        operator: ">",
+                                                                        target: "/dev/null",
+                                                                    },
+                                                                ],
+                                                            },
+                                                            operator: Or,
+                                                            right: Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "true",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "watch_pid",
+                                                            value: "",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -n $events_fd ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "exec",
+                                                        args: [
+                                                            "{events_fd}",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">&",
+                                                        target: "-",
+                                                    },
+                                                ],
+                                            },
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "events_fd",
+                                                            value: "",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "0",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "cleanup",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "stop_watcher",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$test_tmp",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "cleanup",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fake_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$fake_bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "monitors_file",
+                        value: "$test_tmp/monitors.json",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "reload_log",
+                        value: "$test_tmp/reload.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "recovered",
+                        value: "$test_tmp/recovered.json",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "events",
+                        value: "$test_tmp/events",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "modeless_lock",
+                        value: "$test_tmp/omarchy-monitor-modeless.lock",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hyprctl_fail",
+                        value: "$test_tmp/hyprctl-fails",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fake_bin/hyprctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fake_bin/omarchy-hyprland-reload-guard",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fake_bin/socat",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fake_bin/omarchy-hw-laptop",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 3,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fake_bin/omarchy-hyprland-monitor-clamshell",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 4,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$fake_bin/*",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$ROOT/bin/omarchy-hyprland-monitor-modeless",
+                    "$fake_bin/omarchy-hyprland-monitor-modeless",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "MODELESS",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "WORKING",
+                        value: "1",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "UNDETERMINED",
+                        value: "2",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "assert_state",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "expected=$1",
+                                    "actual=0",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "%s",
+                                        "$2",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$monitors_file",
+                                },
+                            ],
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$fake_bin:$PATH",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_MONITORS_FILE",
+                                            value: "$monitors_file",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_HYPRCTL_FAIL_FLAG",
+                                            value: "$hyprctl_fail",
+                                        },
+                                    ],
+                                    name: "$ROOT/bin/omarchy-hyprland-monitor-modeless",
+                                    args: [],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "actual",
+                                            value: "$?",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Arithmetic(
+                                " actual == expected ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$3",
+                                        "expected exit $expected, got $actual",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$3",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "reloads",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "wc",
+                                        args: [
+                                            "-l",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<",
+                                        target: "$reload_log",
+                                    },
+                                ],
+                            },
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "tr",
+                                    args: [
+                                        "-d",
+                                        " ",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_state",
+                args: [
+                    "$MODELESS",
+                    "[{\"name\":\"DP-1\",\"width\":0,\"height\":0,\"disabled\":false}]",
+                    "a monitor brought up with no mode is detected",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_state",
+                args: [
+                    "$MODELESS",
+                    "[{\"name\":\"DP-1\",\"width\":2560,\"height\":1440,\"disabled\":false},{\"name\":\"DP-2\",\"width\":0,\"height\":0,\"disabled\":false}]",
+                    "one modeless monitor among working ones is detected",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_state",
+                args: [
+                    "$MODELESS",
+                    "[{\"name\":\"HDMI-A-1\",\"width\":0,\"height\":0,\"disabled\":false,\"mirrorOf\":\"eDP-1\"}]",
+                    "a modeless mirrored monitor is detected",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_state",
+                args: [
+                    "$WORKING",
+                    "[{\"name\":\"DP-1\",\"width\":2560,\"height\":1440,\"disabled\":false}]",
+                    "a working monitor is not reported as modeless",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_state",
+                args: [
+                    "$WORKING",
+                    "[{\"name\":\"DP-1\",\"width\":0,\"height\":0,\"disabled\":true}]",
+                    "a deliberately disabled monitor is not reported as modeless",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_state",
+                args: [
+                    "$WORKING",
+                    "[]",
+                    "a session with no monitors is not reported as modeless",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_state",
+                args: [
+                    "$UNDETERMINED",
+                    "not json",
+                    "an unreadable monitor payload cannot say",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "[{\"name\":\"DP-1\",\"width\":0,\"height\":0,\"disabled\":false}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$monitors_file",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$hyprctl_fail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "unreachable",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$fake_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_MONITORS_FILE",
+                            value: "$monitors_file",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_HYPRCTL_FAIL_FLAG",
+                            value: "$hyprctl_fail",
+                        },
+                    ],
+                    name: "$ROOT/bin/omarchy-hyprland-monitor-modeless",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "unreachable",
+                            value: "$?",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$hyprctl_fail",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " unreachable == UNDETERMINED ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an unreachable compositor cannot say",
+                        "got $unreachable",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "an unreachable compositor cannot say",
+                ],
+            },
+        ),
+        Function {
+            name: "start_watcher",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$reload_log",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$events",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mkfifo",
+                                args: [
+                                    "$events",
+                                ],
+                            },
+                        ),
+                        Background(
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$fake_bin:$PATH",
+                                        },
+                                        CshAstAssignment {
+                                            name: "XDG_RUNTIME_DIR",
+                                            value: "$test_tmp",
+                                        },
+                                        CshAstAssignment {
+                                            name: "HYPRLAND_INSTANCE_SIGNATURE",
+                                            value: "test",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_EVENTS",
+                                            value: "$events",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_MONITORS_FILE",
+                                            value: "$monitors_file",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_RELOAD_LOG",
+                                            value: "$reload_log",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_RECOVERED_MONITORS",
+                                            value: "$recovered",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_GUARD_PAUSED",
+                                            value: "${1:-0}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_HYPRCTL_FAIL_FLAG",
+                                            value: "$hyprctl_fail",
+                                        },
+                                    ],
+                                    name: "$ROOT/bin/omarchy-hyprland-monitor-watch",
+                                    args: [],
+                                },
+                            ),
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "watch_pid",
+                                        value: "$!",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exec",
+                                    args: [
+                                        "{events_fd}",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$events",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "await_reloads",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "waited",
+                                ],
+                            },
+                        ),
+                        ArithmeticFor {
+                            clauses: " waited = 0; waited < 100; waited++ ",
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Arithmetic(
+                                            " $(reloads) >= $1 ",
+                                        ),
+                                        operator: And,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "return",
+                                                args: [
+                                                    "0",
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "sleep",
+                                            args: [
+                                                "0.05",
+                                            ],
+                                        },
+                                    ),
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "[{\"name\":\"DP-1\",\"width\":0,\"height\":0,\"disabled\":false}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$monitors_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "[{\"name\":\"DP-1\",\"width\":2560,\"height\":1440,\"disabled\":false}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$recovered",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "start_watcher",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "await_reloads",
+                    args: [
+                        "1",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a monitor with no mode is reloaded at startup",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "1",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " $(reloads) == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "recovery stops once the monitor reports a mode",
+                        "$(<\"$reload_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "recovery reloads until the monitor comes back, then stops on its own",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "[{\"name\":\"DP-1\",\"width\":0,\"height\":0,\"disabled\":false}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$monitors_file",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$recovered",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "configreloaded>>\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">&",
+                    target: "$events_fd",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "await_reloads",
+                    args: [
+                        "2",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a monitor left at 0x0 by a reload is recovered",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a monitor left at 0x0 by a reload is recovered",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before",
+                        value: "$(reloads)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "configreloaded>>\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">&",
+                    target: "$events_fd",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "configreloaded>>\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">&",
+                    target: "$events_fd",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "2",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " $(reloads) - before <= 2 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an echoed configreloaded does not stack a second recovery loop",
+                        "$before -> $(reloads)",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "an echoed configreloaded does not stack a second recovery loop",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "stop_watcher",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "[{\"name\":\"DP-1\",\"width\":0,\"height\":0,\"disabled\":false}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$monitors_file",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "start_watcher",
+                args: [
+                    "1",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "1",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $reload_log ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "recovery holds off while the reload guard is paused",
+                        "$(<\"$reload_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "recovery holds off while the reload guard is paused",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "stop_watcher",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "[{\"name\":\"DP-1\",\"width\":0,\"height\":0,\"disabled\":false}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$monitors_file",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$recovered",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$hyprctl_fail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "start_watcher",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "1",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $reload_log ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an unanswerable query does not trigger a reload",
+                        "$(<\"$reload_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$hyprctl_fail",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "await_reloads",
+                    args: [
+                        "1",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "recovery keeps asking after the compositor could not answer",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "recovery keeps asking after the compositor could not answer",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "stop_watcher",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "[{\"name\":\"DP-1\",\"width\":2560,\"height\":1440,\"disabled\":false}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$monitors_file",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$recovered",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "start_watcher",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "flock",
+                    args: [
+                        "-w",
+                        "5",
+                        "$modeless_lock",
+                        "-c",
+                        "true",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the startup worker released the recovery lock",
+                    ],
+                },
+            ),
+        },
+        Background(
+            Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "flock",
+                    args: [
+                        "$modeless_lock",
+                        "-c",
+                        "sleep 0.5",
+                    ],
+                },
+            ),
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "lock_holder",
+                        value: "$!",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "0.1",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "[{\"name\":\"DP-1\",\"width\":0,\"height\":0,\"disabled\":false}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$monitors_file",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "configreloaded>>\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">&",
+                    target: "$events_fd",
+                },
+            ],
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "wait",
+                        args: [
+                            "$lock_holder",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "await_reloads",
+                    args: [
+                        "1",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a trigger contending with the recovery lock is not dropped",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a trigger contending with the recovery lock is not dropped",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "stop_watcher",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "[{\"name\":\"DP-1\",\"width\":2560,\"height\":1440,\"disabled\":false}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$monitors_file",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "start_watcher",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "1",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $reload_log ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a healthy machine is left alone",
+                        "$(<\"$reload_log\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a healthy machine is never reloaded",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "stop_watcher",
+                args: [],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\n# Mirrors are absent from plain `monitors`, so the helper must ask for `all`.\nif [[ ${1:-} == \"monitors\" && ${2:-} == \"all\" && ${3:-} == \"-j\" ]]; then\n  [[ -f $OMARCHY_TEST_HYPRCTL_FAIL_FLAG ]] && exit 4\n  cat \"$OMARCHY_TEST_MONITORS_FILE\"\nelif [[ ${1:-} == \"reload\" ]]; then\n  printf 'reload\\n' >>\"$OMARCHY_TEST_RELOAD_LOG\"\n  [[ -f $OMARCHY_TEST_RECOVERED_MONITORS ]] &&\n    cp \"$OMARCHY_TEST_RECOVERED_MONITORS\" \"$OMARCHY_TEST_MONITORS_FILE\"\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\n[[ ${1:-} == \"paused\" && ${OMARCHY_TEST_GUARD_PAUSED:-0} == 1 ]]\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nexec cat \"$OMARCHY_TEST_EVENTS\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nexit 1\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nexit 0\n",
+        },
+    ],
+}

@@ -1,0 +1,102 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1787691200.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Skip Chromium's new first-run EULA on machines already on Quattro",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "chromium_prefs",
+                        value: "/usr/lib/chromium/initial_preferences",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "chromium_seed",
+                        value: "{\"distribution\":{\"require_eula\":false},\"browser\":{\"theme\":{\"color_scheme\":0,\"color_scheme2\":0}}}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " $(cat \"$chromium_prefs\" 2>/dev/null) != \"$chromium_seed\" ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "mkdir",
+                                        "-p",
+                                        "$(dirname \"$chromium_prefs\")",
+                                    ],
+                                },
+                            ),
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "echo",
+                                        args: [
+                                            "$chromium_seed",
+                                        ],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "sudo",
+                                            args: [
+                                                "tee",
+                                                "$chromium_prefs",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

@@ -1,0 +1,1057 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/webapp-install-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmpdir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmpdir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "home",
+                        value: "$tmpdir/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$home/.local/share/applications",
+                ],
+            },
+        ),
+        Function {
+            name: "install_webapp",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "HOME",
+                                        value: "$home",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-webapp-install",
+                                args: [
+                                    "$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "desktop_for",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "%s",
+                                    "$home/.local/share/applications/$1.desktop",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "install_webapp",
+                                        args: [
+                                            "Example",
+                                            "https://example.com",
+                                            "webapp",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$tmpdir/out",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "$tmpdir/err",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "webapp install accepts an https URL",
+                                    "$(cat \"$tmpdir/err\")",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "desktop",
+                        value: "$(desktop_for Example)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $desktop ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install writes a desktop file",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "Name=Example",
+                        "$desktop",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install writes the app name",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "Exec=omarchy-launch-webapp \"https://example.com\"",
+                        "$desktop",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install launches the https URL",
+                        "$(cat \"$desktop\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp install writes an https desktop entry",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "install_webapp",
+                                        args: [
+                                            "Plain",
+                                            "example.org/app",
+                                            "webapp",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$tmpdir/out",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "$tmpdir/err",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "webapp install prefixes a schemeless URL with https",
+                                    "$(cat \"$tmpdir/err\")",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "Exec=omarchy-launch-webapp \"https://example.org/app\"",
+                        "$(desktop_for Plain)",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install stores the prefixed https URL",
+                        "$(cat \"$(desktop_for Plain)\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp install prefixes a schemeless URL with https",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "install_webapp",
+                                        args: [
+                                            "Local",
+                                            "https://localhost:47990",
+                                            "webapp",
+                                            "omarchy-launch-webapp https://localhost:47990 --ignore-certificate-errors",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$tmpdir/out",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "$tmpdir/err",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "webapp install keeps a custom https exec",
+                                    "$(cat \"$tmpdir/err\")",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "Exec=omarchy-launch-webapp https://localhost:47990 --ignore-certificate-errors",
+                        "$(desktop_for Local)",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install writes the custom exec",
+                        "$(cat \"$(desktop_for Local)\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp install keeps a custom https exec",
+                ],
+            },
+        ),
+        For {
+            variable: "url",
+            words: Some(
+                [
+                    "javascript:alert(1)",
+                    "file:///etc/passwd",
+                    "data:text/html,hi",
+                    "ftp://example.com",
+                    "ext://x",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "install_webapp",
+                                                    args: [
+                                                        "Bad",
+                                                        "$url",
+                                                        "webapp",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">",
+                                                    target: "$tmpdir/out",
+                                                },
+                                                CshAstRedirect {
+                                                    descriptor: Some(
+                                                        "2",
+                                                    ),
+                                                    operator: ">",
+                                                    target: "$tmpdir/err",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "fail",
+                                                args: [
+                                                    "webapp install refuses '$url'",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                    Binary {
+                        left: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "grep",
+                                args: [
+                                    "-Fq",
+                                    "must be http or https",
+                                    "$tmpdir/err",
+                                ],
+                            },
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "webapp install names the scheme refusal for '$url'",
+                                    "$(cat \"$tmpdir/err\")",
+                                ],
+                            },
+                        ),
+                    },
+                    Binary {
+                        left: Test(
+                            " ! -e $(desktop_for Bad) ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "webapp install does not write a desktop file for '$url'",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp install refuses non-http(s) URLs",
+                ],
+            },
+        ),
+        For {
+            variable: "url",
+            words: Some(
+                [
+                    " javascript:alert(1)",
+                    " file:///etc/passwd",
+                    "https://example.com data:text/html,hi",
+                    "https://example.com/ --user-agent=INJECTION_PROOF_MARKER_12345",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "install_webapp",
+                                                    args: [
+                                                        "Sneak",
+                                                        "$url",
+                                                        "webapp",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">",
+                                                    target: "$tmpdir/out",
+                                                },
+                                                CshAstRedirect {
+                                                    descriptor: Some(
+                                                        "2",
+                                                    ),
+                                                    operator: ">",
+                                                    target: "$tmpdir/err",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "fail",
+                                                args: [
+                                                    "webapp install refuses whitespace in '$url'",
+                                                    "$(cat \"$(desktop_for Sneak)\")",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                    Binary {
+                        left: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "grep",
+                                args: [
+                                    "-Fq",
+                                    "must not contain whitespace",
+                                    "$tmpdir/err",
+                                ],
+                            },
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "webapp install names the whitespace refusal for '$url'",
+                                    "$(cat \"$tmpdir/err\")",
+                                ],
+                            },
+                        ),
+                    },
+                    Binary {
+                        left: Test(
+                            " ! -e $(desktop_for Sneak) ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "webapp install writes no desktop file for '$url'",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp install refuses a URL carrying whitespace",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "install_webapp",
+                                        args: [
+                                            "Upper",
+                                            "HTTPS://example.com",
+                                            "webapp",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$tmpdir/out",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "$tmpdir/err",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "webapp install accepts an uppercase scheme",
+                                    "$(cat \"$tmpdir/err\")",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "Exec=omarchy-launch-webapp \"HTTPS://example.com\"",
+                        "$(desktop_for Upper)",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install keeps the uppercase scheme",
+                        "$(cat \"$(desktop_for Upper)\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp install accepts an uppercase http scheme",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stubs",
+                        value: "$tmpdir/stubs",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stubs",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stubs/gum",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "GUM",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stubs/curl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "CURL",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stubs/gum",
+                    "$stubs/curl",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "Evil\\nfile:///etc/passwd\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmpdir/answers",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmpdir/gum-count",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmpdir/curl-log",
+                },
+            ],
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "GUM_ANSWERS",
+                                                value: "$tmpdir/answers",
+                                            },
+                                            CshAstAssignment {
+                                                name: "GUM_COUNT",
+                                                value: "$tmpdir/gum-count",
+                                            },
+                                            CshAstAssignment {
+                                                name: "CURL_LOG",
+                                                value: "$tmpdir/curl-log",
+                                            },
+                                            CshAstAssignment {
+                                                name: "PATH",
+                                                value: "$stubs:$PATH",
+                                            },
+                                            CshAstAssignment {
+                                                name: "HOME",
+                                                value: "$home",
+                                            },
+                                        ],
+                                        name: "$ROOT/bin/omarchy-webapp-install",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$tmpdir/out",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "$tmpdir/err",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "interactive webapp install refuses a file: URL",
+                                        "$(cat \"$tmpdir/out\")",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "must be http or https",
+                        "$tmpdir/err",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "interactive webapp install names the scheme refusal",
+                        "$(cat \"$tmpdir/err\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $tmpdir/curl-log ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "interactive webapp install refuses before fetching the URL",
+                        "$(cat \"$tmpdir/curl-log\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $(desktop_for Evil) ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "interactive webapp install writes no desktop file",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "interactive webapp install refuses a bad URL before fetching it",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "GUM",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\ncount=$(cat \"$GUM_COUNT\" 2>/dev/null || echo 0)\ncount=$((count + 1))\nprintf '%s\\n' \"$count\" >\"$GUM_COUNT\"\nsed -n \"${count}p\" \"$GUM_ANSWERS\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "CURL",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >>\"$CURL_LOG\"\nexit 1\n",
+        },
+    ],
+}

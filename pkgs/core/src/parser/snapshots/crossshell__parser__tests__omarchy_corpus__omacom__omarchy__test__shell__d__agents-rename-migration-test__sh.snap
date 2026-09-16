@@ -1,0 +1,471 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/agents-rename-migration-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "jq",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration",
+                        value: "$ROOT/migrations/1786099804.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$test_dir/bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_dir/bin/omarchy-agent-usage-update",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$test_dir/bin/*",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "USAGE_UPDATES=$test_dir/usage-updates",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "home",
+                        value: "$test_dir/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "config",
+                        value: "$home/.config/omarchy/shell.json",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "run_migration",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$USAGE_UPDATES",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "HOME",
+                                            value: "$home",
+                                        },
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$test_dir/bin:$PATH",
+                                        },
+                                    ],
+                                    name: "bash",
+                                    args: [
+                                        "-euo",
+                                        "pipefail",
+                                        "$migration",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$home/.config/omarchy",
+                    "$home/.cache/omarchy/model-usage",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$config",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JSON",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '.bar.layout.right[1]' \"$config\") == '{\"id\":\"omarchy.agents\",\"syncMode\":\"On\",\"syncDir\":\"~/Sync/agent-usage\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration renames the widget and keeps its settings",
+                        "$(cat \"$config\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration renames the widget and keeps its settings",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '.bar.layout.center' \"$config\") == '[\"omarchy.agents\"]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration renames string-form entries",
+                        "$(cat \"$config\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration renames string-form entries",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '.disabledPlugins' \"$config\") == '[\"omarchy.agents\",\"omarchy.weather\"]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration keeps a disabled widget disabled",
+                        "$(cat \"$config\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration keeps a disabled widget disabled",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $home/.cache/omarchy/model-usage ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration drops the old scanner cache",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration drops the old scanner cache",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                "$(wc -l <\"$USAGE_UPDATES\") == 1",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration primes the usage data files",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration primes the usage data files",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before",
+                        value: "$(sha256sum \"$config\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $before == $(sha256sum \"$config\") ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration is idempotent",
+                        "$(cat \"$config\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration is idempotent",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "{ not json",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$config",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(cat \"$config\") == '{ not json' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration leaves an unparsable config untouched",
+                        "$(cat \"$config\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration leaves an unparsable config untouched",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\necho run >>\"$USAGE_UPDATES\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "JSON",
+            quoted: true,
+            strip_tabs: false,
+            body: "{\n  \"bar\": {\n    \"layout\": {\n      \"center\": [\"omarchy.model-usage\"],\n      \"right\": [\n        { \"id\": \"omarchy.tray\" },\n        { \"id\": \"omarchy.model-usage\", \"syncMode\": \"On\", \"syncDir\": \"~/Sync/agent-usage\" }\n      ]\n    }\n  },\n  \"disabledPlugins\": [\"omarchy.model-usage\", \"omarchy.weather\"]\n}\n",
+        },
+    ],
+}

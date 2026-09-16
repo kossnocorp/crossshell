@@ -1,0 +1,95 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1784479832.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Enable Kitty cwd lookup through a remote control socket",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "kitty_config",
+                        value: "$HOME/.config/kitty/kitty.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "listen_on",
+                        value: "listen_on unix:${XDG_RUNTIME_DIR}/omarchy-kitty-{kitty_pid}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " -f $kitty_config ",
+                                ),
+                                operator: And,
+                                right: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-qE",
+                                                "^[[:space:]]*listen_on[[:space:]]",
+                                                "$kitty_config",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "printf",
+                                        args: [
+                                            "\\n# Allow cwd lookup from global keybindings\\n%s\\n",
+                                            "$listen_on",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">>",
+                                        target: "$kitty_config",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

@@ -1,0 +1,96 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1784909971.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Regenerate mise wrappers to stop them recursing through PATH",
+                ],
+            },
+        ),
+        For {
+            variable: "wrapper",
+            words: Some(
+                [
+                    "$HOME/.local/bin/*",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -f $wrapper && -x $wrapper ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "package",
+                                    value: "$(sed -n 's/^mise use -g \"\\(.*\\)\"$/\\1/p' \"$wrapper\")",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "bin",
+                                    value: "$(sed -n 's/^exec \"\\(.*\\)\" \"\\$@\"$/\\1/p' \"$wrapper\")",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Test(
+                                            " -n $package && -n $bin ",
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "omarchy-mise-install",
+                                                args: [
+                                                    "$package",
+                                                    "$(basename \"$wrapper\")",
+                                                    "$bin",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+    ],
+}

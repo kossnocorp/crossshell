@@ -1,0 +1,292 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/provision-user-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mock_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$mock_bin",
+                    "$test_tmp/home",
+                    "$test_tmp/home/.hermes/profiles/james",
+                ],
+            },
+        ),
+        For {
+            variable: "command",
+            words: Some(
+                [
+                    "xdg-user-dirs-update",
+                    "xdg-settings",
+                    "xdg-mime",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "#!/bin/bash\\nexit 0\\n",
+                                ],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$mock_bin/$command",
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$mock_bin/*",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$test_tmp/install/user",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/install/user/all.sh",
+                },
+            ],
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "HOME",
+                                value: "$test_tmp/home",
+                            },
+                            CshAstAssignment {
+                                name: "PATH",
+                                value: "$mock_bin:$ROOT/bin:$PATH",
+                            },
+                            CshAstAssignment {
+                                name: "OMARCHY_PATH",
+                                value: "$ROOT",
+                            },
+                            CshAstAssignment {
+                                name: "OMARCHY_INSTALL",
+                                value: "$test_tmp/install",
+                            },
+                        ],
+                        name: "bash",
+                        args: [
+                            "$ROOT/bin/omarchy-provision-user",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-provision-user finishes",
+                    ],
+                },
+            ),
+        },
+        For {
+            variable: "skill",
+            words: Some(
+                [
+                    "omarchy",
+                    "diagnose-crash",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "link",
+                                    value: "$test_tmp/home/.gemini/config/skills/$skill",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Test(
+                            " -L $link && $(readlink \"$link\") == \"$ROOT/default/agents/skills/$skill\" ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-provision-user provisions the $skill skill for Antigravity",
+                                ],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "link",
+                                    value: "$test_tmp/home/.hermes/skills/$skill",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Test(
+                            " -L $link && $(readlink \"$link\") == \"$ROOT/default/agents/skills/$skill\" ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-provision-user provisions the $skill skill for Hermes",
+                                ],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "link",
+                                    value: "$test_tmp/home/.hermes/profiles/james/skills/$skill",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Test(
+                            " -L $link && $(readlink \"$link\") == \"$ROOT/default/agents/skills/$skill\" ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-provision-user provisions the $skill skill for a Hermes profile",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "omarchy-provision-user provisions Antigravity and Hermes skills",
+                ],
+            },
+        ),
+    ],
+}

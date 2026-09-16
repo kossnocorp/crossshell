@@ -1,0 +1,155 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1784476564.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Keep non-Latin keyboard layouts out of the initramfs so the LUKS passphrase stays typeable",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hooks_conf",
+                        value: "/etc/mkinitcpio.conf.d/omarchy_hooks.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "layout",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f /etc/vconsole.conf ",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "layout",
+                            value: "$(unset XKBLAYOUT; . /etc/vconsole.conf; echo \"${XKBLAYOUT:-}\")",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "layout",
+                        value: "${layout%%,*}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Binary {
+                                    left: Test(
+                                        " $layout =~ ^(af|am|ara|bd|bg|by|et|ge|gr|il|in|iq|ir|kg|kh|kz|la|lk|mk|mm|mn|mv|np|rs|ru|sy|th|tj|ua)$ ",
+                                    ),
+                                    operator: And,
+                                    right: Test(
+                                        " -f $hooks_conf ",
+                                    ),
+                                },
+                                operator: And,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-qx",
+                                            "FILES+=(/etc/vconsole.conf)",
+                                            "$hooks_conf",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "sed",
+                                        "-i",
+                                        "\\|^FILES+=(/etc/vconsole.conf)$|d",
+                                        "$hooks_conf",
+                                    ],
+                                },
+                            ),
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "omarchy-cmd-present",
+                                                        args: [
+                                                            "limine-mkinitcpio",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "sudo",
+                                                        args: [
+                                                            "limine-mkinitcpio",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

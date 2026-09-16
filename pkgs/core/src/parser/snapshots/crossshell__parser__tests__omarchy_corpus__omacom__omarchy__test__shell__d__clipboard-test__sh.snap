@@ -1,0 +1,2718 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/clipboard-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TMPDIR",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PIDS_TO_KILL",
+                        value: "()",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "cleanup",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "pid",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "pid",
+                            words: Some(
+                                [
+                                    "${PIDS_TO_KILL[@]}",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "kill",
+                                                    args: [
+                                                        "$pid",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: Some(
+                                                        "2",
+                                                    ),
+                                                    operator: ">",
+                                                    target: "/dev/null",
+                                                },
+                                            ],
+                                        },
+                                        operator: Or,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "true",
+                                                args: [],
+                                            },
+                                        ),
+                                    },
+                                    Binary {
+                                        left: Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "wait",
+                                                    args: [
+                                                        "$pid",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: Some(
+                                                        "2",
+                                                    ),
+                                                    operator: ">",
+                                                    target: "/dev/null",
+                                                },
+                                            ],
+                                        },
+                                        operator: Or,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "true",
+                                                args: [],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$TMPDIR",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "cleanup",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "process_gone",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "pid=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "stat",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "_",
+                            words: Some(
+                                [
+                                    "{1..40}",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [
+                                                CshAstAssignment {
+                                                    name: "stat",
+                                                    value: "$(ps -o stat= -p \"$pid\" 2>/dev/null || true)",
+                                                },
+                                            ],
+                                            name: "",
+                                            args: [],
+                                        },
+                                    ),
+                                    If {
+                                        branches: [
+                                            CshAstBranch {
+                                                condition: CshAst {
+                                                    commands: [
+                                                        Test(
+                                                            " -z $stat || $stat == Z* ",
+                                                        ),
+                                                    ],
+                                                },
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "return",
+                                                                args: [
+                                                                    "0",
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        otherwise: None,
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "sleep",
+                                            args: [
+                                                "0.1",
+                                            ],
+                                        },
+                                    ),
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "process_alive",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "pid=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "stat",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "stat",
+                                        value: "$(ps -o stat= -p \"$pid\" 2>/dev/null || true)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Test(
+                            " -n $stat && $stat != Z* ",
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$TMPDIR/bin",
+                    "$TMPDIR/home/.local/state/omarchy",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/wl-copy",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/wl-paste",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/wtype",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 3,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/omarchy-launch-browser",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 4,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/omarchy-launch-editor",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 5,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/tensaku-edit",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 6,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$TMPDIR/bin/wl-copy",
+                    "$TMPDIR/bin/wl-paste",
+                    "$TMPDIR/bin/wtype",
+                    "$TMPDIR/bin/omarchy-launch-browser",
+                    "$TMPDIR/bin/omarchy-launch-editor",
+                    "$TMPDIR/bin/tensaku-edit",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"terminal copy\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture records normal text events",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture records normal text events",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf 'closing app copy' | WL_PASTE_TEXT=\"stale read\" XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"closing app copy\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture records watched text from stdin",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture records watched text from stdin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf '%s' 'UTF-16 clipboard - fixed' | iconv -f UTF-8 -t UTF-16LE | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"UTF-16 clipboard - fixed\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture decodes UTF-16LE text",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture decodes UTF-16LE text",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf '%s' 'https://example.com/image — preview …' | iconv -f UTF-8 -t UTF-16LE | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"https://example.com/image — preview …\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture decodes mostly ASCII UTF-16LE text with Unicode punctuation",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture decodes mostly ASCII UTF-16LE text with Unicode punctuation",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf '%s' 'Text with 日本 and 😀' | iconv -f UTF-8 -t UTF-16BE | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"Text with 日本 and 😀\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture decodes mostly ASCII UTF-16BE text with Unicode characters",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture decodes mostly ASCII UTF-16BE text with Unicode characters",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf '%s' 'ABC—' | iconv -f UTF-8 -t UTF-16LE | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"ABC—\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture decodes UTF-16LE text at the padding threshold",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture decodes UTF-16LE text at the padding threshold",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "ABCDEFGH————",
+                    ],
+                },
+            ),
+            operator: Pipe,
+            right: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "iconv",
+                        args: [
+                            "-f",
+                            "UTF-8",
+                            "-t",
+                            "UTF-16LE",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "$TMPDIR/below-utf16-threshold",
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected",
+                        value: "$(jq -cRs '{type:\"text\", text:.}' <\"$TMPDIR/below-utf16-threshold\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text <\"$TMPDIR/below-utf16-threshold\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == \"$expected\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture leaves UTF-16LE text below the padding threshold undecoded",
+                        "expected: $expected\\nactual: $capture_output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture leaves UTF-16LE text below the padding threshold undecoded",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s",
+                        "ABCĀ",
+                    ],
+                },
+            ),
+            operator: Pipe,
+            right: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "iconv",
+                        args: [
+                            "-f",
+                            "UTF-8",
+                            "-t",
+                            "UTF-16LE",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "$TMPDIR/opposite-nul-threshold",
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected",
+                        value: "$(jq -cRs '{type:\"text\", text:.}' <\"$TMPDIR/opposite-nul-threshold\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text <\"$TMPDIR/opposite-nul-threshold\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == \"$expected\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture leaves UTF-16LE text at the opposite-byte NUL threshold undecoded",
+                        "expected: $expected\\nactual: $capture_output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture leaves UTF-16LE text at the opposite-byte NUL threshold undecoded",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf 'a\\fb' | iconv -f UTF-8 -t UTF-16LE | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"a\\fb\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture preserves UTF-16LE form feeds",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture preserves UTF-16LE form feeds",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf 'A' | iconv -f UTF-8 -t UTF-16LE | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"A\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture decodes exact NUL-padded UTF-16LE text",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture decodes exact NUL-padded UTF-16LE text",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf 'BE text' | iconv -f UTF-8 -t UTF-16BE | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"BE text\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture decodes exact NUL-padded UTF-16BE text",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture decodes exact NUL-padded UTF-16BE text",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$({ printf '\\377\\376'; printf '%s' 'Little endian 日本 😀' | iconv -f UTF-8 -t UTF-16LE; } | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"Little endian 日本 😀\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture decodes BOM-tagged UTF-16LE text",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture decodes BOM-tagged UTF-16LE text",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$({ printf '\\376\\377'; printf '%s' 'Big endian 日本 😀' | iconv -f UTF-8 -t UTF-16BE; } | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == '{\"type\":\"text\",\"text\":\"Big endian 日本 😀\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture decodes BOM-tagged UTF-16BE text",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture decodes BOM-tagged UTF-16BE text",
+                ],
+            },
+        ),
+        Function {
+            name: "assert_ambiguous_utf16_falls_back",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                    "value=$2",
+                                    "expected",
+                                    "capture_output",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "%s",
+                                        "$value",
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "iconv",
+                                        args: [
+                                            "-f",
+                                            "UTF-8",
+                                            "-t",
+                                            "UTF-16LE",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$TMPDIR/ambiguous-utf16",
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "expected",
+                                        value: "$(jq -cRs '{type:\"text\", text:.}' <\"$TMPDIR/ambiguous-utf16\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "capture_output",
+                                        value: "$(XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text <\"$TMPDIR/ambiguous-utf16\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $capture_output == \"$expected\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$description",
+                                        "expected: $expected\\nactual: $capture_output",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_ambiguous_utf16_falls_back",
+                args: [
+                    "clipboard capture leaves BOM-less UTF-16 punctuation undecoded",
+                    "—",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_ambiguous_utf16_falls_back",
+                args: [
+                    "clipboard capture leaves BOM-less UTF-16 CJK undecoded",
+                    "日本",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_ambiguous_utf16_falls_back",
+                args: [
+                    "clipboard capture leaves BOM-less UTF-16 surrogate pairs undecoded",
+                    "😀",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "foo\\0bar\\0",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/nul-separated-utf8",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected",
+                        value: "$(jq -cRs '{type:\"text\", text:.}' <\"$TMPDIR/nul-separated-utf8\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text <\"$TMPDIR/nul-separated-utf8\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == \"$expected\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture leaves sparse NUL-separated UTF-8 undecoded",
+                        "expected: $expected\\nactual: $capture_output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture leaves sparse NUL-separated UTF-8 undecoded",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "Hello\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/nul-padded-utf8",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected",
+                        value: "$(jq -cRs '{type:\"text\", text:.}' <\"$TMPDIR/nul-padded-utf8\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text <\"$TMPDIR/nul-padded-utf8\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == \"$expected\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture leaves NUL-padded UTF-8 undecoded",
+                        "expected: $expected\\nactual: $capture_output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture leaves NUL-padded UTF-8 undecoded",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "\\001\\000\\001\\000\\001\\000\\001\\000",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/ambiguous-control-text",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected",
+                        value: "$(jq -cRs '{type:\"text\", text:.}' <\"$TMPDIR/ambiguous-control-text\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text <\"$TMPDIR/ambiguous-control-text\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == \"$expected\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture leaves endian-ambiguous control text undecoded",
+                        "expected: $expected\\nactual: $capture_output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture leaves endian-ambiguous control text undecoded",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "\\377\\376\\075\\330",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/malformed-utf16",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected",
+                        value: "$(jq -cRs '{type:\"text\", text:.}' <\"$TMPDIR/malformed-utf16\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text <\"$TMPDIR/malformed-utf16\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $capture_output == \"$expected\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture falls back from malformed UTF-16",
+                        "expected: $expected\\nactual: $capture_output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture falls back from malformed UTF-16",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf 'png-data' | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" image/png)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "image_path",
+                        value: "$(jq -r '.path' <<<\"$capture_output\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "jq",
+                        args: [
+                            "-e",
+                            ".type == \"image\" and .mime == \"image/png\" and (.capturedAt | type == \"string\")",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$capture_output",
+                    },
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture records watched png images",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -s $image_path && $(<\"$image_path\") == \"png-data\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture stores watched png image data",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture records watched png images",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf 'jpg-data' | XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" image/jpeg)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "image_path",
+                        value: "$(jq -r '.path' <<<\"$capture_output\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Binary {
+                left: Redirected {
+                    expression: Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "jq",
+                            args: [
+                                "-e",
+                                ".mime == \"image/jpeg\"",
+                            ],
+                        },
+                    ),
+                    redirects: [
+                        CshAstRedirect {
+                            descriptor: None,
+                            operator: "<<<",
+                            target: "$capture_output",
+                        },
+                        CshAstRedirect {
+                            descriptor: None,
+                            operator: ">",
+                            target: "/dev/null",
+                        },
+                    ],
+                },
+                operator: And,
+                right: Test(
+                    " $image_path == *.jpg ",
+                ),
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture stores watched jpeg images with jpg extension",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture stores watched jpeg images with jpg extension",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(printf 'secret' | CLIPBOARD_STATE=sensitive XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\" text)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -z $capture_output ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture ignores sensitive watched text",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture ignores sensitive watched text",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(CLIPBOARD_STATE=sensitive XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -z $capture_output ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture ignores sensitive clipboard events",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture ignores sensitive clipboard events",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "capture_output",
+                        value: "$(WL_PASTE_TYPES=\"text/plain\\nx-kde-passwordManagerHint\\n\" XDG_RUNTIME_DIR=\"$TMPDIR\" XDG_STATE_HOME=\"$TMPDIR/state\" PATH=\"$TMPDIR/bin:$PATH\" \"$ROOT/shell/plugins/clipboard/capture.sh\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -z $capture_output ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard capture ignores password manager hint",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard capture ignores password manager hint",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/wl-paste",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 7,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$TMPDIR/bin/wl-paste",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "clipboard_lifecycle_dir",
+                        value: "$TMPDIR/clipboard-lifecycle",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "current_script",
+                        value: "$clipboard_lifecycle_dir/current/shell/plugins/clipboard/capture.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$(dirname \"$current_script\")",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$ROOT/shell/plugins/clipboard/capture.sh",
+                    "$current_script",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$current_script",
+                ],
+            },
+        ),
+        Background(
+            Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$TMPDIR/bin:$PATH",
+                        },
+                    ],
+                    name: "wl-paste",
+                    args: [
+                        "--type",
+                        "text",
+                        "--watch",
+                        "$current_script",
+                        "text",
+                    ],
+                },
+            ),
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stale_pid",
+                        value: "$!",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "PIDS_TO_KILL+=(\"$stale_pid\")",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "0.2",
+                ],
+            },
+        ),
+        Binary {
+            left: Binary {
+                left: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "pgrep",
+                        args: [
+                            "-f",
+                            "wl-paste .*--watch .*/shell/plugins/clipboard/capture\\.sh",
+                        ],
+                    },
+                ),
+                operator: Pipe,
+                right: Redirected {
+                    expression: Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "grep",
+                            args: [
+                                "-x",
+                                "$stale_pid",
+                            ],
+                        },
+                    ),
+                    redirects: [
+                        CshAstRedirect {
+                            descriptor: None,
+                            operator: ">",
+                            target: "/dev/null",
+                        },
+                    ],
+                },
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard reaper pattern matches running watchers",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "kill",
+                        args: [
+                            "$stale_pid",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "wait",
+                        args: [
+                            "$stale_pid",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard reaper pattern matches running watchers",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "watch_owner",
+                        value: "$clipboard_lifecycle_dir/watch-owner.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "watch_pid_file",
+                        value: "$clipboard_lifecycle_dir/watch.pid",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$watch_owner",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 8,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$watch_owner",
+                ],
+            },
+        ),
+        Background(
+            Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "$watch_owner",
+                    args: [],
+                },
+            ),
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "owner_pid",
+                        value: "$!",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "PIDS_TO_KILL+=(\"$owner_pid\")",
+                args: [],
+            },
+        ),
+        For {
+            variable: "_",
+            words: Some(
+                [
+                    "{1..40}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -s $watch_pid_file ",
+                        ),
+                        operator: And,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "break",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "sleep",
+                            args: [
+                                "0.1",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "watch_pid",
+                        value: "$(<\"$watch_pid_file\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Binary {
+                left: Test(
+                    " -n $watch_pid ",
+                ),
+                operator: And,
+                right: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "process_alive",
+                        args: [
+                            "$watch_pid",
+                        ],
+                    },
+                ),
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard watcher starts under setpriv",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "PIDS_TO_KILL+=(\"$watch_pid\")",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "kill",
+                        args: [
+                            "$owner_pid",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "process_gone",
+                    args: [
+                        "$watch_pid",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard watcher dies with its owner via pdeathsig",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard watcher dies with its owner via pdeathsig",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "jq",
+                    args: [
+                        "-n",
+                        "--arg",
+                        "text",
+                        "$(printf 'large block line 1\\nlarge block line 2\\n')",
+                        "[{type:\"text\", text:\"ignored\"}, {type:\"text\", text:$text}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/home/.local/state/omarchy/clipboard-history.json",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "WL_COPY_OUT",
+                        value: "$TMPDIR/copied",
+                    },
+                    CshAstAssignment {
+                        name: "WTYPE_OUT",
+                        value: "$TMPDIR/wtype",
+                    },
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$TMPDIR/home",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$TMPDIR/bin:$PATH",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-clipboard-paste-text",
+                args: [
+                    "--shift-insert",
+                    "--history-index",
+                    "1",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/copied\") == \"$(printf 'large block line 1\\nlarge block line 2')\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard paste helper copies history entry text",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard paste helper copies history entry text",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/wtype\") == \"-M shift -k Insert -m shift\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard paste helper pastes history entries with shift insert",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard paste helper pastes history entries with shift insert",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$TMPDIR/wtype",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "WL_COPY_OUT",
+                        value: "$TMPDIR/copied",
+                    },
+                    CshAstAssignment {
+                        name: "WTYPE_OUT",
+                        value: "$TMPDIR/wtype",
+                    },
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$TMPDIR/home",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$TMPDIR/bin:$PATH",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-clipboard-paste-text",
+                args: [
+                    "--copy-only",
+                    "--history-index",
+                    "1",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/copied\") == \"$(printf 'large block line 1\\nlarge block line 2')\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard paste helper copy-only copies history entry text",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard paste helper copy-only copies history entry text",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e \"$TMPDIR/wtype\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard paste helper copy-only skips typing",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard paste helper copy-only skips typing",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "image-data",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/image.png",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$TMPDIR/wtype",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "WL_COPY_OUT",
+                        value: "$TMPDIR/copied",
+                    },
+                    CshAstAssignment {
+                        name: "WTYPE_OUT",
+                        value: "$TMPDIR/wtype",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$TMPDIR/bin:$PATH",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-clipboard-paste-file",
+                args: [
+                    "--copy-only",
+                    "image/png",
+                    "$TMPDIR/image.png",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/copied\") == \"image-data\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard file paste helper copy-only copies file content",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard file paste helper copy-only copies file content",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e \"$TMPDIR/wtype\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard file paste helper copy-only skips paste keystroke",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard file paste helper copy-only skips paste keystroke",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "jq",
+                    args: [
+                        "-n",
+                        "--arg",
+                        "url",
+                        "https://example.com/docs",
+                        "--arg",
+                        "text",
+                        "$(printf 'plain text\\nsecond line')",
+                        "--arg",
+                        "image",
+                        "$TMPDIR/image.png",
+                        "[{type:\"text\", text:$url}, {type:\"text\", text:$text}, {type:\"image\", mime:\"image/png\", path:$image}]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/home/.local/state/omarchy/clipboard-history.json",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "BROWSER_OUT",
+                        value: "$TMPDIR/browser",
+                    },
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$TMPDIR/home",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$TMPDIR/bin:$PATH",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-clipboard-open",
+                args: [
+                    "--history-index",
+                    "0",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/browser\") == \"https://example.com/docs\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard open helper opens URL entries in browser",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard open helper opens URL entries in browser",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "EDITOR_PATH_OUT",
+                        value: "$TMPDIR/editor-path",
+                    },
+                    CshAstAssignment {
+                        name: "EDITOR_TEXT_OUT",
+                        value: "$TMPDIR/editor-text",
+                    },
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$TMPDIR/home",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_STATE_HOME",
+                        value: "$TMPDIR/state",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$TMPDIR/bin:$PATH",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-clipboard-open",
+                args: [
+                    "--history-index",
+                    "1",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/editor-text\") == \"$(printf 'plain text\\nsecond line')\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard open helper opens text entries in editor",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard open helper opens text entries in editor",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/editor-path\") == \"$TMPDIR\"/state/omarchy/clipboard-open/clipboard.*.txt ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard open helper writes text entries to a temporary file",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard open helper writes text entries to a temporary file",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TENSAKU_OUT",
+                        value: "$TMPDIR/tensaku",
+                    },
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$TMPDIR/home",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$TMPDIR/bin:$PATH",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-clipboard-open",
+                args: [
+                    "--history-index",
+                    "2",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/tensaku\") == \"$TMPDIR/image.png\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "clipboard open helper opens image entries in Tensaku",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "clipboard open helper opens image entries in Tensaku",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const fs = require('fs')\nconst clipboard = requireFromRoot('shell/plugins/clipboard/ClipboardHistory.js')\nconst clipboardQml = fs.readFileSync(path.join(root, 'shell/plugins/clipboard/Clipboard.qml'), 'utf8')\n\nassertDeepEqual(\n  clipboard.normalizeEntry('hello'),\n  { type: 'text', text: 'hello' },\n  'clipboard normalizes string entries'\n)\n\nassertDeepEqual(\n  clipboard.normalizeEntry({ kind: 'image', path: '/tmp/a.png' }),\n  { type: 'image', path: '/tmp/a.png', mime: 'image/png' },\n  'clipboard normalizes image entries with default mime'\n)\n\nassertDeepEqual(\n  clipboard.normalizeEntry({ type: 'image', path: '/tmp/a.png', mime: 'image/png', capturedAt: 'Friday 14:42' }),\n  { type: 'image', path: '/tmp/a.png', mime: 'image/png', capturedAt: 'Friday 14:42' },\n  'clipboard keeps image capture timestamps'\n)\n\nassertDeepEqual(\n  clipboard.parseHistory(JSON.stringify(['one', '', { type: 'text', text: 'two' }, { type: 'image', path: '/tmp/a.jpg', mime: 'image/jpeg' }])),\n  [\n    { type: 'text', text: 'one' },\n    { type: 'text', text: 'two' },\n    { type: 'image', path: '/tmp/a.jpg', mime: 'image/jpeg' }\n  ],\n  'clipboard history parser drops invalid entries'\n)\n\nassertDeepEqual(clipboard.parseHistory(JSON.stringify([' ', '\\n', { type: 'text', text: '\\t' }])), [], 'clipboard history parser drops whitespace-only text')\n\nconst history = [\n  { type: 'text', text: 'old' },\n  { type: 'text', text: 'new' },\n  { type: 'image', path: '/tmp/a.png', mime: 'image/png' }\n]\n\nassertDeepEqual(\n  clipboard.addEntry(history, { type: 'text', text: 'new' }, 100),\n  [\n    { type: 'text', text: 'new' },\n    { type: 'text', text: 'old' },\n    { type: 'image', path: '/tmp/a.png', mime: 'image/png' }\n  ],\n  'clipboard addEntry moves duplicate text to front'\n)\n\nassertDeepEqual(\n  clipboard.removeEntryAt(history, 1),\n  [\n    { type: 'text', text: 'old' },\n    { type: 'image', path: '/tmp/a.png', mime: 'image/png' }\n  ],\n  'clipboard removeEntryAt removes the requested entry'\n)\n\nassertDeepEqual(clipboard.removeEntryAt(history, 10), history, 'clipboard removeEntryAt ignores invalid indexes')\nassertDeepEqual(clipboard.clearHistory(), [], 'clipboard clearHistory returns an empty history')\n\nassertDeepEqual(\n  clipboard.displayRows(history, 'image', 50).map(row => ({ type: row.entryType, preview: row.previewText, mime: row.mime })),\n  [{ type: 'image', preview: 'Image', mime: 'image/png' }],\n  'clipboard display rows search image metadata'\n)\n\nassertDeepEqual(\n  clipboard.displayRows([{ type: 'image', path: '/tmp/a.png', mime: 'image/png', capturedAt: 'Friday 14:42' }], '', 50)[0].previewText,\n  'Screenshot from Friday 14:42',\n  'clipboard labels timestamped png image entries as screenshots'\n)\n\nassertDeepEqual(\n  clipboard.displayRows([{ type: 'image', path: '/tmp/a.jpg', mime: 'image/jpeg', capturedAt: 'Friday 14:42' }], '', 50)[0].previewText,\n  'Image from Friday 14:42',\n  'clipboard labels timestamped non-png image entries as images'\n)\n\nassertDeepEqual(\n  clipboard.displayRows(history, 'image', 50).map(row => row.index),\n  [2],\n  'clipboard display rows preserve original history indexes'\n)\n\nassertDeepEqual(\n  clipboard.displayRows([{ type: 'text', text: 'line one\\nline two' }], '', 50)[0].previewText,\n  'line one line two',\n  'clipboard display rows collapse text whitespace'\n)\n\nassertDeepEqual(\n  clipboard.displayRows([{ type: 'text', text: 'file:///home/dhh/Videos/screenrecording-2026-05-29_13-56-43-720p.gif\\n' }], '', 50)[0],\n  {\n    entryType: 'file',\n    fullText: '/home/dhh/Videos/screenrecording-2026-05-29_13-56-43-720p.gif',\n    previewText: 'screenrecording-2026-05-29_13-56-43-720p.gif',\n    previewImage: '/home/dhh/Videos/screenrecording-2026-05-29_13-56-43-720p.gif',\n    path: '/home/dhh/Videos/screenrecording-2026-05-29_13-56-43-720p.gif',\n    mime: 'text/plain',\n    index: 0\n  },\n  'clipboard display rows show file uri entries as files'\n)\n\nassertDeepEqual(\n  clipboard.displayRows([{ type: 'text', text: 'file:///home/dhh/One.txt\\nfile:///home/dhh/Two.txt\\n' }], '', 50)[0].previewText,\n  '2 files',\n  'clipboard display rows summarize multiple file uri entries'\n)\n\nassertDeepEqual(\n  clipboard.displayRows([{ type: 'text', text: 'file:///home/dhh/Videos/demo.mp4\\n' }], '', 50)[0].previewImage,\n  '',\n  'clipboard display rows do not preview video file uri entries inline'\n)\n\nassertDeepEqual(clipboard.displayRows(history, '', 0), [], 'clipboard display rows supports zero result limit')\nassertDeepEqual(clipboard.addEntry(history, 'next', 0), [], 'clipboard addEntry supports zero history limit')\n\nassert(\n  /function select\\(delta\\)[\\s\\S]*root\\.disarmPointer\\(\\)[\\s\\S]*selectedIndex =/.test(clipboardQml),\n  'clipboard keyboard navigation disarms pointer selection'\n)\nassert(\n  /function selectAbsolute\\(index\\)[\\s\\S]*root\\.disarmPointer\\(\\)[\\s\\S]*root\\.selectedIndex = Math\\.max\\(0, Math\\.min\\(index, displayModel\\.count - 1\\)\\)/.test(clipboardQml),\n  'clipboard absolute navigation disarms pointer selection'\n)\nassert(\n  /event\\.key === Qt\\.Key_Home[\\s\\S]*root\\.selectAbsolute\\(0\\)[\\s\\S]*event\\.accepted = true/.test(clipboardQml),\n  'clipboard Home selects the first entry'\n)\nassert(\n  /event\\.key === Qt\\.Key_End[\\s\\S]*root\\.selectAbsolute\\(displayModel\\.count - 1\\)[\\s\\S]*event\\.accepted = true/.test(clipboardQml),\n  'clipboard End selects the last entry'\n)\nassert(\n  /PointerMoveGate\\s*\\{[\\s\\S]*id: pointerGate[\\s\\S]*referenceItem: card[\\s\\S]*\\}/.test(clipboardQml),\n  'clipboard uses shared pointer movement gate in card coordinates'\n)\nassert(\n  /function disarmPointer\\(\\)[\\s\\S]*pointerGate\\.reset\\(\\)/.test(clipboardQml),\n  'clipboard resets pointer movement gate when pointer selection is disarmed'\n)\nassert(\n  /function selectFromPointer\\(index, item, mouse\\)[\\s\\S]*pointerGate\\.moved\\(item, mouse\\)[\\s\\S]*root\\.selectedIndex = index/.test(clipboardQml),\n  'clipboard only selects from pointer after real movement'\n)\nassert(\n  /onPositionChanged: function\\(mouse\\) \\{\\s*root\\.selectFromPointer\\(row\\.index, row, mouse\\)\\s*\\}/.test(clipboardQml),\n  'clipboard row hover routes through pointer movement gate'\n)\nassert(\n  !/onContainsMouseChanged:[\\s\\S]*root\\.selectedIndex/.test(clipboardQml),\n  'clipboard does not select rows from containsMouse'\n)\nassert(\n  clipboardQml.includes('command: [\"setpriv\", \"--pdeathsig\", \"TERM\", \"wl-paste\", \"--type\", \"text\", \"--watch\", root.captureScript, \"text\"]'),\n  'clipboard text watcher dies with the shell via pdeathsig'\n)\nassert(\n  clipboardQml.includes('command: [\"setpriv\", \"--pdeathsig\", \"TERM\", \"wl-paste\", \"--type\", \"image/png\", \"--watch\", root.captureScript, \"image/png\"]'),\n  'clipboard image watcher dies with the shell via pdeathsig'\n)\nassert(\n  clipboardQml.includes('command: [\"pkill\", \"-f\", \"wl-paste .*--watch .*/shell/plugins/clipboard/capture\\\\\\\\.sh\"]'),\n  'clipboard init reaps stale watchers before starting new ones'\n)\nassertEqual(\n  (clipboardQml.match(/onExited: watchRestartTimer\\.restart\\(\\)/g) || []).length,\n  2,\n  'clipboard respawns both watchers when they die'\n)\n\nassertDeepEqual(\n  clipboard.displayRows([{ type: 'text', text: 'a'.repeat(8192) + 'needle' }], 'needle', 50),\n  [],\n  'clipboard display rows do not search text past the cap'\n)\n\nassertDeepEqual(\n  clipboard.displayRows([{ type: 'text', text: 'needle' + 'a'.repeat(100000) }], 'needle', 50).map(row => row.index),\n  [0],\n  'clipboard display rows search text up to the cap'\n)\n\nconst hugeTextRow = clipboard.displayRows([{ type: 'text', text: 'z'.repeat(100000) }], '', 50)[0]\nassert(\n  hugeTextRow.fullText.length === 8192 && hugeTextRow.previewText.length === 8192,\n  'clipboard display rows cap what a huge text entry renders'\n)\n\nconst hugeFileList = []\nfor (let i = 0; i < 5000; i++) hugeFileList.push('file:///home/dhh/clip-' + i + '.mp4')\nconst hugeFileRow = clipboard.displayRows([{ type: 'text', text: hugeFileList.join('\\n') + '\\n' }], '', 50)[0]\nassert(\n  hugeFileRow.entryType === 'file' && hugeFileRow.fullText.split('\\n').every(path => path.endsWith('.mp4')),\n  'clipboard display rows cap a huge file list without truncating a path'\n)\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\ncat >\"$WL_COPY_OUT\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nif [[ $1 == \"--list-types\" ]]; then\n  printf '%b' \"${WL_PASTE_TYPES:-text/plain\\n}\"\nelif [[ $1 == \"--type\" && $2 == \"text\" ]]; then\n  printf '%s' \"${WL_PASTE_TEXT:-terminal copy}\"\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >\"$WTYPE_OUT\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >\"$BROWSER_OUT\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$1\" >\"$EDITOR_PATH_OUT\"\ncat \"$1\" >\"$EDITOR_TEXT_OUT\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >\"$TENSAKU_OUT\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\t%s\\n' \"$BASHPID\" \"$*\" >>\"${WL_PASTE_LOG:-/dev/null}\"\nsleep_pid=\"\"\n\ncleanup() {\n  [[ -n $sleep_pid ]] && kill \"$sleep_pid\" 2>/dev/null || true\n  exit 0\n}\ntrap cleanup HUP INT TERM\n\nwhile true; do\n  sleep 10 &\n  sleep_pid=$!\n  wait \"$sleep_pid\"\ndone\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: false,
+            strip_tabs: false,
+            body: "#!/bin/bash\nPATH=\"$TMPDIR/bin:\\$PATH\" setpriv --pdeathsig TERM wl-paste --type text --watch \"$current_script\" text &\nprintf '%s\\n' \"\\$!\" >\"$watch_pid_file\"\nwait\n",
+        },
+    ],
+}

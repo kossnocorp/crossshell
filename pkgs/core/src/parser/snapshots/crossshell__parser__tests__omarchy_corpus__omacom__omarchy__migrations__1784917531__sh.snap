@@ -1,0 +1,106 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1784917531.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Unpack the initramfs synchronously so Plymouth survives early boot",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Binary {
+                                    left: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "omarchy-cmd-present",
+                                            args: [
+                                                "limine-mkinitcpio",
+                                            ],
+                                        },
+                                    ),
+                                    operator: And,
+                                    right: Test(
+                                        " -f /etc/limine-entry-tool.d/omarchy-defaults.conf ",
+                                    ),
+                                },
+                                operator: And,
+                                right: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-rqs",
+                                                "initramfs_async",
+                                                "/etc/limine-entry-tool.d/",
+                                                "/etc/default/limine",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "echo",
+                                        args: [
+                                            "KERNEL_CMDLINE[default]+=\" initramfs_async=0\"",
+                                        ],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "sudo",
+                                            args: [
+                                                "tee",
+                                                "-a",
+                                                "/etc/limine-entry-tool.d/omarchy-defaults.conf",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "limine-mkinitcpio",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

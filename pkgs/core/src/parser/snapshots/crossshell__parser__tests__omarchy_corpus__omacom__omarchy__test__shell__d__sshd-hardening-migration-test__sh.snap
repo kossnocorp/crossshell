@@ -1,0 +1,1920 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/sshd-hardening-migration-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration",
+                        value: "$ROOT/migrations/1788124236.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_dir/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/systemctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/sshd",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/*",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ssh-keygen",
+                args: [
+                    "-q",
+                    "-t",
+                    "ed25519",
+                    "-N",
+                    "",
+                    "-f",
+                    "$test_dir/key",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "public_key",
+                        value: "$(<\"$test_dir/key.pub\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "run_migration",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "scenario=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "home=$test_dir/$scenario/home",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "root=$test_dir/$scenario/root",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "config=$root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mkdir",
+                                args: [
+                                    "-p",
+                                    "$home/.ssh",
+                                    "${config%/*}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "chmod",
+                                args: [
+                                    "${HOME_MODE:-755}",
+                                    "$home",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$test_dir/$scenario.calls",
+                                },
+                            ],
+                        },
+                        Case {
+                            word: "${AUTHORIZED_KEY_STATE:-valid}",
+                            arms: [
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "valid",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "%s\\n",
+                                                            "$public_key",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "$home/.ssh/authorized_keys",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "invalid",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "not a public key\\n",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "$home/.ssh/authorized_keys",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "private",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "cat",
+                                                        args: [
+                                                            "$test_dir/key",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "$home/.ssh/authorized_keys",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "symlink",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "%s\\n",
+                                                            "$public_key",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "$home/.ssh/imported_key",
+                                                    },
+                                                ],
+                                            },
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "ln",
+                                                    args: [
+                                                        "-s",
+                                                        "imported_key",
+                                                        "$home/.ssh/authorized_keys",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "unreadable",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "%s\\n",
+                                                            "$public_key",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "$home/.ssh/authorized_keys",
+                                                    },
+                                                ],
+                                            },
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "chmod",
+                                                    args: [
+                                                        "000",
+                                                        "$home/.ssh/authorized_keys",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                            ],
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " ${LOOSE_SSH_PERMS:-0} == 1 ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "chmod",
+                                                    args: [
+                                                        "755",
+                                                        "$home/.ssh",
+                                                    ],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "chmod",
+                                                    args: [
+                                                        "644",
+                                                        "$home/.ssh/authorized_keys",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " ${ALREADY_HARDENED:-0} == 1 ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "PasswordAuthentication no\\n",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "$config",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sed",
+                                    args: [
+                                        "s|^config=/etc/ssh/sshd_config.d/10-omarchy-hardening.conf$|config=$config|",
+                                        "$migration",
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "HOME",
+                                            value: "$home",
+                                        },
+                                        CshAstAssignment {
+                                            name: "CALL_LOG",
+                                            value: "$test_dir/$scenario.calls",
+                                        },
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$stub_bin:$PATH",
+                                        },
+                                        CshAstAssignment {
+                                            name: "SSHD_ENABLED",
+                                            value: "${SSHD_ENABLED:-0}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "SSHD_ACTIVE",
+                                            value: "${SSHD_ACTIVE:-0}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "SSHD_SYNTAX_VALID",
+                                            value: "${SSHD_SYNTAX_VALID:-1}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "SSHD_PASSWORD_AUTH",
+                                            value: "${SSHD_PASSWORD_AUTH:-no}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "SSHD_KBD_AUTH",
+                                            value: "${SSHD_KBD_AUTH:-no}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "SSHD_RELOAD_VALID",
+                                            value: "${SSHD_RELOAD_VALID:-1}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "SUDO_ALLOWED",
+                                            value: "${SUDO_ALLOWED:-1}",
+                                        },
+                                    ],
+                                    name: "bash",
+                                    args: [
+                                        "-euo",
+                                        "pipefail",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "sshd_disabled",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "grep",
+                                args: [
+                                    "-qxF",
+                                    "sudo systemctl disable --now sshd.service",
+                                    "$test_dir/$1.calls",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "SSHD_ENABLED",
+                        value: "0",
+                    },
+                    CshAstAssignment {
+                        name: "SSHD_ACTIVE",
+                        value: "0",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "disabled",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $test_dir/disabled/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration leaves a disabled daemon alone",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "^sudo ",
+                            "$test_dir/disabled.calls",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "disabled SSH does not prompt for privileges",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration no-ops when sshd is not enabled or active",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "ALREADY_HARDENED",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ENABLED",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ACTIVE",
+                            value: "1",
+                        },
+                    ],
+                    name: "run_migration",
+                    args: [
+                        "hardened",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -s $test_dir/hardened.calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an already-hardened machine must not touch sshd or prompt",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qxF",
+                        "PasswordAuthentication no",
+                        "$test_dir/hardened/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the existing hardening config is left alone",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration no-ops when the hardening config already exists",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "AUTHORIZED_KEY_STATE",
+                            value: "missing",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ENABLED",
+                            value: "1",
+                        },
+                    ],
+                    name: "run_migration",
+                    args: [
+                        "no-key",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -e $test_dir/no-key/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration must not write the hardening config without an authorized key",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sshd_disabled",
+                    args: [
+                        "no-key",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration disables a password-only sshd",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration disables sshd when no key is authorized",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "AUTHORIZED_KEY_STATE",
+                            value: "invalid",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ENABLED",
+                            value: "1",
+                        },
+                    ],
+                    name: "run_migration",
+                    args: [
+                        "invalid-key",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sshd_disabled",
+                    args: [
+                        "invalid-key",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a malformed authorized_keys leaves sshd password-only",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration disables sshd when authorized_keys holds no valid key",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "AUTHORIZED_KEY_STATE",
+                            value: "private",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ENABLED",
+                            value: "1",
+                        },
+                    ],
+                    name: "run_migration",
+                    args: [
+                        "private-key",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -e $test_dir/private-key/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration must not treat a private key as an authorized key",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sshd_disabled",
+                    args: [
+                        "private-key",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a private-key authorized_keys leaves sshd password-only",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration disables sshd when authorized_keys holds a private key",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "AUTHORIZED_KEY_STATE",
+                            value: "symlink",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ENABLED",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ACTIVE",
+                            value: "1",
+                        },
+                    ],
+                    name: "run_migration",
+                    args: [
+                        "symlink-key",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qxF",
+                        "PasswordAuthentication no",
+                        "$test_dir/symlink-key/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration hardens a symlinked authorized_keys with a valid key",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "sshd_disabled",
+                        args: [
+                            "symlink-key",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration must not disable sshd when the symlinked key is usable",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration follows an authorized_keys symlink to its key",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " EUID != 0 ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "AUTHORIZED_KEY_STATE",
+                                                value: "unreadable",
+                                            },
+                                            CshAstAssignment {
+                                                name: "SSHD_ENABLED",
+                                                value: "1",
+                                            },
+                                        ],
+                                        name: "run_migration",
+                                        args: [
+                                            "unreadable",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                            Binary {
+                                left: Test(
+                                    " ! -e $test_dir/unreadable/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf ",
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "fail",
+                                        args: [
+                                            "SSH migration must not harden against an unverifiable authorized_keys",
+                                        ],
+                                    },
+                                ),
+                            },
+                            Binary {
+                                left: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-q",
+                                                "^sudo ",
+                                                "$test_dir/unreadable.calls",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "fail",
+                                        args: [
+                                            "an unreadable authorized_keys does not prompt or disable",
+                                        ],
+                                    },
+                                ),
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "pass",
+                                    args: [
+                                        "SSH migration leaves an unreadable authorized_keys alone",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "HOME_MODE",
+                            value: "775",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ENABLED",
+                            value: "1",
+                        },
+                    ],
+                    name: "run_migration",
+                    args: [
+                        "loose-home",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -e $test_dir/loose-home/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration must not disable passwords when sshd would ignore the key",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "^sudo ",
+                            "$test_dir/loose-home.calls",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a group-writable home does not prompt for privileges",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration leaves a group-writable home directory alone",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "LOOSE_SSH_PERMS",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ENABLED",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ACTIVE",
+                            value: "1",
+                        },
+                    ],
+                    name: "run_migration",
+                    args: [
+                        "active",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "config",
+                        value: "$test_dir/active/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qxF",
+                        "PasswordAuthentication no",
+                        "$config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration disables password authentication",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qxF",
+                        "KbdInteractiveAuthentication no",
+                        "$config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration disables keyboard-interactive authentication",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$test_dir/active/home/.ssh\") == \"700\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration tightens ~/.ssh so StrictModes accepts the key",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$test_dir/active/home/.ssh/authorized_keys\") == \"600\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration tightens authorized_keys so StrictModes accepts the key",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qxF",
+                        "sudo sshd -t",
+                        "$test_dir/active.calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration validates sshd syntax",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qxF",
+                        "sudo sshd -T",
+                        "$test_dir/active.calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration validates effective sshd settings",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qxF",
+                        "sudo systemctl reload sshd.service",
+                        "$test_dir/active.calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration reloads an active daemon",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration hardens and reloads an existing key-based SSH setup",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "SSHD_ENABLED",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "SSHD_ACTIVE",
+                            value: "0",
+                        },
+                    ],
+                    name: "run_migration",
+                    args: [
+                        "stopped",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -e $test_dir/stopped/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration hardens an enabled but stopped daemon",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-qF",
+                            "reload sshd.service",
+                            "$test_dir/stopped.calls",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration must not start or reload a stopped daemon",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration hardens an enabled daemon without starting it",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "SSHD_ENABLED",
+                                value: "1",
+                            },
+                            CshAstAssignment {
+                                name: "SSHD_ACTIVE",
+                                value: "1",
+                            },
+                            CshAstAssignment {
+                                name: "SSHD_PASSWORD_AUTH",
+                                value: "yes",
+                            },
+                        ],
+                        name: "run_migration",
+                        args: [
+                            "ineffective",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "$test_dir/ineffective.output",
+                    },
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">&",
+                        target: "1",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an ineffective drop-in must complete without blocking later migrations",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $test_dir/ineffective/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration removes an ineffective config",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-qF",
+                            "reload sshd.service",
+                            "$test_dir/ineffective.calls",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration must not reload ineffective hardening",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration backs off when another rule keeps password authentication enabled",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "SSHD_ENABLED",
+                                value: "1",
+                            },
+                            CshAstAssignment {
+                                name: "SSHD_ACTIVE",
+                                value: "1",
+                            },
+                            CshAstAssignment {
+                                name: "SSHD_SYNTAX_VALID",
+                                value: "0",
+                            },
+                        ],
+                        name: "run_migration",
+                        args: [
+                            "invalid-config",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "$test_dir/invalid-config.output",
+                    },
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">&",
+                        target: "1",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a rejected config must complete without blocking later migrations",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $test_dir/invalid-config/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration removes a rejected config",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-qF",
+                            "reload sshd.service",
+                            "$test_dir/invalid-config.calls",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "SSH migration must not reload rejected hardening",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration backs off when sshd rejects the config",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "SSHD_ENABLED",
+                                value: "1",
+                            },
+                            CshAstAssignment {
+                                name: "SSHD_ACTIVE",
+                                value: "1",
+                            },
+                            CshAstAssignment {
+                                name: "SSHD_RELOAD_VALID",
+                                value: "0",
+                            },
+                        ],
+                        name: "run_migration",
+                        args: [
+                            "reload-fail",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "$test_dir/reload-fail.output",
+                    },
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">&",
+                        target: "1",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a failed reload must complete without blocking later migrations",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -e $test_dir/reload-fail/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a failed reload keeps the valid hardening config staged",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration keeps the hardening staged when sshd cannot reload",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "SUDO_ALLOWED",
+                                                value: "0",
+                                            },
+                                            CshAstAssignment {
+                                                name: "SSHD_ENABLED",
+                                                value: "1",
+                                            },
+                                            CshAstAssignment {
+                                                name: "SSHD_ACTIVE",
+                                                value: "1",
+                                            },
+                                        ],
+                                        name: "run_migration",
+                                        args: [
+                                            "no-sudo",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$test_dir/no-sudo.output",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "SSH migration must stay pending when privileges are unavailable",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " ! -e $test_dir/no-sudo/root/etc/ssh/sshd_config.d/10-omarchy-hardening.conf ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "no hardening config is left behind without privileges",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration stays pending until privileges are granted",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "SUDO_ALLOWED",
+                                                value: "0",
+                                            },
+                                            CshAstAssignment {
+                                                name: "AUTHORIZED_KEY_STATE",
+                                                value: "missing",
+                                            },
+                                            CshAstAssignment {
+                                                name: "SSHD_ENABLED",
+                                                value: "1",
+                                            },
+                                        ],
+                                        name: "run_migration",
+                                        args: [
+                                            "no-sudo-keyless",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$test_dir/no-sudo-keyless.output",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "SSH migration must stay pending when it cannot disable a password-only sshd",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "SSH migration stays pending when disabling sshd needs privileges",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'systemctl %s\\n' \"$*\" >>\"${CALL_LOG:?}\"\ncase \"$1 $2\" in\n\"is-enabled --quiet\") [[ ${SSHD_ENABLED:-0} == 1 ]] ;;\n\"is-active --quiet\") [[ ${SSHD_ACTIVE:-0} == 1 ]] ;;\n\"reload sshd.service\") [[ ${SSHD_RELOAD_VALID:-1} == 1 ]] ;;\n\"disable --now\") ;;\n*) exit 2 ;;\nesac\n",
+        },
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'sshd %s\\n' \"$*\" >>\"${CALL_LOG:?}\"\ncase $1 in\n-t) [[ ${SSHD_SYNTAX_VALID:-1} == 1 ]] ;;\n-T)\n  printf 'PasswordAuthentication %s\\n' \"${SSHD_PASSWORD_AUTH:-no}\"\n  printf 'KbdInteractiveAuthentication %s\\n' \"${SSHD_KBD_AUTH:-no}\"\n  ;;\n*) exit 2 ;;\nesac\n",
+        },
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'sudo %s\\n' \"$*\" >>\"${CALL_LOG:?}\"\nif [[ ${SUDO_ALLOWED:-1} != 1 ]]; then\n  exit 1\nfi\nexec \"$@\"\n",
+        },
+    ],
+}

@@ -1,0 +1,143 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1787589206.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Require signed packages from the Omarchy repository",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "omarchy_sig_override",
+                        value: "SigLevel = Optional TrustAll",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " -f /etc/pacman.conf ",
+                                ),
+                                operator: And,
+                                right: Binary {
+                                    left: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "sed",
+                                            args: [
+                                                "-n",
+                                                "/^\\[omarchy\\]/,/^\\[/p",
+                                                "/etc/pacman.conf",
+                                            ],
+                                        },
+                                    ),
+                                    operator: Pipe,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-qxF",
+                                                "$omarchy_sig_override",
+                                            ],
+                                        },
+                                    ),
+                                },
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "omarchy-pkg-missing",
+                                                            args: [
+                                                                "omarchy-keyring",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    operator: Or,
+                                                    right: Negated(
+                                                        Redirected {
+                                                            expression: Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "sudo",
+                                                                    args: [
+                                                                        "pacman-key",
+                                                                        "--list-keys",
+                                                                        "40DFB630FF42BCFFB047046CF0134EE680CAC571",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                            redirects: [
+                                                                CshAstRedirect {
+                                                                    descriptor: None,
+                                                                    operator: "&>",
+                                                                    target: "/dev/null",
+                                                                },
+                                                            ],
+                                                        },
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "omarchy-update-keyring",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "sed",
+                                        "-i",
+                                        "/^\\[omarchy\\]/,/^\\[/{/^$omarchy_sig_override$/d}",
+                                        "/etc/pacman.conf",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

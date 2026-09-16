@@ -1,0 +1,1012 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/qml-text-format-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "python3",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "SCAN",
+                        value: "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/qml-text-format-scan.py",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "violations",
+                        value: "$(python3 \"$SCAN\" \"$ROOT\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -n $violations ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "count",
+                                            value: "$(printf '%s\\n' \"$violations\" | wc -l)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "every Text with a dynamic text binding declares textFormat",
+                                        "$violations\n\n$count Text element(s) rely on Text.AutoText for a non-literal binding.\nAdd an explicit textFormat. Text.PlainText is right for anything that renders\ndata from outside the shell; use Text.StyledText only where markup is a\ndeliberate, documented feature, and strip <img> before it reaches the renderer.",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "every Text with a dynamic text binding declares textFormat",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fixture_root",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "chmod -R u+rwX \"$fixture_root\" 2>/dev/null; rm -rf \"$fixture_root\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "scan_fixture",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "name=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "dir=$fixture_root/$name",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mkdir",
+                                args: [
+                                    "-p",
+                                    "$dir/shell/Ui",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cat",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$dir/shell/Ui/Fixture.qml",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "python3",
+                                    args: [
+                                        "$SCAN",
+                                        "$dir",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: Some(
+                                        "2",
+                                    ),
+                                    operator: ">&",
+                                    target: "1",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "caught",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "name=$1",
+                                    "description=$2",
+                                    "output",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "output",
+                                        value: "$(scan_fixture \"$name\" || true)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -z $output ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "fail",
+                                                    args: [
+                                                        "$description",
+                                                        "the scan reported nothing for fixture $name",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "clean",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "name=$1",
+                                    "description=$2",
+                                    "output",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "output",
+                                        value: "$(scan_fixture \"$name\" || true)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -n $output ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "fail",
+                                                    args: [
+                                                        "$description",
+                                                        "the scan reported: $output",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "plain",
+                        "the scan reports a plain dynamic binding with no textFormat",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clean",
+                    args: [
+                        "literal",
+                        "the scan leaves a string literal alone",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clean",
+                    args: [
+                        "declared",
+                        "the scan leaves a declared textFormat alone",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 2,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "block-comment",
+                        "the scan reads a Text whose brace a block comment hides",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 3,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "block-comment-multiline",
+                        "the scan reads past a block comment spanning lines",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 4,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "namespaced",
+                        "the scan reads a Text reached through a namespaced import",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 5,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "namespaced-inline",
+                        "the scan reads a one-line namespaced Text block",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 6,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "namespaced-unscannable",
+                        "the scan rejects an unreadable namespaced Text block",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 7,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "textformat-substring",
+                        "the scan does not accept a lookalike property as textFormat",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 8,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "component-next-line",
+                        "the scan reads a component root whose Text sits on the next line",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 9,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "component-one-line",
+                        "the scan reads a component root written on one line",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 10,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "brace-next-line",
+                        "the scan rejects a Text whose opening brace is on the next line",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 11,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "trailing-binding",
+                        "the scan rejects a Text with a binding after the opening brace",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 12,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "wrapped-binding",
+                        "the scan follows a wrapped binding past its literal first line",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 13,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "clean",
+                    args: [
+                        "wrapped-literals",
+                        "the scan leaves a wrapped concatenation of literals alone",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 14,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "caught",
+                    args: [
+                        "nested-child",
+                        "the scan does not let a nested child's textFormat cover its parent",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "QML",
+                    here_document: 15,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "empty_root",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$empty_root/shell",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "python3",
+                                        args: [
+                                            "$SCAN",
+                                            "$empty_root",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "rm",
+                                    args: [
+                                        "-rf",
+                                        "$empty_root",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "the scan fails when it reads no files",
+                                        "an empty shell/ tree exited 0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$empty_root",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the scan fails when it reads no files",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "blind_root",
+                        value: "$fixture_root/blind",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$blind_root/shell/Ui/locked",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "import QtQuick\\nItem {\\n  Text {\\n    textFormat: Text.PlainText\\n    text: \"ok\"\\n  }\\n}\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$blind_root/shell/Ui/Good.qml",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "import QtQuick\\nItem {\\n  property string external: \"x\"\\n  Text {\\n    text: external\\n  }\\n}\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$blind_root/shell/Ui/locked/Bad.qml",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "000",
+                    "$blind_root/shell/Ui/locked",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "python3",
+                                        args: [
+                                            "$SCAN",
+                                            "$blind_root",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "chmod",
+                                    args: [
+                                        "755",
+                                        "$blind_root/shell/Ui/locked",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "the scan fails when a directory hides files from it",
+                                        "an unreadable subdirectory exited 0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "755",
+                    "$blind_root/shell/Ui/locked",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the scan fails when a directory hides files from it",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  property string external: \"x\"\n  Text {\n    text: external\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  Text {\n    text: \"a literal\"\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  property string external: \"x\"\n  Text {\n    textFormat: Text.PlainText\n    text: external\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  property string external: \"x\"\n  Text /* explanation */ {\n    text: external\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  property string external: \"x\"\n  /*\n   * Text { text: \"not this one\" }\n   */\n  Text {\n    text: external\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick as QQ\nQQ.Item {\n  property string external: \"x\"\n  QQ.Text {\n    text: external\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick as QQ\nQQ.Item {\n  property string external: \"x\"\n  QQ.Text { text: external }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick as QQ\nQQ.Item {\n  property string external: \"x\"\n  QQ.Text { text: external\n    color: \"red\"\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  property string external: \"x\"\n  property bool textFormatEnabled: true\n  Text { text: external; visible: textFormatEnabled }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  component Info:\n    Text {\n    }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  component Info: Text { color: \"red\" }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  property string external: \"x\"\n  Text\n  {\n    text: external\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  property string external: \"x\"\n  Text { text: external\n    color: \"red\"\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  property string external: \"x\"\n  Text {\n    text: \"prefix\"\n      + external\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nItem {\n  Text {\n    text: \"one\"\n      + \"two\"\n  }\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "QML",
+            quoted: true,
+            strip_tabs: false,
+            body: "import QtQuick\nText {\n  text: external.value\n  Text {\n    textFormat: Text.PlainText\n    text: \"literal\"\n  }\n}\n",
+        },
+    ],
+}

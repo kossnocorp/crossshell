@@ -1,0 +1,166 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/user/hardware/fix-nouveau-cursor.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "nvidia_config",
+                        value: "${OMARCHY_NVIDIA_MODPROBE_CONFIG:-/etc/modprobe.d/nvidia.conf}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Binary {
+                                    left: Test(
+                                        " ! -f $nvidia_config ",
+                                    ),
+                                    operator: And,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "omarchy-cmd-present",
+                                            args: [
+                                                "lspci",
+                                            ],
+                                        },
+                                    ),
+                                },
+                                operator: And,
+                                right: Binary {
+                                    left: Command(
+                                        CshAstCommand {
+                                            assignments: [
+                                                CshAstAssignment {
+                                                    name: "LC_ALL",
+                                                    value: "C",
+                                                },
+                                            ],
+                                            name: "lspci",
+                                            args: [
+                                                "-k",
+                                            ],
+                                        },
+                                    ),
+                                    operator: Pipe,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-qi",
+                                                "Kernel driver in use: nouveau",
+                                            ],
+                                        },
+                                    ),
+                                },
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "looknfeel",
+                                            value: "$HOME/.config/hypr/looknfeel.lua",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Test(
+                                                        " -f $looknfeel ",
+                                                    ),
+                                                    operator: And,
+                                                    right: Negated(
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "grep",
+                                                                args: [
+                                                                    "-q",
+                                                                    "no_hardware_cursors",
+                                                                    "$looknfeel",
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "echo",
+                                                        args: [
+                                                            "Detected nouveau driver. Forcing software cursors so the mouse pointer stays visible.",
+                                                        ],
+                                                    },
+                                                ),
+                                                Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "cat",
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: ">>",
+                                                            target: "$looknfeel",
+                                                        },
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: "<<",
+                                                            target: "EOF",
+                                                            here_document: 0,
+                                                        },
+                                                    ],
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "\n-- nouveau does not display the hardware cursor plane on many older NVIDIA GPUs,\n-- leaving the pointer invisible on the physical display. Render it in software.\nhl.config({\n  cursor = {\n    no_hardware_cursors = true,\n  },\n})\n",
+        },
+    ],
+}

@@ -1,0 +1,802 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/acceptance.d/menu-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "CONFIG_FILE",
+                        value: "$HOME/.config/omarchy/shell.json",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "DEFAULTS_FILE",
+                        value: "$OMARCHY_PATH/config/omarchy/shell.json",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "config_backup",
+                        value: "$(mktemp)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "config_existed",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -f $CONFIG_FILE ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cp",
+                                    args: [
+                                        "$CONFIG_FILE",
+                                        "$config_backup",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "config_existed",
+                                            value: "1",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Function {
+            name: "restore_bar_config",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "omarchy-shell",
+                                        args: [
+                                            "shell",
+                                            "hide",
+                                            "omarchy.menu",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "true",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Arithmetic(
+                                                "config_existed",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "mkdir",
+                                                    args: [
+                                                        "-p",
+                                                        "$(dirname \"$CONFIG_FILE\")",
+                                                    ],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "cp",
+                                                    args: [
+                                                        "$config_backup",
+                                                        "$CONFIG_FILE",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "rm",
+                                                args: [
+                                                    "-f",
+                                                    "$CONFIG_FILE",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "omarchy-shell",
+                                        args: [
+                                            "shell",
+                                            "reloadConfig",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "true",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$config_backup",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "restore_bar_config",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "bar_is_vertical",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "width",
+                                    "height",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "read",
+                                    args: [
+                                        "-r",
+                                        "width",
+                                        "height",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(hyprctl -j layers | jq -r '\n    [.. | objects | select(.namespace? == \"omarchy-bar\")][0]\n    | [.w, .h] | @tsv\n  ')",
+                                },
+                            ],
+                        },
+                        Binary {
+                            left: Test(
+                                " $width =~ ^[0-9]+$ && $height =~ ^[0-9]+$ ",
+                            ),
+                            operator: And,
+                            right: Arithmetic(
+                                "width < height",
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "bar_is_horizontal",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "width",
+                                    "height",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "read",
+                                    args: [
+                                        "-r",
+                                        "width",
+                                        "height",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(hyprctl -j layers | jq -r '\n    [.. | objects | select(.namespace? == \"omarchy-bar\")][0]\n    | [.w, .h] | @tsv\n  ')",
+                                },
+                            ],
+                        },
+                        Binary {
+                            left: Test(
+                                " $width =~ ^[0-9]+$ && $height =~ ^[0-9]+$ ",
+                            ),
+                            operator: And,
+                            right: Arithmetic(
+                                "width > height",
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "bar_position_is",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "expected=$1",
+                                ],
+                            },
+                        ),
+                        Test(
+                            " $(jq -r '.bar.position // \"top\"' \"$CONFIG_FILE\") == $expected ",
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "source_file",
+                        value: "$DEFAULTS_FILE",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                "config_existed",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "source_file",
+                            value: "$CONFIG_FILE",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "original_position",
+                        value: "$(jq -r '.bar.position // \"top\"' \"$source_file\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-shell",
+                    args: [
+                        "shell",
+                        "summon",
+                        "omarchy.menu",
+                        "{\"menu\":\"root\"}",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "root menu opens",
+                    "15",
+                    "layer_present",
+                    "omarchy-menu",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "root menu content is visible",
+                    "15",
+                    "screen_contains",
+                    "Apps",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-menu-01-root",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wtype",
+                args: [
+                    "-k",
+                    "Down",
+                    "-k",
+                    "Down",
+                    "-k",
+                    "Down",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "1",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-menu-02-style-selected",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wtype",
+                args: [
+                    "-k",
+                    "Return",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "style submenu is visible",
+                    "15",
+                    "screen_contains",
+                    "Theme",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-menu-03-style-submenu",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wtype",
+                args: [
+                    "-k",
+                    "Down",
+                    "-k",
+                    "Down",
+                    "-k",
+                    "Down",
+                    "-k",
+                    "Down",
+                    "-k",
+                    "Return",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "1",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-menu-04-menu-bar-submenu",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wtype",
+                args: [
+                    "-k",
+                    "Return",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "1",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-menu-05-position-submenu",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wtype",
+                args: [
+                    "-k",
+                    "Down",
+                    "-k",
+                    "Down",
+                    "-k",
+                    "Return",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "menu bar position changes to left",
+                    "20",
+                    "bar_position_is",
+                    "left",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "menu bar becomes vertical",
+                    "20",
+                    "bar_is_vertical",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "menu closes after selecting a position",
+                    "15",
+                    "layer_absent",
+                    "omarchy-menu",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-menu-06-bar-left",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                "config_existed",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cp",
+                                    args: [
+                                        "$config_backup",
+                                        "$CONFIG_FILE",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$CONFIG_FILE",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-shell",
+                    args: [
+                        "shell",
+                        "reloadConfig",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " $original_position == \"left\" || $original_position == \"right\" ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "wait_until",
+                                    args: [
+                                        "menu bar restores its original vertical position",
+                                        "20",
+                                        "bar_is_vertical",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "wait_until",
+                                args: [
+                                    "menu bar restores its original horizontal position",
+                                    "20",
+                                    "bar_is_horizontal",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-menu-07-bar-restored",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "-",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "restore_bar_config",
+                args: [],
+            },
+        ),
+    ],
+}

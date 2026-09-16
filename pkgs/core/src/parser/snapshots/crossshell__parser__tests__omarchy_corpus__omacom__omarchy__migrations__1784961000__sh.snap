@@ -1,0 +1,136 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1784961000.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Tune reclaim for swap on zram",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "sudo",
+                        args: [
+                            "sysctl",
+                            "-p",
+                            "/etc/sysctl.d/99-omarchy-sysctl.conf",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "systemctl",
+                                        "daemon-reload",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "zram_used",
+                                            value: "$(awk '$1 == \"/dev/zram0\" {print $4}' /proc/swaps)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Test(
+                                                        " ${zram_used:-0} == 0 ",
+                                                    ),
+                                                    operator: And,
+                                                    right: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "sudo",
+                                                            args: [
+                                                                "systemctl",
+                                                                "restart",
+                                                                "dev-zram0.swap",
+                                                            ],
+                                                        },
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "exit",
+                                                        args: [
+                                                            "0",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "omarchy-state",
+                args: [
+                    "set",
+                    "reboot-required",
+                ],
+            },
+        ),
+    ],
+}

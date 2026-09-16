@@ -1,0 +1,1725 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/restart-shell-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_pid_one",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_pid_two",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "cleanup",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Binary {
+                                left: Test(
+                                    " -n $restart_pid_one ",
+                                ),
+                                operator: And,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "kill",
+                                            args: [
+                                                "$restart_pid_one",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "true",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Binary {
+                                left: Test(
+                                    " -n $restart_pid_two ",
+                                ),
+                                operator: And,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "kill",
+                                            args: [
+                                                "$restart_pid_two",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "true",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$test_tmp",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "cleanup",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "wrapper_root",
+                        value: "$test_tmp/wrapper-root",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "wrapper_bin",
+                        value: "$test_tmp/wrapper-bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$wrapper_root/shell",
+                    "$wrapper_bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$wrapper_root/shell/shell.qml",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$wrapper_bin/qs",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$wrapper_bin/qs",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "wrapper_error",
+                            value: "$(PATH=\"$wrapper_bin:$PATH\" \\\n  OMARCHY_PATH=\"$wrapper_root\" \\\n  OMARCHY_SHELL_IPC_TIMEOUT=0.1s \\\n  OMARCHY_TEST_QS_HANG=1 \\\n  \"$ROOT/bin/omarchy-shell\" shell ping 2>&1)",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hung shell IPC returns a failure",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $wrapper_error == \"omarchy-shell is not responding\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "hung shell IPC reports that the shell is unresponsive",
+                        "$wrapper_error",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "shell IPC calls time out when Quickshell is unresponsive",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "wrapper_error",
+                            value: "$(PATH=\"$wrapper_bin:$PATH\" \\\n  OMARCHY_PATH=\"$wrapper_root\" \\\n  OMARCHY_TEST_QS_STARTING=1 \\\n  \"$ROOT/bin/omarchy-shell\" shell ping 2>&1)",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a starting shell answers IPC calls with a failure",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $wrapper_error == \"omarchy-shell is not ready\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a starting shell reports that it is not ready",
+                        "$wrapper_error",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "shell IPC calls fail while Quickshell is still starting",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "PATH",
+                                value: "$wrapper_bin:$PATH",
+                            },
+                            CshAstAssignment {
+                                name: "OMARCHY_PATH",
+                                value: "$wrapper_root",
+                            },
+                            CshAstAssignment {
+                                name: "OMARCHY_TEST_QS_STARTING",
+                                value: "1",
+                            },
+                        ],
+                        name: "$ROOT/bin/omarchy-shell",
+                        args: [
+                            "-q",
+                            "shell",
+                            "ping",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">&",
+                        target: "1",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "quiet best-effort IPC calls tolerate a starting shell",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "quiet best-effort IPC calls tolerate a starting shell",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "wrapper_args",
+                        value: "$test_tmp/wrapper-args",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$wrapper_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_PATH",
+                            value: "$wrapper_root",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_QS_ARGS",
+                            value: "$wrapper_args",
+                        },
+                    ],
+                    name: "$ROOT/bin/omarchy-shell",
+                    args: [
+                        "shell",
+                        "ping",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "--",
+                            "ipc -n -p",
+                            "$wrapper_args",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "shell IPC targets the newest live Quickshell instance",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "shell IPC targets the newest live Quickshell instance",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_root",
+                        value: "$test_tmp/restart-root",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_bin",
+                        value: "$restart_root/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_state",
+                        value: "$test_tmp/restart-pids",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_log",
+                        value: "$test_tmp/restart.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_env_log",
+                        value: "$test_tmp/restart-env.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dispatch_log",
+                        value: "$test_tmp/dispatch.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "ipc_log",
+                        value: "$test_tmp/ipc.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "runtime_dir",
+                        value: "$test_tmp/runtime",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$restart_root/shell",
+                    "$restart_bin",
+                    "$runtime_dir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$restart_root/shell/shell.qml",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$ROOT/bin/omarchy-shell",
+                    "$restart_bin/omarchy-shell",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$ROOT/bin/omarchy-launch-shell",
+                    "$restart_bin/omarchy-launch-shell",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$ROOT/bin/omarchy-cmd-missing",
+                    "$restart_bin/omarchy-cmd-missing",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$ROOT/bin/omarchy-hyprland-session-locked",
+                    "$restart_bin/omarchy-hyprland-session-locked",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$restart_bin/qs",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$restart_bin/quickshell",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$restart_bin/hyprctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 3,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$restart_bin/systemd-cat",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 4,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$restart_bin/systemctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 5,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$restart_bin/qs",
+                    "$restart_bin/quickshell",
+                    "$restart_bin/hyprctl",
+                    "$restart_bin/systemd-cat",
+                    "$restart_bin/systemctl",
+                ],
+            },
+        ),
+        Background(
+            Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sleep",
+                    args: [
+                        "30",
+                    ],
+                },
+            ),
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_pid_one",
+                        value: "$!",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Background(
+            Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sleep",
+                    args: [
+                        "30",
+                    ],
+                },
+            ),
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_pid_two",
+                        value: "$!",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n%s\\n",
+                        "$restart_pid_one",
+                        "$restart_pid_two",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$restart_state",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "caller_root",
+                        value: "$test_tmp/caller-root",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$caller_root/shell",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$caller_root/shell/shell.qml",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$restart_bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_PATH",
+                        value: "$caller_root",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_RUNTIME_DIR",
+                        value: "$runtime_dir",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_QS_STATE",
+                        value: "$restart_state",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_QS_LOG",
+                        value: "$restart_log",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_QS_ENV_LOG",
+                        value: "$restart_env_log",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_DISPATCH_LOG",
+                        value: "$dispatch_log",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_IPC_LOG",
+                        value: "$ipc_log",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_SESSION_PATH",
+                        value: "$restart_root",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_TEST_TRANSIENT_ENV",
+                        value: "leaked",
+                    },
+                ],
+                name: "timeout",
+                args: [
+                    "5",
+                    "$ROOT/bin/omarchy-restart-shell",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "kill",
+                                        args: [
+                                            "-0",
+                                            "$restart_pid_one",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "restart stops the first matching shell instance",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "kill",
+                                        args: [
+                                            "-0",
+                                            "$restart_pid_two",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "restart stops duplicate matching shell instances",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "wait",
+                        args: [
+                            "$restart_pid_one",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "wait",
+                        args: [
+                            "$restart_pid_two",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_pid_one",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_pid_two",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$restart_state\") == 303 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "restart leaves exactly one fresh shell instance",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(grep -c '^-n -p ' \"$restart_log\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "restart launches one fresh shell process",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "kill -p $restart_root/shell --any-display",
+                            "$restart_log",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "restart stops the shell from the session checkout",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(<\"$restart_env_log\") == \"unset\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "restart uses the Hyprland session environment for the fresh shell",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "hl.dsp.exec_cmd(\"omarchy-launch-shell\")",
+                            "$dispatch_log",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "restart launches the fresh shell through Hyprland",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "ipc -n -p $restart_root/shell call -- shell ping",
+                            "$ipc_log",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "restart checks readiness in the session checkout",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "restart replaces duplicate shell instances from the session checkout",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$restart_log",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "303\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$restart_state",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$restart_state.locked",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "locked_error",
+                            value: "$(PATH=\"$restart_bin:$PATH\" \\\n  OMARCHY_PATH=\"$restart_root\" \\\n  XDG_RUNTIME_DIR=\"$runtime_dir\" \\\n  OMARCHY_TEST_SESSION_LOCKED=1 \\\n  OMARCHY_TEST_QS_STATE=\"$restart_state\" \\\n  OMARCHY_TEST_QS_LOG=\"$restart_log\" \\\n  OMARCHY_TEST_DISPATCH_LOG=\"$dispatch_log\" \\\n  OMARCHY_TEST_IPC_LOG=\"$ipc_log\" \\\n  OMARCHY_TEST_SESSION_PATH=\"$restart_root\" \\\n  \"$ROOT/bin/omarchy-restart-shell\" 2>&1)",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "restart refuses while the shell lock is active",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $locked_error == \"Refusing to restart Omarchy shell while the session is locked.\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "locked restart explains why it was refused",
+                        "$locked_error",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(<\"$restart_state\") == 303 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "locked restart preserves the running shell",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $restart_log ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "locked restart does not stop or launch Quickshell",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "restart preserves the shell while its lock is active",
+                ],
+            },
+        ),
+        Background(
+            Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sleep",
+                    args: [
+                        "30",
+                    ],
+                },
+            ),
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_pid_one",
+                        value: "$!",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "$restart_pid_one",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$restart_state",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$restart_state.locked",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$restart_log",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$ipc_log",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$restart_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_PATH",
+                            value: "$restart_root",
+                        },
+                        CshAstAssignment {
+                            name: "XDG_RUNTIME_DIR",
+                            value: "$runtime_dir",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_SESSION_LOCKED",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_QS_STATE",
+                            value: "$restart_state",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_QS_LOG",
+                            value: "$restart_log",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_QS_ENV_LOG",
+                            value: "$restart_env_log",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_DISPATCH_LOG",
+                            value: "$dispatch_log",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_IPC_LOG",
+                            value: "$ipc_log",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_TEST_SESSION_PATH",
+                            value: "$restart_root",
+                        },
+                    ],
+                    name: "timeout",
+                    args: [
+                        "5",
+                        "$ROOT/bin/omarchy-restart-shell",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "locked restart recovers when the lock client is dead",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "kill",
+                                        args: [
+                                            "-0",
+                                            "$restart_pid_one",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "dead-lock recovery stops the stale shell instance",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "wait",
+                        args: [
+                            "$restart_pid_one",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restart_pid_one",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$restart_state\") == 303 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "dead-lock recovery leaves one fresh shell instance",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "ipc -n -p $restart_root/shell call -- lock lock",
+                            "$ipc_log",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "dead-lock recovery re-acquires the session lock",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "ipc -n -p $restart_root/shell call -- lock status",
+                            "$ipc_log",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "dead-lock recovery waits for the lock to become secure",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "restart recovers a locked session whose lock client died",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\n[[ -n ${OMARCHY_TEST_QS_ARGS:-} ]] && printf '%s\\n' \"$*\" >\"$OMARCHY_TEST_QS_ARGS\"\n\nif [[ ${OMARCHY_TEST_QS_HANG:-0} == 1 ]]; then\n  sleep 5\nelif [[ ${OMARCHY_TEST_QS_STARTING:-0} == 1 ]]; then\n  printf 'Not ready to accept queries yet.\\n'\nelse\n  printf 'ok\\n'\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf '%s\\n' \"$*\" >>\"$OMARCHY_TEST_IPC_LOG\"\n\ncase \"$*\" in\n  *'shell ping')\n    [[ $* == *\"-p $OMARCHY_TEST_SESSION_PATH/shell\"* ]] &&\n      grep -Fx '303' \"$OMARCHY_TEST_QS_STATE\" >/dev/null &&\n      printf 'ok\\n'\n    ;;\n  *'lock lock')\n    touch \"$OMARCHY_TEST_QS_STATE.locked\"\n    printf 'ok\\n'\n    ;;\n  *'lock status')\n    if [[ -f $OMARCHY_TEST_QS_STATE.locked ]]; then\n      printf '{\"secure\": true, \"requested\": true}\\n'\n    else\n      printf '{\"secure\": false, \"requested\": false}\\n'\n    fi\n    ;;\nesac\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf '%s\\n' \"$*\" >>\"$OMARCHY_TEST_QS_LOG\"\n\ncase \" $* \" in\n  *' kill -p '*)\n    pid=$(head -n 1 \"$OMARCHY_TEST_QS_STATE\")\n    [[ $pid =~ ^[0-9]+$ ]] || exit 1\n    kill \"$pid\" 2>/dev/null\n    while kill -0 \"$pid\" 2>/dev/null; do sleep 0.01; done\n    awk 'NR > 1' \"$OMARCHY_TEST_QS_STATE\" >\"$OMARCHY_TEST_QS_STATE.next\"\n    mv \"$OMARCHY_TEST_QS_STATE.next\" \"$OMARCHY_TEST_QS_STATE\"\n    ;;\n  *' -n -p '*)\n    printf '%s\\n' \"${OMARCHY_TEST_TRANSIENT_ENV-unset}\" >\"$OMARCHY_TEST_QS_ENV_LOG\"\n    printf '303\\n' >\"$OMARCHY_TEST_QS_STATE\"\n    ;;\nesac\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nif [[ ${1:-} == \"-j\" && ${2:-} == \"monitors\" ]]; then\n  # Hyprland reports an active session lock as a reason the monitor cannot hand\n  # a client the whole screen, not as a workspace.\n  if [[ ${OMARCHY_TEST_SESSION_LOCKED:-0} == 1 ]]; then\n    printf '[{\"name\":\"eDP-1\",\"solitaryBlockedBy\":[\"WINDOWED\",\"LOCK\",\"CANDIDATE\"]}]\\n'\n  else\n    printf '[{\"name\":\"eDP-1\",\"solitaryBlockedBy\":[\"WINDOWED\",\"CANDIDATE\"]}]\\n'\n  fi\nelif [[ ${1:-} == \"dispatch\" && ${2:-} == hl.dsp.exec_cmd* ]]; then\n  printf '%s\\n' \"${2:-}\" >>\"$OMARCHY_TEST_DISPATCH_LOG\"\n  OMARCHY_PATH=\"$OMARCHY_TEST_SESSION_PATH\" \\\n    env -u OMARCHY_TEST_TRANSIENT_ENV omarchy-launch-shell\n  printf 'ok\\n'\nelif [[ ${1:-} == \"dispatch\" ]]; then\n  exit 1\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nwhile (( $# > 0 )); do\n  [[ $1 == \"--\" ]] && { shift; break; }\n  shift\ndone\nexec \"$@\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nif [[ ${1:-} == \"--user\" && ${2:-} == \"show-environment\" ]]; then\n  printf 'OMARCHY_PATH=%s\\n' \"$OMARCHY_TEST_SESSION_PATH\"\nelif [[ ${1:-} == \"--user\" && ${2:-} == \"try-restart\" ]]; then\n  exit 0\nelse\n  exit 1\nfi\n",
+        },
+    ],
+}

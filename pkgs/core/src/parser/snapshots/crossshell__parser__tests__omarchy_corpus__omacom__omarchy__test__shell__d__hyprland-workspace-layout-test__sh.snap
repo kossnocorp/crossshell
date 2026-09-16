@@ -1,0 +1,418 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hyprland-workspace-layout-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"${BASH_SOURCE[0]}\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "lua",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmpdir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmpdir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_dir",
+                        value: "$tmpdir/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "home_dir",
+                        value: "$tmpdir/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "log_file",
+                        value: "$tmpdir/hyprctl.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_dir",
+                    "$home_dir",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_dir/hyprctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_dir/hyprctl",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_dir/omarchy-notification-send",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_dir/omarchy-notification-send",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$home_dir",
+                    },
+                    CshAstAssignment {
+                        name: "HYPRCTL_LOG",
+                        value: "$log_file",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$stub_dir:$PATH",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-hyprland-workspace-layout-toggle",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "layout_file",
+                        value: "$home_dir/.local/state/omarchy/workspace-layouts/3.lua",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $layout_file ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "workspace layout toggle saves a workspace rule",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "hl.workspace_rule({ workspace = \"3\", layout = \"scrolling\" })",
+                            "$layout_file",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "workspace layout toggle saves the selected layout",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "eval hl.workspace_rule({ workspace = \"3\", layout = \"scrolling\" })",
+                            "$log_file",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "workspace layout toggle applies the selected layout immediately",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "workspace layout toggle persists and applies the selected layout",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "HOME",
+                                                value: "$home_dir",
+                                            },
+                                            CshAstAssignment {
+                                                name: "HYPRCTL_LOG",
+                                                value: "$log_file",
+                                            },
+                                            CshAstAssignment {
+                                                name: "HYPRCTL_BROKEN",
+                                                value: "1",
+                                            },
+                                            CshAstAssignment {
+                                                name: "PATH",
+                                                value: "$stub_dir:$PATH",
+                                            },
+                                        ],
+                                        name: "$ROOT/bin/omarchy-hyprland-workspace-layout-toggle",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "workspace layout toggle exits nonzero without a workspace id",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " -f \"$home_dir/.local/state/omarchy/workspace-layouts/null.lua\" ",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "workspace layout toggle does not persist a rule without a workspace id",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "workspace layout toggle ignores broken hyprctl output",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "HOME",
+                            value: "$home_dir",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_PATH",
+                            value: "$ROOT",
+                        },
+                    ],
+                    name: "lua",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "LUA",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "saved workspace layouts load into Hyprland configuration",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nif [[ $1 == \"activeworkspace\" && -n $HYPRCTL_BROKEN ]]; then\n  printf '{}\\n'\nelif [[ $1 == \"activeworkspace\" ]]; then\n  printf '{\"id\":3,\"tiledLayout\":\"dwindle\"}\\n'\nelse\n  printf '%s\\n' \"$*\" >>\"$HYPRCTL_LOG\"\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n:\n",
+        },
+        CshAstHereDocument {
+            delimiter: "LUA",
+            quoted: true,
+            strip_tabs: false,
+            body: "local rules = {}\n\nhl = {\n  workspace_rule = function(rule)\n    table.insert(rules, rule)\n  end,\n}\n\ndofile(os.getenv(\"OMARCHY_PATH\") .. \"/default/hypr/bootstrap.lua\")\nrequire(\"default.hypr.workspace-layouts\")\n\nassert(#rules == 1)\nassert(rules[1].workspace == \"3\")\nassert(rules[1].layout == \"scrolling\")\n",
+        },
+    ],
+}

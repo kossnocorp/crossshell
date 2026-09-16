@@ -1,0 +1,403 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/network.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "systemctl",
+                        args: [
+                            "disable",
+                            "iwd.service",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        For {
+            variable: "unit",
+            words: Some(
+                [
+                    "systemd-networkd.service",
+                    "systemd-networkd.socket",
+                    "systemd-networkd-varlink.socket",
+                    "systemd-networkd-varlink-metrics.socket",
+                    "systemd-networkd-resolve-hook.socket",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "systemctl",
+                                    args: [
+                                        "disable",
+                                        "$unit",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: Some(
+                                        "2",
+                                    ),
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "true",
+                                args: [],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "systemctl",
+                        args: [
+                            "disable",
+                            "systemd-networkd-wait-online.service",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "systemctl",
+                        args: [
+                            "mask",
+                            "systemd-networkd-wait-online.service",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+        Function {
+            name: "stock_networkd_file",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file=$1",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -f $file ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Case {
+                            word: "$(basename \"$file\")",
+                            arms: [
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "20-ethernet.network",
+                                        "20-wlan.network",
+                                        "20-wwan.network",
+                                    ],
+                                    body: CshAst {
+                                        commands: [],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "*",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "return",
+                                                    args: [
+                                                        "1",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                            ],
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-Eq",
+                                        "^[[:space:]]*DHCP=yes[[:space:]]*$",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-Eq",
+                                        "^[[:space:]]*Name=(en\\*|eth\\*|wl\\*|ww\\*)[[:space:]]*$",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "backup_dir",
+                        value: "/etc/systemd/network/omarchy-networkd-retired-$(date +%Y%m%d%H%M%S)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "file",
+            words: Some(
+                [
+                    "/etc/systemd/network/20-ethernet.network",
+                    "/etc/systemd/network/20-wlan.network",
+                    "/etc/systemd/network/20-wwan.network",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "stock_networkd_file",
+                                                args: [
+                                                    "$file",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "install",
+                                                args: [
+                                                    "-d",
+                                                    "-m",
+                                                    "0755",
+                                                    "$backup_dir",
+                                                ],
+                                            },
+                                        ),
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "mv",
+                                                args: [
+                                                    "$file",
+                                                    "$backup_dir/",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "systemctl",
+                                        args: [
+                                            "is-active",
+                                            "--quiet",
+                                            "NetworkManager.service",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "systemctl",
+                                            args: [
+                                                "stop",
+                                                "systemd-networkd.service",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "true",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

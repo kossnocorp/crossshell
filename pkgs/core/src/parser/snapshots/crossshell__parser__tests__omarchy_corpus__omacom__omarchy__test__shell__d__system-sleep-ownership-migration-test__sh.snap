@@ -1,0 +1,4731 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/system-sleep-ownership-migration-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration",
+                        value: "$ROOT/migrations/1788662350.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d -p /tmp)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mock_omarchy",
+                        value: "$test_tmp/omarchy",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "sleep_dir",
+                        value: "$test_tmp/system-sleep",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "systemd_dir",
+                        value: "$test_tmp/systemd",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "drop_in",
+                        value: "$systemd_dir/supergfxd.service.d/delay-start.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "quarantine",
+                        value: "$test_tmp/quarantine",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "reload_needed_marker",
+                        value: "$test_tmp/reload-needed",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration_copy",
+                        value: "$test_tmp/migration.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "calls",
+                        value: "$test_tmp/calls",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$mock_omarchy/default/systemd/system-sleep",
+                    "$mock_omarchy/default/systemd/system/supergfxd.service.d",
+                    "$sleep_dir",
+                    "${drop_in%/*}",
+                    "$stub_bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$ROOT/default/systemd/system-sleep/keyboard-backlight",
+                    "$mock_omarchy/default/systemd/system-sleep/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$ROOT/default/systemd/system-sleep/force-igpu",
+                    "$mock_omarchy/default/systemd/system-sleep/force-igpu",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$ROOT/default/systemd/system/supergfxd.service.d/delay-start.conf",
+                    "$mock_omarchy/default/systemd/system/supergfxd.service.d/delay-start.conf",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(grep -Fxc 'system_sleep_dir=/usr/lib/systemd/system-sleep' \"$migration\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration fixes one literal system-sleep directory",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(grep -Fxc 'supergfxd_drop_in=/etc/systemd/system/supergfxd.service.d/delay-start.conf' \"$migration\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration fixes one literal supergfxd drop-in",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sed",
+                    args: [
+                        "-e",
+                        "s|system_sleep_dir=/usr/lib/systemd/system-sleep|system_sleep_dir=$sleep_dir|",
+                        "-e",
+                        "s|supergfxd_drop_in=/etc/systemd/system/supergfxd.service.d/delay-start.conf|supergfxd_drop_in=$drop_in|",
+                        "-e",
+                        "s|quarantine_root=/var/lib/omarchy/migrations/1788662350-system-sleep|quarantine_root=$quarantine|",
+                        "-e",
+                        "s|/var/lib/omarchy/migrations/1788662350-systemd-reload-needed|$reload_needed_marker|",
+                        "-e",
+                        "s|/usr/bin/stat|$stub_bin/stat|g",
+                        "-e",
+                        "s|/usr/bin/readlink|$stub_bin/readlink|g",
+                        "$migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$migration_copy",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/stat",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/readlink",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/stat",
+                    "$stub_bin/readlink",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/sudo",
+                ],
+            },
+        ),
+        Function {
+            name: "run_migration",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "fake_root_dirs",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$calls",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "fake_root_dirs",
+                                        value: "/:/tmp:$test_tmp:$sleep_dir:$systemd_dir:${drop_in%/*}",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -z ${EXTRA_FAKE_ROOT_DIRS:-} ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fake_root_dirs+=:$EXTRA_FAKE_ROOT_DIRS",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "CALLS",
+                                            value: "$calls",
+                                        },
+                                        CshAstAssignment {
+                                            name: "FAKE_ROOT_DIRS",
+                                            value: "$fake_root_dirs",
+                                        },
+                                        CshAstAssignment {
+                                            name: "FAKE_ROOT_FILES",
+                                            value: "${FAKE_ROOT_FILES:-${2:-}}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "FAKE_ROOT_MODE",
+                                            value: "${FAKE_ROOT_MODE:-${3:-}}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "FAKE_ROOT_GID",
+                                            value: "${FAKE_ROOT_GID:-0}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "INACCESSIBLE_AS_USER",
+                                            value: "${INACCESSIBLE_AS_USER:-}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "SYSTEMCTL_FAIL_ONCE_FILE",
+                                            value: "${SYSTEMCTL_FAIL_ONCE_FILE:-}",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_PATH",
+                                            value: "$mock_omarchy",
+                                        },
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$stub_bin:$PATH",
+                                        },
+                                    ],
+                                    name: "bash",
+                                    args: [
+                                        "-euo",
+                                        "pipefail",
+                                        "$migration_copy",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "attacker keyboard\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$sleep_dir/keyboard-backlight",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "attacker gpu\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$sleep_dir/force-igpu",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "attacker drop-in\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$drop_in",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0777",
+                    "$sleep_dir/keyboard-backlight",
+                    "$sleep_dir/force-igpu",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0666",
+                    "$drop_in",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exec",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: Some(
+                        "9",
+                    ),
+                    operator: ">>",
+                    target: "$sleep_dir/keyboard-backlight",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "write through stale attacker descriptor\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">&",
+                    target: "9",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exec",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: Some(
+                        "9",
+                    ),
+                    operator: ">&",
+                    target: "-",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$mock_omarchy/default/systemd/system-sleep/keyboard-backlight",
+                        "$sleep_dir/keyboard-backlight",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration replaces the user-owned keyboard hook with trusted content",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$mock_omarchy/default/systemd/system-sleep/force-igpu",
+                        "$sleep_dir/force-igpu",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration replaces the user-owned GPU hook with trusted content",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$mock_omarchy/default/systemd/system/supergfxd.service.d/delay-start.conf",
+                        "$drop_in",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration replaces the user-owned root service drop-in with trusted content",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$sleep_dir/keyboard-backlight\") == 755 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration activates the repaired keyboard hook",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$sleep_dir/force-igpu\") == 755 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration activates force-igpu only in Integrated mode",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$drop_in\") == 644 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration installs the service drop-in as configuration",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "$sudo\\t/usr/bin/systemctl\\tdaemon-reload",
+                            "$calls",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration reloads systemd after repairing its root service drop-in",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $reload_needed_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration leaves a reload marker after systemd accepted the repaired drop-in",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$quarantine\") == 700 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration keeps preserved unsafe custom content in a root-only directory",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "keyboard_backup",
+                        value: "$(find \"$quarantine\" -path '*/keyboard-backlight.*/original' -type f -print -quit)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "force_backup",
+                        value: "$(find \"$quarantine\" -path '*/force-igpu.*/original' -type f -print -quit)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "drop_in_backup",
+                        value: "$(find \"$quarantine\" -path '*/delay-start.conf.*/original' -type f -print -quit)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "attacker keyboard",
+                        "$keyboard_backup",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration preserves unknown keyboard-hook content before replacing it",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "attacker gpu",
+                        "$force_backup",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration preserves unknown force-iGPU content before replacing it",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "attacker drop-in",
+                        "$drop_in_backup",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration preserves unknown service-drop-in content before replacing it",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration replaces writable privileged files with trusted root-owned copies",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "backup_count",
+                        value: "$(find \"$quarantine\" -mindepth 2 -maxdepth 2 -name original | wc -l)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$sleep_dir/keyboard-backlight:$sleep_dir/force-igpu:$drop_in",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration changes already-repaired privileged files on a second run",
+                        "$(<\"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(find \"$quarantine\" -mindepth 2 -maxdepth 2 -name original | wc -l) == \"$backup_count\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration creates duplicate quarantines on a second run",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration is idempotent after repairing unsafe privileged files",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "attacker drop-in\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$drop_in",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0666",
+                    "$drop_in",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "reload_failure",
+                        value: "$test_tmp/fail-systemd-reload-once",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$reload_failure",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "+e",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "SYSTEMCTL_FAIL_ONCE_FILE",
+                        value: "$reload_failure",
+                    },
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$sleep_dir/keyboard-backlight:$sleep_dir/force-igpu",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "reload_status",
+                        value: "$?",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-e",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " reload_status != 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration reports success after systemd rejects the repaired drop-in",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$mock_omarchy/default/systemd/system/supergfxd.service.d/delay-start.conf",
+                        "$drop_in",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not repair the drop-in before the simulated reload failure",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -e $reload_needed_marker && $(stat -c '%a' \"$reload_needed_marker\") == 644 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not persist the reload requirement before replacing the drop-in",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$sleep_dir/keyboard-backlight:$sleep_dir/force-igpu:$drop_in",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "$sudo\\t/usr/bin/systemctl\\tdaemon-reload",
+                            "$calls",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not retry a failed reload after the drop-in is already safe",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $reload_needed_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not clear the reload requirement after a successful retry",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$sleep_dir/keyboard-backlight:$sleep_dir/force-igpu:$drop_in",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration repeats a successfully completed reload repair",
+                        "$(<\"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration persists and retries systemd reload after failure or interruption",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "keyboard_backup_count",
+                        value: "$(find \"$quarantine\" -path '*/keyboard-backlight.*/original' | wc -l)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$mock_omarchy/default/systemd/system-sleep/keyboard-backlight",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0644",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$sleep_dir/force-igpu:$drop_in",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$sleep_dir/keyboard-backlight\") == 755 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not safely activate a user-owned canonical hook",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(find \"$quarantine\" -path '*/keyboard-backlight.*/original' | wc -l) == \"$keyboard_backup_count\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration quarantines an exact legacy artifact as administrator content",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration replaces exact vulnerable installer artifacts without inventing backups",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "legacy_keyboard",
+                        value: "$test_tmp/legacy-keyboard-backlight",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$legacy_keyboard",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 3,
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " $(sha256sum \"$legacy_keyboard\" | cut -d' ' -f1) == f313a81e47401f0d38b8602e5997f52c5286d5e97f74027564ddd515b3d16511 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "keyboard-backlight legacy fixture no longer matches the migration fingerprint",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "keyboard_backup_count",
+                        value: "$(find \"$quarantine\" -path '*/keyboard-backlight.*/original' | wc -l)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$legacy_keyboard",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0644",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$sleep_dir/keyboard-backlight:$sleep_dir/force-igpu:$drop_in",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$mock_omarchy/default/systemd/system-sleep/keyboard-backlight",
+                        "$sleep_dir/keyboard-backlight",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not upgrade the released keyboard-backlight hook",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$sleep_dir/keyboard-backlight\") == 755 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration leaves the released keyboard-backlight hook non-executable",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(find \"$quarantine\" -path '*/keyboard-backlight.*/original' | wc -l) == \"$keyboard_backup_count\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration quarantines the released keyboard hook as administrator content",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration activates the released root-owned keyboard-backlight hook",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$legacy_keyboard",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0755",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$sleep_dir/keyboard-backlight:$sleep_dir/force-igpu:$drop_in",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$mock_omarchy/default/systemd/system-sleep/keyboard-backlight",
+                        "$sleep_dir/keyboard-backlight",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration mistakes executable released hook bytes for a current artifact",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration refreshes recognized legacy hook contents at the final mode",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "attacker gpu\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$sleep_dir/force-igpu",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0777",
+                    "$sleep_dir/force-igpu",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "Hybrid",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$sleep_dir/force-igpu\") == 755 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not activate the trusted self-guarding force-igpu hook",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration repairs force-igpu without depending on a live GPU-mode query",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "administrator customization\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$sleep_dir/keyboard-backlight",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0755",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                    "$sleep_dir/keyboard-backlight",
+                    "755",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "administrator customization",
+                        "$sleep_dir/keyboard-backlight",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration preserves a secure administrator-owned custom hook",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$mock_omarchy/default/systemd/system-sleep/keyboard-backlight",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0644",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                    "$sleep_dir/keyboard-backlight",
+                    "644",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$sleep_dir/keyboard-backlight\") == 755 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration leaves an exact packaged keyboard hook non-executable",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "administrator customization\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$sleep_dir/keyboard-backlight",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0644",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                    "$sleep_dir/keyboard-backlight",
+                    "644",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$sleep_dir/keyboard-backlight\") == 644 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration changes the mode of a safe noncanonical administrator hook",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "administrator customization",
+                        "$sleep_dir/keyboard-backlight",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration replaces a safe noncanonical administrator hook",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration activates only exact packaged hooks while preserving safe custom files",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "legacy_force_igpu",
+                        value: "$test_tmp/legacy-force-igpu",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$legacy_force_igpu",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 4,
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " $(sha256sum \"$legacy_force_igpu\" | cut -d' ' -f1) == d604e7c4903829563e45fc52188fc5602c3f1bc66e247f0a2cc0a974ed6e57db ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu legacy fixture no longer matches the migration fingerprint",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$legacy_force_igpu",
+                    "$sleep_dir/force-igpu",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0644",
+                    "$sleep_dir/force-igpu",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$sleep_dir/keyboard-backlight:$sleep_dir/force-igpu:$drop_in",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$mock_omarchy/default/systemd/system-sleep/force-igpu",
+                        "$sleep_dir/force-igpu",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not upgrade the exact legacy force-igpu hook",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$sleep_dir/force-igpu\") == 755 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration leaves the exact legacy force-igpu hook non-executable",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration activates the exact legacy force-igpu artifact with its new guard",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "wheel-managed customization\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$sleep_dir/keyboard-backlight",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0755",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$sleep_dir/keyboard-backlight:$sleep_dir/force-igpu:$drop_in",
+                    },
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_GID",
+                        value: "10",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "wheel-managed customization",
+                        "$sleep_dir/keyboard-backlight",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration replaces a safe root:wheel administrator hook",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration escalates while preserving safe root:wheel entries",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration treats non-writable root-owned files as safe regardless of group",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "admin_dir",
+                        value: "$test_tmp/admin-hooks",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "admin_keyboard",
+                        value: "$admin_dir/keyboard",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "admin_delay",
+                        value: "$admin_dir/delay.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$admin_dir",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "protected keyboard customization\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$admin_keyboard",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "protected delay customization\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$admin_delay",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0755",
+                    "$admin_keyboard",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0644",
+                    "$admin_delay",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$sleep_dir/keyboard-backlight",
+                    "$drop_in",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$admin_keyboard",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$admin_delay",
+                    "$drop_in",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "EXTRA_FAKE_ROOT_DIRS",
+                        value: "$admin_dir",
+                    },
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$admin_keyboard:$admin_delay:$sleep_dir/force-igpu",
+                    },
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_GID",
+                        value: "10",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -L $sleep_dir/keyboard-backlight && $(readlink \"$sleep_dir/keyboard-backlight\") == \"$admin_keyboard\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration replaces a safe administrator-managed keyboard-hook symlink",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -L $drop_in && $(readlink \"$drop_in\") == \"$admin_delay\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration replaces a safe administrator-managed service-drop-in symlink",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration escalates while preserving safe administrator symlinks",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration preserves symlinks whose full target paths are root-controlled",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dangling_target",
+                        value: "$admin_dir/future-keyboard",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$sleep_dir/keyboard-backlight",
+                    "$dangling_target",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$dangling_target",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "EXTRA_FAKE_ROOT_DIRS",
+                        value: "$admin_dir",
+                    },
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$admin_delay:$sleep_dir/force-igpu:$drop_in",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -L $sleep_dir/keyboard-backlight && $(readlink \"$sleep_dir/keyboard-backlight\") == \"$dangling_target\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration replaces a safe dangling administrator symlink",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration asks for sudo to verify an absent target below a searchable root-controlled directory",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration handles safe dangling administrator symlinks without sudo",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "escaping_user_dir",
+                        value: "$test_tmp/escaping-user-hooks",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "escaping_user_hook",
+                        value: "$escaping_user_dir/keyboard",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "escaping_missing_dir",
+                        value: "$admin_dir/future",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "escaping_target",
+                        value: "$escaping_missing_dir/../../escaping-user-hooks/keyboard",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$escaping_user_dir",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "future unsafe keyboard customization\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$escaping_user_hook",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0755",
+                    "$escaping_user_hook",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$escaping_target",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "EXTRA_FAKE_ROOT_DIRS",
+                        value: "$admin_dir",
+                    },
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$admin_delay:$sleep_dir/force-igpu:$drop_in",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -L $sleep_dir/keyboard-backlight ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration trusts a dangling symlink whose unresolved suffix escapes to a user-controlled path",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$mock_omarchy/default/systemd/system-sleep/keyboard-backlight",
+                        "$sleep_dir/keyboard-backlight",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not replace a future user-controlled dangling symlink",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration resolves the full dangling-symlink suffix before trusting it",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "protected_dir",
+                        value: "$test_tmp/root-only-hooks",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "protected_target",
+                        value: "$protected_dir/target",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "protected_bridge",
+                        value: "$protected_dir/bridge",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$protected_dir",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "root-only administrator customization\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$protected_target",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$protected_target",
+                    "$protected_bridge",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0700",
+                    "$protected_dir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$protected_bridge",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "EXTRA_FAKE_ROOT_DIRS",
+                        value: "$admin_dir:$protected_dir",
+                    },
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$protected_target:$admin_delay:$sleep_dir/force-igpu:$drop_in",
+                    },
+                    CshAstAssignment {
+                        name: "INACCESSIBLE_AS_USER",
+                        value: "$protected_bridge:$protected_target",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -L $sleep_dir/keyboard-backlight && $(readlink \"$sleep_dir/keyboard-backlight\") == \"$protected_bridge\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration replaces a safe symlink whose target is hidden by a root-only directory",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "$^sudo\\t.*/stat\\t-c\\t%f %u %g %a\\t--\\t.*/root-only-hooks/bridge$",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not inspect inaccessible symlink metadata with privilege",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "$^sudo\\t.*/readlink\\t--\\t.*/root-only-hooks/bridge$",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not resolve an inaccessible administrator symlink with privilege",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "$^sudo\\t.*/stat\\t-c\\t%f %u %g %a\\t--\\t.*/root-only-hooks/target$",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not inspect an inaccessible administrator target with privilege",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration preserves root-controlled symlink chains hidden from the invoking user",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "protected_dangling_dir",
+                        value: "$test_tmp/root-only-dangling",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "protected_dangling_target",
+                        value: "$protected_dangling_dir/future-keyboard",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$protected_dangling_dir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0000",
+                    "$protected_dangling_dir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$protected_dangling_target",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "EXTRA_FAKE_ROOT_DIRS",
+                        value: "$admin_dir:$protected_dangling_dir",
+                    },
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$admin_delay:$sleep_dir/force-igpu:$drop_in",
+                    },
+                    CshAstAssignment {
+                        name: "INACCESSIBLE_AS_USER",
+                        value: "$protected_dangling_target",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -L $sleep_dir/keyboard-backlight && $(readlink \"$sleep_dir/keyboard-backlight\") == \"$protected_dangling_target\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration replaces a safe dangling symlink below a root-only directory",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "$^sudo\\t.*/stat\\t-c\\t%f %u %g %a\\t--\\t.*/root-only-dangling/future-keyboard$",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not inspect a protected dangling target with privilege",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "$^sudo\\t/usr/bin/test\\t-x\\t.*/root-only-dangling$",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not distinguish a protected missing target from an inaccessible parent",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration preserves dangling administrator symlinks below root-only directories",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "user_dir",
+                        value: "$test_tmp/user-hooks",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "user_keyboard",
+                        value: "$user_dir/keyboard",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$user_dir",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "unsafe symlink customization\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$user_keyboard",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0755",
+                    "$user_keyboard",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$user_keyboard",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "EXTRA_FAKE_ROOT_DIRS",
+                        value: "$admin_dir",
+                    },
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$admin_delay:$sleep_dir/force-igpu",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -L $sleep_dir/keyboard-backlight ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration leaves a user-controlled keyboard-hook symlink active",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$mock_omarchy/default/systemd/system-sleep/keyboard-backlight",
+                        "$sleep_dir/keyboard-backlight",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not replace an unsafe symlink with trusted hook content",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "symlink_backup",
+                        value: "$(find \"$quarantine\" -path '*/keyboard-backlight.*/original' -type l -print -quit)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -n $symlink_backup && $(readlink \"$symlink_backup\") == \"$user_keyboard\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration discards an unsafe custom symlink instead of preserving it",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration quarantines unsafe symlinks outside the active systemd directory",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "bridge",
+                        value: "$user_dir/bridge",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$admin_keyboard",
+                    "$bridge",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$bridge",
+                    "$sleep_dir/keyboard-backlight",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "EXTRA_FAKE_ROOT_DIRS",
+                        value: "$admin_dir",
+                    },
+                    CshAstAssignment {
+                        name: "FAKE_ROOT_FILES",
+                        value: "$admin_keyboard:$admin_delay:$sleep_dir/force-igpu",
+                    },
+                ],
+                name: "run_migration",
+                args: [
+                    "Integrated",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -L $sleep_dir/keyboard-backlight ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration trusts a symlink chain routed through a user-controlled directory",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cmp",
+                    args: [
+                        "-s",
+                        "$mock_omarchy/default/systemd/system-sleep/keyboard-backlight",
+                        "$sleep_dir/keyboard-backlight",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not repair an indirectly user-controlled symlink",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration checks every intermediate component in a symlink chain",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hook_copy",
+                        value: "$test_tmp/force-igpu-hook",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hook_calls",
+                        value: "$test_tmp/force-igpu-calls",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hook_queries",
+                        value: "$test_tmp/force-igpu-queries",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hook_config",
+                        value: "$test_tmp/supergfxd.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hook_marker",
+                        value: "$test_tmp/force-igpu-restore",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hook_pending",
+                        value: "$test_tmp/force-igpu-pending",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sed",
+                    args: [
+                        "-e",
+                        "s|/usr/bin/supergfxctl|$stub_bin/hook-supergfxctl|g",
+                        "-e",
+                        "s|/usr/bin/install|$stub_bin/hook-install|g",
+                        "-e",
+                        "s|/etc/supergfxd.conf|$hook_config|g",
+                        "-e",
+                        "s|/run/omarchy-force-igpu-integrated|$hook_marker|g",
+                        "$ROOT/default/systemd/system-sleep/force-igpu",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_copy",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/hook-supergfxctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 5,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/hook-install",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 6,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/sleep",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 7,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/hook-supergfxctl",
+                    "$stub_bin/hook-install",
+                    "$stub_bin/sleep",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hook_env",
+                        value: "(\n  \"HOOK_CALLS=$hook_calls\"\n  \"HOOK_QUERIES=$hook_queries\"\n  \"HOOK_CONFIG=$hook_config\"\n  \"HOOK_PENDING=$hook_pending\"\n  \"PATH=$stub_bin:$PATH\"\n)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "{ \"mode\": \"Hybrid\" }\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_config",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "pre",
+                    "suspend",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "post",
+                    "suspend",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $hook_calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu runs while the root-owned config says Hybrid",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu records restore intent while configured for Hybrid mode",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$hook_config",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "pre",
+                    "suspend",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "post",
+                    "suspend",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $hook_calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu runs when its mode config is unavailable",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu records restore intent without a mode config",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "{ \"mode\": \"Integrated\" }\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_config",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "pre",
+                    "suspend",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $hook_marker && $(stat -c '%a' \"$hook_marker\") == 600 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu does not securely record Integrated restore intent during pre-suspend",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "HOOK_CONFIRM_AFTER",
+                        value: "2",
+                    },
+                ],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "post",
+                    "suspend",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(wc -l <\"$hook_calls\") == 2 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu does not run both GPU transitions in Integrated mode",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fqx",
+                        "--",
+                        "-m Integrated",
+                        "$hook_calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu does not restore Integrated mode after suspend",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu leaves stale restore intent after suspend",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " $(wc -l <\"$hook_queries\") >= 4 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu does not wait for asynchronous GPU transitions",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "force-igpu confirms asynchronous transitions for Integrated sleep cycles",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_calls",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_queries",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "{ \"mode\": \"Integrated\" }\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_config",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "pre",
+                    "suspend",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "+e",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "HOOK_CONFIRM_AFTER",
+                            value: "2",
+                        },
+                        CshAstAssignment {
+                            name: "HOOK_FAIL_MODE",
+                            value: "Integrated",
+                        },
+                    ],
+                    name: "env",
+                    args: [
+                        "${hook_env[@]}",
+                        "bash",
+                        "$hook_copy",
+                        "post",
+                        "suspend",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+                CshAstRedirect {
+                    descriptor: Some(
+                        "2",
+                    ),
+                    operator: ">&",
+                    target: "1",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "restore_status",
+                        value: "$?",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-e",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " restore_status != 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu reports success without confirming Integrated mode",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "\"mode\": \"Vfio\"",
+                        "$hook_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu failure test does not leave the transition in Vfio mode",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu discards restore intent after an asynchronous transition failure",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "HOOK_CONFIRM_AFTER",
+                        value: "2",
+                    },
+                ],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "post",
+                    "suspend",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "\"mode\": \"Integrated\"",
+                        "$hook_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu does not recover the Integrated transition on the next sleep cycle",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu leaves restore intent after a confirmed retry",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "force-igpu retains restore intent until Integrated mode is confirmed",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_calls",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_queries",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "{ \"mode\": \"Integrated\" }\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_config",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "pre",
+                    "suspend",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "+e",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "HOOK_BLOCK_MODE",
+                            value: "Vfio",
+                        },
+                    ],
+                    name: "env",
+                    args: [
+                        "${hook_env[@]}",
+                        "bash",
+                        "$hook_copy",
+                        "post",
+                        "suspend",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+                CshAstRedirect {
+                    descriptor: Some(
+                        "2",
+                    ),
+                    operator: ">&",
+                    target: "1",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "blocked_request_status",
+                        value: "$?",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-e",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " blocked_request_status != 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu waits forever for a blocked GPU transition request",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu discards restore intent after a blocked transition request",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $hook_queries ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu polls before a blocked transition request returns",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "post",
+                    "suspend",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu cannot retry after a blocked transition request",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "force-igpu bounds blocked transition requests and retains retry intent",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_calls",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "{ \"mode\": \"Integrated\" }\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_config",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "pre",
+                    "hibernate",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "\"mode\": \"Vfio\"",
+                        "$hook_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu test double does not model the pre-hibernate Vfio persistence",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu loses restore intent during the Vfio transition",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "post",
+                    "hibernate",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(wc -l <\"$hook_calls\") == 3 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu skips the post-hibernate transitions after Vfio changes the config",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(tail -1 \"$hook_calls\") == \"-m Integrated\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu does not finish post-hibernate restoration in Integrated mode",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "\"mode\": \"Integrated\"",
+                        "$hook_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu leaves supergfxd configured for Vfio after hibernation",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu leaves stale restore intent after hibernation",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "force-igpu restores Integrated mode after pre-hibernate persists Vfio",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_calls",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "{ \"mode\": \"Integrated\" }\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$hook_config",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "SYSTEMD_SLEEP_ACTION",
+                        value: "suspend",
+                    },
+                ],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "pre",
+                    "suspend-then-hibernate",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "SYSTEMD_SLEEP_ACTION",
+                        value: "suspend",
+                    },
+                ],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "post",
+                    "suspend-then-hibernate",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(wc -l <\"$hook_calls\") == 2 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu does not complete the initial suspend phase of suspend-then-hibernate",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "SYSTEMD_SLEEP_ACTION",
+                        value: "hibernate",
+                    },
+                ],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "pre",
+                    "suspend-then-hibernate",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(wc -l <\"$hook_calls\") == 3 && $(tail -1 \"$hook_calls\") == \"-m Vfio\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu skips the Vfio transition before compound hibernation",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "\"mode\": \"Vfio\"",
+                        "$hook_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu does not detach the dGPU during the hibernate phase",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu loses restore intent during compound hibernation",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "SYSTEMD_SLEEP_ACTION",
+                        value: "hibernate",
+                    },
+                ],
+                name: "env",
+                args: [
+                    "${hook_env[@]}",
+                    "bash",
+                    "$hook_copy",
+                    "post",
+                    "suspend-then-hibernate",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(wc -l <\"$hook_calls\") == 5 && $(tail -1 \"$hook_calls\") == \"-m Integrated\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu does not restore Integrated mode after compound hibernation",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "\"mode\": \"Integrated\"",
+                        "$hook_config",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu leaves supergfxd configured for Vfio after compound hibernation",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $hook_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "force-igpu leaves stale restore intent after compound hibernation",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "force-igpu handles both phases of suspend-then-hibernate",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "keyboard_hook_copy",
+                        value: "$test_tmp/keyboard-backlight-hook",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "keyboard_calls",
+                        value: "$test_tmp/keyboard-backlight-calls",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "keyboard_led_dir",
+                        value: "$test_tmp/leds",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$keyboard_led_dir/asus::kbd_backlight",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "sed",
+                    args: [
+                        "s|/sys/class/leds/\\*kbd_backlight\\*|$keyboard_led_dir/*kbd_backlight*|",
+                        "$ROOT/default/systemd/system-sleep/keyboard-backlight",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$keyboard_hook_copy",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/brightnessctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 8,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/brightnessctl",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "SYSTEMD_SLEEP_ACTION",
+                        value: "suspend",
+                    },
+                    CshAstAssignment {
+                        name: "KEYBOARD_CALLS",
+                        value: "$keyboard_calls",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$stub_bin:$PATH",
+                    },
+                ],
+                name: "bash",
+                args: [
+                    "$keyboard_hook_copy",
+                    "pre",
+                    "suspend-then-hibernate",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $keyboard_calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "keyboard-backlight runs during the suspend phase of compound sleep",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "SYSTEMD_SLEEP_ACTION",
+                        value: "hibernate",
+                    },
+                    CshAstAssignment {
+                        name: "KEYBOARD_CALLS",
+                        value: "$keyboard_calls",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$stub_bin:$PATH",
+                    },
+                ],
+                name: "bash",
+                args: [
+                    "$keyboard_hook_copy",
+                    "pre",
+                    "suspend-then-hibernate",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fqx",
+                        "--",
+                        "-d asus::kbd_backlight set 0",
+                        "$keyboard_calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "keyboard-backlight skips the hibernate phase of compound sleep",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "keyboard-backlight handles the hibernate phase of suspend-then-hibernate",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\npath=${!#}\nif [[ :${INACCESSIBLE_AS_USER:-}: == *\":$path:\"* && ${FAKE_SUDO:-0} == 0 ]]; then\n  exit 13\nfi\n\nactual_file_mode=$(/usr/bin/stat -c '%f' -- \"$path\") || exit 1\nactual_mode=$(/usr/bin/stat -c '%a' -- \"$path\") || exit 1\n\nif [[ :${FAKE_ROOT_DIRS:-}: == *\":$path:\"* ]]; then\n  uid=0\n  gid=0\n  mode=$(printf '%o' \"$((8#$actual_mode & ~8#022))\")\nelif [[ :${FAKE_ROOT_FILES:-}: == *\":$path:\"* ]]; then\n  uid=0\n  gid=${FAKE_ROOT_GID:-0}\n  mode=${FAKE_ROOT_MODE:-$actual_mode}\nelse\n  exec /usr/bin/stat \"$@\"\nfi\n\nfile_type=$((16#$actual_file_mode & 16#f000))\nfile_mode=$(printf '%x' \"$((file_type | 8#$mode))\")\n\ncase \"$*\" in\n  *\"%f %u %g %a\"*) printf '%s %s %s %s\\n' \"$file_mode\" \"$uid\" \"$gid\" \"$mode\" ;;\n  *\"%u %g %a\"*) printf '%s %s %s\\n' \"$uid\" \"$gid\" \"$mode\" ;;\n  *\"%a\"*) printf '%s\\n' \"$mode\" ;;\n  *) exec /usr/bin/stat \"$@\" ;;\nesac\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\npath=${!#}\nif [[ :${INACCESSIBLE_AS_USER:-}: == *\":$path:\"* && ${FAKE_SUDO:-0} == 0 ]]; then\n  exit 13\nfi\n\nexec /usr/bin/readlink \"$@\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nset -euo pipefail\n\nprintf 'sudo' >>\"$CALLS\"\nprintf '\\t%s' \"$@\" >>\"$CALLS\"\nprintf '\\n' >>\"$CALLS\"\n\ncase \"$1\" in\n  */stat | */readlink)\n    FAKE_SUDO=1 exec \"$@\"\n    ;;\n  /usr/bin/test)\n    shift\n    if [[ $1 == \"-x\" && :${FAKE_ROOT_DIRS:-}: == *\":$2:\"* ]]; then\n      exit 0\n    else\n      exec /usr/bin/test \"$@\"\n    fi\n    ;;\n  /usr/bin/mktemp | /usr/bin/mv | /usr/bin/chmod | /usr/bin/cp | /usr/bin/rm)\n    exec \"$@\"\n    ;;\n  /usr/bin/systemctl)\n    if [[ -n ${SYSTEMCTL_FAIL_ONCE_FILE:-} && -e $SYSTEMCTL_FAIL_ONCE_FILE ]]; then\n      /usr/bin/rm -f -- \"$SYSTEMCTL_FAIL_ONCE_FILE\"\n      exit 1\n    fi\n    exit 0\n    ;;\n  /usr/bin/install)\n    shift\n    args=()\n    while (($#)); do\n      case \"$1\" in\n        -o | -g)\n          shift 2\n          ;;\n        *)\n          args+=(\"$1\")\n          shift\n          ;;\n      esac\n    done\n    exec /usr/bin/install \"${args[@]}\"\n    ;;\n  *)\n    printf 'unexpected sudo command: %s\\n' \"$*\" >&2\n    exit 97\n    ;;\nesac\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\n# Turn off keyboard backlight before hibernate to prevent hang on power-off.\n# The ASUS keyboard controller can block S4 shutdown if LEDs are active.\n\nif [[ $1 == \"pre\" && $2 == \"hibernate\" ]]; then\n  device=\"\"\n  for candidate in /sys/class/leds/*kbd_backlight*; do\n    if [[ -e \"$candidate\" ]]; then\n      device=\"$(basename \"$candidate\")\"\n      break\n    fi\n  done\n\n  if [[ -n \"$device\" ]]; then\n    brightnessctl -d \"$device\" set 0 >/dev/null 2>&1\n  fi\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\n# Use the Vfio to Integrated trick to turn off NVIDIA dgpu when in integrated mode\n# without needing to restart the computer. This is needed because computers like the Asus G14\n# will wake after suspend in Hybrid mode, even if the system was in Integrated mode before\n# suspending.\n\ncase \"$1\" in\n  pre)\n    # Before hibernating, switch to Vfio so the nvidia driver is detached from the dGPU.\n    # Without this, hibernate resume fails because the nvidia driver can't freeze a\n    # powered-off dGPU (returns -EIO), which aborts the entire resume.\n    if [[ $2 == \"hibernate\" ]]; then\n      /usr/bin/supergfxctl -m Vfio\n      sleep 1\n    fi\n    ;;\n  post)\n    # small delay so the device is fully re-enumerated\n    sleep 4\n\n    # force-bind dGPU to vfio (fully detached from nvidia)\n    /usr/bin/supergfxctl -m Vfio\n    sleep 1\n\n    # then go back to Integrated, which powers it off again\n    /usr/bin/supergfxctl -m Integrated\n    ;;\nesac\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\ncase \"$1\" in\n  -m)\n    printf '%s\\n' \"$*\" >>\"$HOOK_CALLS\"\n    if [[ ${HOOK_BLOCK_MODE:-} == \"$2\" ]]; then\n      trap '' TERM\n      /usr/bin/sleep 30\n    fi\n    current=$(sed -n 's/.*\"mode\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' \"$HOOK_CONFIG\")\n    if [[ $current != \"$2\" ]]; then\n      printf '%s %s\\n' \"$2\" \"${HOOK_CONFIRM_AFTER:-1}\" >\"$HOOK_PENDING\"\n    fi\n    ;;\n  -g)\n    printf '%s\\n' \"$*\" >>\"$HOOK_QUERIES\"\n    if [[ -f $HOOK_PENDING ]]; then\n      read -r pending remaining <\"$HOOK_PENDING\"\n      if [[ ${HOOK_FAIL_MODE:-} != \"$pending\" ]]; then\n        remaining=$((remaining - 1))\n        if (( remaining <= 0 )); then\n          sed -i \"s/\\\"mode\\\"[[:space:]]*:[[:space:]]*\\\"[^\\\"]*\\\"/\\\"mode\\\": \\\"$pending\\\"/\" \"$HOOK_CONFIG\"\n          rm -f -- \"$HOOK_PENDING\"\n        else\n          printf '%s %s\\n' \"$pending\" \"$remaining\" >\"$HOOK_PENDING\"\n        fi\n      fi\n    fi\n    sed -n 's/.*\"mode\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' \"$HOOK_CONFIG\"\n    ;;\nesac\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nargs=()\nwhile (($#)); do\n  case \"$1\" in\n    -o | -g)\n      shift 2\n      ;;\n    *)\n      args+=(\"$1\")\n      shift\n      ;;\n  esac\ndone\nexec /usr/bin/install \"${args[@]}\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n:\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >>\"$KEYBOARD_CALLS\"\n",
+        },
+    ],
+}

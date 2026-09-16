@@ -1,0 +1,623 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/shell/plugins/clipboard/capture.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-o",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "STATE_DIR",
+                        value: "${XDG_STATE_HOME:-$HOME/.local/state}/omarchy",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "IMAGE_DIR",
+                        value: "$STATE_DIR/clipboard-images",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$IMAGE_DIR",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "types",
+                        value: "$(wl-paste --list-types 2>/dev/null || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " ${CLIPBOARD_STATE:-} == \"sensitive\" ",
+                                ),
+                                operator: Or,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-qx",
+                                                "x-kde-passwordManagerHint",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: "<<<",
+                                            target: "$types",
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Function {
+            name: "emit_image",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "mime=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "ext",
+                                    "tmp",
+                                    "hash",
+                                    "file",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "ext",
+                                        value: "${mime#image/}",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $ext == jpeg ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "ext",
+                                            value: "jpg",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "tmp",
+                                            value: "$(mktemp --tmpdir=\"$IMAGE_DIR\" clipboard.XXXXXX)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cat",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$tmp",
+                                },
+                            ],
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " ! -s $tmp ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "rm",
+                                                    args: [
+                                                        "-f",
+                                                        "$tmp",
+                                                    ],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "return",
+                                                    args: [
+                                                        "0",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "hash",
+                                        value: "$(sha256sum \"$tmp\" | awk '{print $1}')",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "file",
+                                        value: "$IMAGE_DIR/$hash.$ext",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -e $file ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "rm",
+                                                    args: [
+                                                        "-f",
+                                                        "$tmp",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "mv",
+                                                args: [
+                                                    "$tmp",
+                                                    "$file",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "jq",
+                                args: [
+                                    "-cn",
+                                    "--arg",
+                                    "mime",
+                                    "$mime",
+                                    "--arg",
+                                    "path",
+                                    "$file",
+                                    "--arg",
+                                    "captured_at",
+                                    "$(date +'%A %H:%M')",
+                                    "{type:\"image\", mime:$mime, path:$path, capturedAt:$captured_at}",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "emit_text",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "perl",
+                                args: [
+                                    "-MEncode=decode,FB_CROAK,LEAVE_SRC",
+                                    "-MJSON::PP=encode_json",
+                                    "-0777",
+                                    "-e",
+                                    "\n    my $raw = <STDIN>;\n    exit unless length $raw;\n\n    my $encoding;\n    my $heuristic_encoding = 0;\n    if ($raw =~ /^(?:\\xFF\\xFE|\\xFE\\xFF)/) {\n      $encoding = \"UTF-16\";\n    } elsif (length($raw) % 2 == 0 && index($raw, \"\\0\") >= 0) {\n      my $units = length($raw) / 2;\n      my $nuls = $raw =~ tr/\\0/\\0/;\n\n      # Neither byte lane can reach the padding threshold when the entire\n      # payload contains fewer NULs than that, so avoid two full string passes.\n      if ($nuls * 4 >= $units * 3) {\n        my $even_bytes = $raw;\n        $even_bytes =~ s/(.)./$1/sg;\n        my $even_nuls = $even_bytes =~ tr/\\0/\\0/;\n        undef $even_bytes;\n\n        my $odd_bytes = $raw;\n        $odd_bytes =~ s/.(.)/$1/sg;\n        my $odd_nuls = $odd_bytes =~ tr/\\0/\\0/;\n\n        # BOM-less UTF-16 is indistinguishable from NUL-separated bytes. Decode\n        # only when at least three quarters of the code units have consistent\n        # padding and fewer than one quarter have NULs in the opposite byte.\n        if ($odd_nuls * 4 >= $units * 3 && $even_nuls * 4 < $units) {\n          $encoding = \"UTF-16LE\";\n          $heuristic_encoding = 1;\n        } elsif ($even_nuls * 4 >= $units * 3 && $odd_nuls * 4 < $units) {\n          $encoding = \"UTF-16BE\";\n          $heuristic_encoding = 1;\n        }\n      }\n    }\n\n    my $text = $encoding ? eval { decode($encoding, $raw, FB_CROAK | LEAVE_SRC) } : undef;\n    if ($heuristic_encoding && defined($text) && $text =~ /[\\x00-\\x08\\x0E-\\x1A\\x1C-\\x1F]/) {\n      $text = undef;\n    }\n    $text = decode(\"UTF-8\", $raw) unless defined $text;\n    print \"{\\\"type\\\":\\\"text\\\",\\\"text\\\":\", encode_json($text), \"}\\n\";\n  ",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Case {
+            word: "${1:-}",
+            arms: [
+                CshAstCaseArm {
+                    patterns: [
+                        "text",
+                    ],
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "emit_text",
+                                    args: [],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    terminator: ";;",
+                },
+                CshAstCaseArm {
+                    patterns: [
+                        "image/*",
+                    ],
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "emit_image",
+                                    args: [
+                                        "$1",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    terminator: ";;",
+                },
+            ],
+        },
+        For {
+            variable: "mime",
+            words: Some(
+                [
+                    "image/png",
+                    "image/jpeg",
+                    "image/webp",
+                    "image/gif",
+                    "image/bmp",
+                    "image/tiff",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "grep",
+                                                    args: [
+                                                        "-qx",
+                                                        "$mime",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: "<<<",
+                                                    target: "$types",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "timeout",
+                                                        args: [
+                                                            "2s",
+                                                            "wl-paste",
+                                                            "--type",
+                                                            "$mime",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: Some(
+                                                            "2",
+                                                        ),
+                                                        operator: ">",
+                                                        target: "/dev/null",
+                                                    },
+                                                ],
+                                            },
+                                            operator: Pipe,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "emit_image",
+                                                    args: [
+                                                        "$mime",
+                                                    ],
+                                                },
+                                            ),
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "exit",
+                                                args: [
+                                                    "0",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Binary {
+                                    left: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "-q",
+                                                    "^text/",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: "<<<",
+                                                target: "$types",
+                                            },
+                                        ],
+                                    },
+                                    operator: Or,
+                                    right: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "-qx",
+                                                    "UTF8_STRING",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: "<<<",
+                                                target: "$types",
+                                            },
+                                        ],
+                                    },
+                                },
+                                operator: Or,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-qx",
+                                                "STRING",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: "<<<",
+                                            target: "$types",
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "wl-paste",
+                                            args: [
+                                                "--type",
+                                                "text",
+                                                "--no-newline",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "emit_text",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

@@ -1,0 +1,201 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1780517689.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Add yt-dlp download extension (Alt+Shift+D) to Chromium-based browsers",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "YTDLP_EXT",
+                        value: "$OMARCHY_PATH/default/chromium/extensions/yt-dlp",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "add_ytdlp_extension",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file=$1",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -f $file ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-q",
+                                        "extensions/yt-dlp",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "grep",
+                                                    args: [
+                                                        "-q",
+                                                        "^--load-extension=",
+                                                        "$file",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "sed",
+                                                    args: [
+                                                        "-i",
+                                                        "--follow-symlinks",
+                                                        "s|^--load-extension=\\(.*\\)$|--load-extension=\\1,$YTDLP_EXT|",
+                                                        "$file",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "--load-extension=$YTDLP_EXT",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">>",
+                                                    target: "$file",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        For {
+            variable: "conf",
+            words: Some(
+                [
+                    "chromium",
+                    "chrome",
+                    "google-chrome",
+                    "brave",
+                    "brave-beta",
+                    "brave-nightly",
+                    "brave-origin-beta",
+                    "microsoft-edge-stable",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "add_ytdlp_extension",
+                            args: [
+                                "$HOME/.config/$conf-flags.conf",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "omarchy-pkg-add",
+                args: [
+                    "yt-dlp",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-install-chromium-ytdlp",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+    ],
+}

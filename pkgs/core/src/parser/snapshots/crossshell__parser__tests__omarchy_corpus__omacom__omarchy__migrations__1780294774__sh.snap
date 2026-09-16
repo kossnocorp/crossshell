@@ -1,0 +1,117 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1780294774.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Remove leading zero from bar clock date",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "config_file",
+                        value: "$HOME/.config/omarchy/shell.json",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " -f $config_file ",
+                                ),
+                                operator: And,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "omarchy-cmd-present",
+                                        args: [
+                                            "jq",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "tmp",
+                                            value: "$(mktemp)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Binary {
+                                left: Binary {
+                                    left: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "jq",
+                                                args: [
+                                                    "\n    def update_clock_format:\n      if type == \"object\" and (.id // \"\") == \"omarchy.clock\" and (.formatAlt // \"\") == \"dd MMMM \\u0027W\\u0027ww yyyy\" then\n        .formatAlt = \"d MMMM \\u0027W\\u0027ww yyyy\"\n      else\n        .\n      end;\n\n    .bar.layout |= (\n      if type == \"object\" then\n        with_entries(\n          .value |= (\n            if type == \"array\" then\n              map(update_clock_format)\n            else\n              .\n            end\n          )\n        )\n      else\n        .\n      end\n    )\n  ",
+                                                    "$config_file",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "$tmp",
+                                            },
+                                        ],
+                                    },
+                                    operator: And,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "mv",
+                                            args: [
+                                                "$tmp",
+                                                "$config_file",
+                                            ],
+                                        },
+                                    ),
+                                },
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "rm",
+                                        args: [
+                                            "-f",
+                                            "$tmp",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

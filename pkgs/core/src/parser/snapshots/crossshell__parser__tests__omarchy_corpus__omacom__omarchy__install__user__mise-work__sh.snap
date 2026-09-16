@@ -1,0 +1,327 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/user/mise-work.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$HOME/Work",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$HOME/Work/tries",
+                ],
+            },
+        ),
+        Case {
+            word: "${OMARCHY_SETUP_CONTEXT:-runtime}",
+            arms: [
+                CshAstCaseArm {
+                    patterns: [
+                        "iso-chroot",
+                    ],
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "NODE_PACKAGE_DIR",
+                                            value: "/opt/packages",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    terminator: ";;",
+                },
+                CshAstCaseArm {
+                    patterns: [
+                        "provision-owner",
+                    ],
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "NODE_PACKAGE_DIR",
+                                            value: "/var/lib/omarchy/provisioning/packages",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    terminator: ";;",
+                },
+                CshAstCaseArm {
+                    patterns: [
+                        "*",
+                    ],
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "NODE_PACKAGE_DIR",
+                                            value: "",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    terminator: ";;",
+                },
+            ],
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -n $NODE_PACKAGE_DIR ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "NODE_TARBALL",
+                                            value: "$(find \"$NODE_PACKAGE_DIR\" -name \"node-v*-linux-x64.tar.gz\" -type f 2>/dev/null | head -n1)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Test(
+                                                    " -z $NODE_TARBALL ",
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                If {
+                                                    branches: [
+                                                        CshAstBranch {
+                                                            condition: CshAst {
+                                                                commands: [
+                                                                    Test(
+                                                                        " ${OMARCHY_SETUP_CONTEXT:-} == \"provision-owner\" ",
+                                                                    ),
+                                                                ],
+                                                            },
+                                                            body: CshAst {
+                                                                commands: [
+                                                                    Redirected {
+                                                                        expression: Command(
+                                                                            CshAstCommand {
+                                                                                assignments: [],
+                                                                                name: "echo",
+                                                                                args: [
+                                                                                    "Warning: no bundled Node.js tarball in $NODE_PACKAGE_DIR; trying the network",
+                                                                                ],
+                                                                            },
+                                                                        ),
+                                                                        redirects: [
+                                                                            CshAstRedirect {
+                                                                                descriptor: None,
+                                                                                operator: ">&",
+                                                                                target: "2",
+                                                                            },
+                                                                        ],
+                                                                    },
+                                                                    Binary {
+                                                                        left: Command(
+                                                                            CshAstCommand {
+                                                                                assignments: [],
+                                                                                name: "mise",
+                                                                                args: [
+                                                                                    "use",
+                                                                                    "-g",
+                                                                                    "node@latest",
+                                                                                ],
+                                                                            },
+                                                                        ),
+                                                                        operator: Or,
+                                                                        right: Redirected {
+                                                                            expression: Command(
+                                                                                CshAstCommand {
+                                                                                    assignments: [],
+                                                                                    name: "echo",
+                                                                                    args: [
+                                                                                        "Warning: Node.js install deferred (no network)",
+                                                                                    ],
+                                                                                },
+                                                                            ),
+                                                                            redirects: [
+                                                                                CshAstRedirect {
+                                                                                    descriptor: None,
+                                                                                    operator: ">&",
+                                                                                    target: "2",
+                                                                                },
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                    otherwise: Some(
+                                                        CshAst {
+                                                            commands: [
+                                                                Redirected {
+                                                                    expression: Command(
+                                                                        CshAstCommand {
+                                                                            assignments: [],
+                                                                            name: "echo",
+                                                                            args: [
+                                                                                "Error: bundled Node.js tarball missing from $NODE_PACKAGE_DIR",
+                                                                            ],
+                                                                        },
+                                                                    ),
+                                                                    redirects: [
+                                                                        CshAstRedirect {
+                                                                            descriptor: None,
+                                                                            operator: ">&",
+                                                                            target: "2",
+                                                                        },
+                                                                    ],
+                                                                },
+                                                                Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "exit",
+                                                                        args: [
+                                                                            "1",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                            ],
+                                                        },
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: Some(
+                                    CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "NODE_VERSION",
+                                                            value: "$(basename \"$NODE_TARBALL\" | sed 's/node-v\\(.*\\)-linux-x64.tar.gz/\\1/')",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "NODE_INSTALL_DIR",
+                                                            value: "$HOME/.local/share/mise/installs/node/$NODE_VERSION",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "mkdir",
+                                                    args: [
+                                                        "-p",
+                                                        "$NODE_INSTALL_DIR",
+                                                    ],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "tar",
+                                                    args: [
+                                                        "-xzf",
+                                                        "$NODE_TARBALL",
+                                                        "--strip-components=1",
+                                                        "-C",
+                                                        "$NODE_INSTALL_DIR",
+                                                    ],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "mise",
+                                                    args: [
+                                                        "use",
+                                                        "-g",
+                                                        "node@$NODE_VERSION",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mise",
+                                args: [
+                                    "use",
+                                    "-g",
+                                    "node@latest",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+    ],
+}

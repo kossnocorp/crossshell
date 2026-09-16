@@ -1,0 +1,683 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hw-fingerprint-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmp_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmp_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "write_usb_devices",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$tmp_dir/devices",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mkdir",
+                                args: [
+                                    "-p",
+                                    "$tmp_dir/devices",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "index=0",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "spec",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "spec",
+                            words: Some(
+                                [
+                                    "$@",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "local",
+                                            args: [
+                                                "vendor=${spec%%:*}",
+                                            ],
+                                        },
+                                    ),
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "local",
+                                            args: [
+                                                "remainder=${spec#*:}",
+                                            ],
+                                        },
+                                    ),
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "local",
+                                            args: [
+                                                "product_id=${remainder%%:*}",
+                                            ],
+                                        },
+                                    ),
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "local",
+                                            args: [
+                                                "product=",
+                                            ],
+                                        },
+                                    ),
+                                    If {
+                                        branches: [
+                                            CshAstBranch {
+                                                condition: CshAst {
+                                                    commands: [
+                                                        Test(
+                                                            " $remainder == *:* ",
+                                                        ),
+                                                    ],
+                                                },
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [
+                                                                    CshAstAssignment {
+                                                                        name: "product",
+                                                                        value: "${remainder#*:}",
+                                                                    },
+                                                                ],
+                                                                name: "",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        otherwise: None,
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "local",
+                                            args: [
+                                                "dev=$tmp_dir/devices/1-$index",
+                                            ],
+                                        },
+                                    ),
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "mkdir",
+                                            args: [
+                                                "-p",
+                                                "$dev",
+                                            ],
+                                        },
+                                    ),
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "printf",
+                                                args: [
+                                                    "%s\\n",
+                                                    "$vendor",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "$dev/idVendor",
+                                            },
+                                        ],
+                                    },
+                                    Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "printf",
+                                                args: [
+                                                    "%s\\n",
+                                                    "$product_id",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "$dev/idProduct",
+                                            },
+                                        ],
+                                    },
+                                    Binary {
+                                        left: Test(
+                                            " -n $product ",
+                                        ),
+                                        operator: And,
+                                        right: Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "printf",
+                                                    args: [
+                                                        "%s\\n",
+                                                        "$product",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">",
+                                                    target: "$dev/product",
+                                                },
+                                            ],
+                                        },
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [
+                                                CshAstAssignment {
+                                                    name: "index",
+                                                    value: "$((index + 1))",
+                                                },
+                                            ],
+                                            name: "",
+                                            args: [],
+                                        },
+                                    ),
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "hw_fingerprint",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "OMARCHY_USB_DEVICES_PATH",
+                                        value: "$tmp_dir/devices",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-hw-fingerprint",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "assert_detects",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "hw_fingerprint",
+                                    args: [],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$description",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "assert_rejects",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "hw_fingerprint",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "fail",
+                                                    args: [
+                                                        "$description",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "10a5:a305:FPC L:0000 FW:1425046",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "an FPC reader is detected by its product string",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "10a5:1234:Generic USB Device",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_rejects",
+                args: [
+                    "a generic 10a5 USB device is not detected",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "10a5:9800:FPC Sensor Controller L:0002 FW:25.26.23.14",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "an FPC reader is detected by its sensor-controller string",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "0bda:5842:USB2.0 FPC Camera",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_rejects",
+                args: [
+                    "an FPC token mid-string is not detected",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "1234:5678:Goodix Fingerprint USB Device",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "a reader is detected by an existing product-name match",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "27c6:1234",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "a reader is detected by an existing vendor match",
+                ],
+            },
+        ),
+        Function {
+            name: "bind_driver",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "dev=$1",
+                                    "driver=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mkdir",
+                                args: [
+                                    "-p",
+                                    "$tmp_dir/drivers/$driver",
+                                    "$tmp_dir/devices/$dev",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "ln",
+                                args: [
+                                    "-sf",
+                                    "$tmp_dir/drivers/$driver",
+                                    "$tmp_dir/devices/$dev/driver",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "27c6:1234",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "bind_driver",
+                args: [
+                    "1-0/1-0:1.0",
+                    "uvcvideo",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_rejects",
+                args: [
+                    "a vendor guess bound to a kernel driver is rejected",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "27c6:1234",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "bind_driver",
+                args: [
+                    "1-0/1-0:1.0",
+                    "usbfs",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "a vendor guess claimed through usbfs is still detected",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "27c6:1234",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "bind_driver",
+                args: [
+                    "1-0/1-0:1.0",
+                    "usbfs",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "bind_driver",
+                args: [
+                    "1-0/1-0:1.1",
+                    "uvcvideo",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_rejects",
+                args: [
+                    "a real driver alongside a usbfs claim is still rejected",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "27c6:1234:Goodix Fingerprint USB Device",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "bind_driver",
+                args: [
+                    "1-0/1-0:1.0",
+                    "uvcvideo",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_detects",
+                args: [
+                    "a self-named reader is detected with a driver bound",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_usb_devices",
+                args: [
+                    "1234:5678:Generic USB Device",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_rejects",
+                args: [
+                    "a machine with no matching USB devices detects nothing",
+                ],
+            },
+        ),
+    ],
+}

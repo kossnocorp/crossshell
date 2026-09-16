@@ -1,0 +1,53 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/monitor-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const monitor = requireFromRoot('shell/plugins/panels/monitor/Model.js')\n\nassertEqual(monitor.clampBrightness(0), 1, 'monitor clamps minimum brightness')\nassertEqual(monitor.clampBrightness(101), 100, 'monitor clamps maximum brightness')\nassertEqual(monitor.clampBrightness(42.4), 42, 'monitor rounds brightness')\nassertEqual(monitor.clampBrightness('nope'), 1, 'monitor rejects invalid brightness')\n\nassertEqual(monitor.normalizeScale('1.250'), '1.25', 'monitor normalizes fractional scale')\nassertEqual(monitor.normalizeScale('nope'), '', 'monitor rejects invalid scale')\nassertEqual(monitor.cleanScale(3, 1280, 800), '3.2', 'monitor matches clean VM scale')\nassertEqual(monitor.cleanScale(1.25, 1280, 800), '1.25', 'monitor preserves an already clean scale')\nassertEqual(monitor.cleanScale(1.25, 6016, 3384), '1.33', 'monitor matches clean physical display scale')\nassertEqual(monitor.cleanScale(1.6, 0, 800), '', 'monitor rejects a missing display mode')\nassertEqual(\n  monitor.matchingScaleIndex(['1', '1.25', '1.6', '2', '3', '4'], 3.2, 1280, 800),\n  4,\n  'monitor selects an approximated VM scale'\n)\nassertEqual(\n  monitor.matchingScaleIndex(['1', '1.25', '1.6', '2', '3', '4'], 4, 4, 4),\n  5,\n  'monitor selects an exact preset'\n)\nassertDeepEqual(\n  monitor.availableScales(['1', '1.25', '1.6', '2', '3', '4'], 1280, 800),\n  ['1', '1.25', '1.6', '2', '3', '4'],\n  'monitor keeps distinct approximated VM scales'\n)\nassertDeepEqual(\n  monitor.availableScales(['1', '1.25', '1.6', '2', '3', '4'], 6016, 3384),\n  ['1', '1.25', '1.6', '2', '3', '4'],\n  'monitor keeps distinct approximated physical display scales'\n)\nassertDeepEqual(\n  monitor.availableScales(['1', '1.25', '1.6', '2', '3', '4'], 1280, 804),\n  ['1', '1.25', '2', '4'],\n  'monitor collapses presets with duplicate effective scales'\n)\nassertDeepEqual(\n  monitor.availableScales(['1', '1.25', '1.6', '2', '3', '4'], 5968, 3230),\n  ['1', '2'],\n  'monitor hides presets the current mode cannot reach'\n)\nassertDeepEqual(\n  monitor.availableScales(['1', '1.25', '1.6', '2', '3', '4'], 0, 0),\n  ['1', '1.25', '1.6', '2', '3', '4'],\n  'monitor keeps presets until display dimensions are known'\n)\n\nassertEqual(monitor.brightnessName(96), 'Sun blast', 'monitor names very bright displays')\nassertEqual(monitor.brightnessName(12), 'Candlelit', 'monitor names dim displays')\n\nassertDeepEqual(\n  monitor.parseDisplays(JSON.stringify([\n    { name: 'eDP-1', enabled: true, focused: false, width: 1920, height: 1080 },\n    { name: 'HDMI-A-1', enabled: false, focused: false, width: 0, height: 0 },\n    { name: 'DP-1', enabled: true, focused: true, width: 1280, height: 800 }\n  ])),\n  {\n    displays: [\n      { name: 'eDP-1', enabled: true, focused: false, width: 1920, height: 1080 },\n      { name: 'HDMI-A-1', enabled: false, focused: false, width: 0, height: 0 },\n      { name: 'DP-1', enabled: true, focused: true, width: 1280, height: 800 }\n    ],\n    enabledDisplayCount: 2\n  },\n  'monitor parses display state'\n)\n\nassertDeepEqual(monitor.parseDisplays('{'), { displays: [], enabledDisplayCount: 0 }, 'monitor handles invalid display JSON')\n",
+        },
+    ],
+}

@@ -1,0 +1,168 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1786567036.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Unmask wpa_supplicant so NetworkManager can bring wifi back",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "state",
+                        value: "$(systemctl is-enabled wpa_supplicant.service 2>/dev/null || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $state == masked* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sudo",
+                args: [
+                    "systemctl",
+                    "unmask",
+                    "wpa_supplicant.service",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "state",
+                        value: "$(systemctl is-enabled wpa_supplicant.service 2>/dev/null || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " $state == \"masked-runtime\" ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "systemctl",
+                                        "unmask",
+                                        "--runtime",
+                                        "wpa_supplicant.service",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Binary {
+                                    left: Test(
+                                        " ${OMARCHY_UPGRADE_TO_QUATTRO_LIVE:-0} != \"1\" ",
+                                    ),
+                                    operator: And,
+                                    right: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "systemctl",
+                                                args: [
+                                                    "is-active",
+                                                    "--quiet",
+                                                    "NetworkManager.service",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: Some(
+                                                    "2",
+                                                ),
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                        ],
+                                    },
+                                },
+                                operator: And,
+                                right: Test(
+                                    " $(LC_ALL=C nmcli -t -f TYPE,STATE device 2>/dev/null || true) == *\"wifi:unavailable\"* ",
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "sudo",
+                                        args: [
+                                            "systemctl",
+                                            "restart",
+                                            "NetworkManager.service",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "true",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

@@ -1,0 +1,264 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1787618700.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Store Hyprland input-device names as data instead of generated Lua",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "toggles_dir",
+                        value: "$HOME/.local/state/omarchy/toggles/hypr",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "reapply",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "kind",
+            words: Some(
+                [
+                    "touchpad",
+                    "touchscreen",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "state_file",
+                                    value: "$toggles_dir/$kind-disabled.lua",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "name_file",
+                                    value: "$toggles_dir/$kind-disabled-name",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Test(
+                            " -f $state_file ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Test(
+                                            " ! -f $name_file && -r $state_file ",
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "old",
+                                                        value: "$(<\"$state_file\")",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "pattern",
+                                                        value: "^hl\\.device\\(\\{ name = \"([^\"\\\\[:cntrl:]]+)\", enabled = false \\}\\)$",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Test(
+                                                                " $old =~ $pattern ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Redirected {
+                                                                expression: Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "printf",
+                                                                        args: [
+                                                                            "%s\\n",
+                                                                            "${BASH_REMATCH[1]}",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                                redirects: [
+                                                                    CshAstRedirect {
+                                                                        descriptor: None,
+                                                                        operator: ">",
+                                                                        target: "$name_file",
+                                                                    },
+                                                                ],
+                                                            },
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "rm",
+                            args: [
+                                "-f",
+                                "$state_file",
+                            ],
+                        },
+                    ),
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Test(
+                                            " -f $name_file ",
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "reapply",
+                                                        value: "1",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " reapply ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "hyprctl",
+                                            args: [
+                                                "reload",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">&",
+                                            target: "1",
+                                        },
+                                    ],
+                                },
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "true",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

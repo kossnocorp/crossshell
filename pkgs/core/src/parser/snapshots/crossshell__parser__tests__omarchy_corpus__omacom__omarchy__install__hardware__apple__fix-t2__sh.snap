@@ -1,0 +1,225 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/apple/fix-t2.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "lspci",
+                                        args: [
+                                            "-nn",
+                                        ],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "106b:180[12]",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "echo",
+                                    args: [
+                                        "Detected MacBook with T2 chip. Installing support items...",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-add",
+                                    args: [
+                                        "linux-t2",
+                                        "linux-t2-headers",
+                                        "apple-t2-audio-config",
+                                        "apple-bcm-firmware",
+                                        "t2fanrd",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "systemctl",
+                                    args: [
+                                        "enable",
+                                        "t2fanrd.service",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mkdir",
+                                    args: [
+                                        "-p",
+                                        "/etc/modules-load.d",
+                                    ],
+                                },
+                            ),
+                            Redirected {
+                                expression: Group(
+                                    CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "t2bce_vhci",
+                                                    ],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "hci_bcm4377",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/etc/modules-load.d/t2.conf",
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mkdir",
+                                    args: [
+                                        "-p",
+                                        "/etc/mkinitcpio.conf.d",
+                                    ],
+                                },
+                            ),
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "echo",
+                                        args: [
+                                            "MODULES+=(t2bce_vhci usbhid hid_apple hid_generic xhci_pci xhci_hcd)",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/etc/mkinitcpio.conf.d/apple-t2.conf",
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mkdir",
+                                    args: [
+                                        "-p",
+                                        "/etc/limine-entry-tool.d",
+                                    ],
+                                },
+                            ),
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "cat",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/etc/limine-entry-tool.d/t2-mac.conf",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<<",
+                                        target: "EOF",
+                                        here_document: 0,
+                                    },
+                                ],
+                            },
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "cat",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/etc/t2fand.conf",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<<",
+                                        target: "EOF",
+                                        here_document: 1,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "# Generated by Omarchy installer for T2 Mac support\nKERNEL_CMDLINE[default]+=\" intel_iommu=on iommu=pt pm_async=off mem_sleep_default=deep\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "[Fan1]\nlow_temp=55\nhigh_temp=75\nspeed_curve=linear\nalways_full_speed=false\n\n[Fan2]\nlow_temp=55\nhigh_temp=75\nspeed_curve=linear\nalways_full_speed=false\n",
+        },
+    ],
+}

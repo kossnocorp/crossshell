@@ -1,0 +1,460 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1785944594.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Update T2 Mac suspend, Touch Bar, and fan defaults",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Negated(
+                                Binary {
+                                    left: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "lspci",
+                                            args: [
+                                                "-nn",
+                                            ],
+                                        },
+                                    ),
+                                    operator: Pipe,
+                                    right: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "106b:180[12]",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                        ],
+                                    },
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "limine_conf",
+                        value: "${OMARCHY_T2_LIMINE_CONF:-/etc/limine-entry-tool.d/t2-mac.conf}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fan_conf",
+                        value: "${OMARCHY_T2_FAN_CONF:-/etc/t2fand.conf}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "running_cmdline",
+                        value: "${OMARCHY_T2_RUNNING_CMDLINE:-/proc/cmdline}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "repair_marker",
+                        value: "${OMARCHY_T2_REPAIR_MARKER:-/var/lib/omarchy/migrations/1785944594}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "needs_limine_rebuild",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " -f $limine_conf ",
+                                ),
+                                operator: And,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-q",
+                                            "pcie_ports=compat",
+                                            "$limine_conf",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "sed",
+                                        "-i",
+                                        "s/pcie_ports=compat/pm_async=off mem_sleep_default=deep/",
+                                        "$limine_conf",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "needs_limine_rebuild",
+                                            value: "1",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " -f $fan_conf ",
+                                ),
+                                operator: And,
+                                right: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-Eq",
+                                                "^[[:space:]]*\\[Fan2\\][[:space:]]*$",
+                                                "$fan_conf",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "sudo",
+                                        args: [
+                                            "tee",
+                                            "-a",
+                                            "$fan_conf",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<<",
+                                        target: "EOF",
+                                        here_document: 0,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-present",
+                                    args: [
+                                        "tiny-dfr",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "sudo",
+                                        args: [
+                                            "systemctl",
+                                            "disable",
+                                            "--now",
+                                            "tiny-dfr.service",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "true",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-drop",
+                                    args: [
+                                        "tiny-dfr",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Binary {
+                                    left: Binary {
+                                        left: Binary {
+                                            left: Test(
+                                                " -f $limine_conf ",
+                                            ),
+                                            operator: And,
+                                            right: Test(
+                                                " ! -e $repair_marker ",
+                                            ),
+                                        },
+                                        operator: And,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "-q",
+                                                    "pm_async=off",
+                                                    "$limine_conf",
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                    operator: And,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-q",
+                                                "mem_sleep_default=deep",
+                                                "$limine_conf",
+                                            ],
+                                        },
+                                    ),
+                                },
+                                operator: And,
+                                right: Group(
+                                    CshAst {
+                                        commands: [
+                                            Binary {
+                                                left: Binary {
+                                                    left: Test(
+                                                        " ! -r $running_cmdline ",
+                                                    ),
+                                                    operator: Or,
+                                                    right: Negated(
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "grep",
+                                                                args: [
+                                                                    "-Eq",
+                                                                    "(^| )pm_async=off( |$)",
+                                                                    "$running_cmdline",
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ),
+                                                },
+                                                operator: Or,
+                                                right: Negated(
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "grep",
+                                                            args: [
+                                                                "-Eq",
+                                                                "(^| )mem_sleep_default=deep( |$)",
+                                                                "$running_cmdline",
+                                                            ],
+                                                        },
+                                                    ),
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "needs_limine_rebuild",
+                                            value: "1",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " needs_limine_rebuild ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "limine-mkinitcpio",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "install",
+                                        "-Dm644",
+                                        "/dev/null",
+                                        "$repair_marker",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "\n[Fan2]\nlow_temp=55\nhigh_temp=75\nspeed_curve=linear\nalways_full_speed=false\n",
+        },
+    ],
+}

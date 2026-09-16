@@ -1,0 +1,838 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/shell/services/hidden-entries.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "desktop_names",
+                        value: "${1:-}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "declare",
+                args: [
+                    "-A",
+                    "seen_ids",
+                ],
+            },
+        ),
+        Function {
+            name: "desktop_matches",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "list=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "desktop_name",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "entry",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "IFS",
+                                            value: ":",
+                                        },
+                                    ],
+                                    name: "read",
+                                    args: [
+                                        "-ra",
+                                        "desktop_parts",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<<",
+                                    target: "$desktop_names",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "IFS",
+                                            value: ";",
+                                        },
+                                    ],
+                                    name: "read",
+                                    args: [
+                                        "-ra",
+                                        "entries",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<<",
+                                    target: "$list",
+                                },
+                            ],
+                        },
+                        For {
+                            variable: "desktop_name",
+                            words: Some(
+                                [
+                                    "${desktop_parts[@]}",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Test(
+                                            " -z $desktop_name ",
+                                        ),
+                                        operator: And,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "continue",
+                                                args: [],
+                                            },
+                                        ),
+                                    },
+                                    For {
+                                        variable: "entry",
+                                        words: Some(
+                                            [
+                                                "${entries[@]}",
+                                            ],
+                                        ),
+                                        body: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Test(
+                                                        " -z $entry ",
+                                                    ),
+                                                    operator: And,
+                                                    right: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "continue",
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                },
+                                                Binary {
+                                                    left: Test(
+                                                        " $entry == \"$desktop_name\" ",
+                                                    ),
+                                                    operator: And,
+                                                    right: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "return",
+                                                            args: [
+                                                                "0",
+                                                            ],
+                                                        },
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "desktop_id_for_file",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "dir=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "rel=${file#\"$dir\"/}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "rel",
+                                        value: "${rel%.desktop}",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "%s\\n",
+                                    "${rel//\\//-}",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "is_hidden_desktop_file",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "in_desktop_entry=0",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "hidden=false",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "only_show_in=",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "not_show_in=",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "line",
+                                    "key",
+                                    "value",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Loop {
+                                until: false,
+                                condition: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "IFS",
+                                                            value: "",
+                                                        },
+                                                    ],
+                                                    name: "read",
+                                                    args: [
+                                                        "-r",
+                                                        "line",
+                                                    ],
+                                                },
+                                            ),
+                                            operator: Or,
+                                            right: Test(
+                                                " -n $line ",
+                                            ),
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "line",
+                                                        value: "${line%$'\\r'}",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Test(
+                                                                " $line =~ ^\\[(.*)\\]$ ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Binary {
+                                                                left: Binary {
+                                                                    left: Test(
+                                                                        " ${BASH_REMATCH[1]} == \"Desktop Entry\" ",
+                                                                    ),
+                                                                    operator: And,
+                                                                    right: Command(
+                                                                        CshAstCommand {
+                                                                            assignments: [
+                                                                                CshAstAssignment {
+                                                                                    name: "in_desktop_entry",
+                                                                                    value: "1",
+                                                                                },
+                                                                            ],
+                                                                            name: "",
+                                                                            args: [],
+                                                                        },
+                                                                    ),
+                                                                },
+                                                                operator: Or,
+                                                                right: Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [
+                                                                            CshAstAssignment {
+                                                                                name: "in_desktop_entry",
+                                                                                value: "0",
+                                                                            },
+                                                                        ],
+                                                                        name: "",
+                                                                        args: [],
+                                                                    },
+                                                                ),
+                                                            },
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "continue",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                        Binary {
+                                            left: Arithmetic(
+                                                " in_desktop_entry ",
+                                            ),
+                                            operator: Or,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "continue",
+                                                    args: [],
+                                                },
+                                            ),
+                                        },
+                                        Binary {
+                                            left: Test(
+                                                " $line == *=* ",
+                                            ),
+                                            operator: Or,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "continue",
+                                                    args: [],
+                                                },
+                                            ),
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "key",
+                                                        value: "${line%%=*}",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "value",
+                                                        value: "${line#*=}",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        Case {
+                                            word: "$key",
+                                            arms: [
+                                                CshAstCaseArm {
+                                                    patterns: [
+                                                        "Hidden",
+                                                        "NoDisplay",
+                                                    ],
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Binary {
+                                                                left: Test(
+                                                                    " $value == \"true\" ",
+                                                                ),
+                                                                operator: And,
+                                                                right: Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [
+                                                                            CshAstAssignment {
+                                                                                name: "hidden",
+                                                                                value: "true",
+                                                                            },
+                                                                        ],
+                                                                        name: "",
+                                                                        args: [],
+                                                                    },
+                                                                ),
+                                                            },
+                                                        ],
+                                                    },
+                                                    terminator: ";;",
+                                                },
+                                                CshAstCaseArm {
+                                                    patterns: [
+                                                        "OnlyShowIn",
+                                                    ],
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [
+                                                                        CshAstAssignment {
+                                                                            name: "only_show_in",
+                                                                            value: "$value",
+                                                                        },
+                                                                    ],
+                                                                    name: "",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                    terminator: ";;",
+                                                },
+                                                CshAstCaseArm {
+                                                    patterns: [
+                                                        "NotShowIn",
+                                                    ],
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [
+                                                                        CshAstAssignment {
+                                                                            name: "not_show_in",
+                                                                            value: "$value",
+                                                                        },
+                                                                    ],
+                                                                    name: "",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                    terminator: ";;",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                            },
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "$file",
+                                },
+                            ],
+                        },
+                        Binary {
+                            left: Test(
+                                " $hidden == \"true\" ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Binary {
+                                left: Test(
+                                    " -n $only_show_in ",
+                                ),
+                                operator: And,
+                                right: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "desktop_matches",
+                                            args: [
+                                                "$only_show_in",
+                                            ],
+                                        },
+                                    ),
+                                ),
+                            },
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Binary {
+                                left: Test(
+                                    " -n $not_show_in ",
+                                ),
+                                operator: And,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "desktop_matches",
+                                        args: [
+                                            "$not_show_in",
+                                        ],
+                                    },
+                                ),
+                            },
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "scan_dir",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "dir=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file",
+                                    "id",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -d $dir ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Redirected {
+                            expression: Loop {
+                                until: false,
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "IFS",
+                                                        value: "",
+                                                    },
+                                                ],
+                                                name: "read",
+                                                args: [
+                                                    "-r",
+                                                    "-d",
+                                                    "",
+                                                    "file",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "id",
+                                                        value: "$(desktop_id_for_file \"$dir\" \"$file\")",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        Binary {
+                                            left: Test(
+                                                " -n ${seen_ids[$id]+set} ",
+                                            ),
+                                            operator: And,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "continue",
+                                                    args: [],
+                                                },
+                                            ),
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "seen_ids[$id]=1",
+                                                args: [],
+                                            },
+                                        ),
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "is_hidden_desktop_file",
+                                                                    args: [
+                                                                        "$file",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "printf",
+                                                                    args: [
+                                                                        "%s\\n",
+                                                                        "$id",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                    ],
+                                },
+                            },
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(find \"$dir\" -type f -name '*.desktop' -print0 2>/dev/null | sort -z)",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "scan_dir",
+                args: [
+                    "$HOME/.local/share/applications",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "IFS",
+                            value: ":",
+                        },
+                    ],
+                    name: "read",
+                    args: [
+                        "-ra",
+                        "data_dirs",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<<",
+                    target: "${XDG_DATA_DIRS:-/usr/local/share:/usr/share}",
+                },
+            ],
+        },
+        For {
+            variable: "data_dir",
+            words: Some(
+                [
+                    "${data_dirs[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "scan_dir",
+                            args: [
+                                "$data_dir/applications",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "scan_dir",
+                args: [
+                    "$HOME/.nix-profile/share/applications",
+                ],
+            },
+        ),
+    ],
+}

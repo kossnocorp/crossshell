@@ -1,0 +1,294 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/weather-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "weather_location",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "HOME",
+                                        value: "$test_tmp",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-weather-location",
+                                args: [
+                                    "$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "weather_location",
+                args: [
+                    "--set",
+                    "Malibu",
+                    "34.02577,-118.7804",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c . \"$test_tmp/.local/state/omarchy/settings/weather.json\") == '{\"name\":\"Malibu\",\"latitude\":34.02577,\"longitude\":-118.7804}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "weather location stores name and coordinates as JSON",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "weather location stores name and coordinates as JSON",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(weather_location) == \"Malibu\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "weather location returns the stored name",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "weather location returns the stored name",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "weather_location",
+                args: [
+                    "--set",
+                    "New York",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c . \"$test_tmp/.local/state/omarchy/settings/weather.json\") == '{\"name\":\"New York\"}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "weather location stores a bare name as JSON",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(weather_location) == \"New York\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "weather location returns a bare stored name",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "weather location stores and returns a bare name",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "weather_location",
+                                        args: [
+                                            "--set",
+                                            "bad",
+                                            "not,coords",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "weather location rejects malformed coordinates",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "weather location rejects malformed coordinates",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "weather_location",
+                args: [
+                    "--clear",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e \"$test_tmp/.local/state/omarchy/settings/weather.json\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "weather location clear removes the state file",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "weather location clear removes the state file",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const fs = require('fs')\nconst weather = requireFromRoot('shell/plugins/panels/weather/Model.js')\nconst panelSource = fs.readFileSync(root + '/shell/plugins/panels/weather/Panel.qml', 'utf8')\nconst widgetSource = fs.readFileSync(root + '/shell/plugins/panels/weather/BarWidget.qml', 'utf8')\n\nassertDeepEqual(weather.parseLocationFile('{\"name\": \"Malibu\", \"latitude\": 34.02577, \"longitude\": -118.7804}\\n'), { name: 'Malibu', latitude: 34.02577, longitude: -118.7804 }, 'weather parses name plus coordinates from weather.json')\nassertDeepEqual(weather.parseLocationFile('{\"name\": \"New York\"}'), { name: 'New York', latitude: null, longitude: null }, 'weather parses a name-only weather.json')\nassertDeepEqual(weather.parseLocationFile('{\"name\": \"Malibu\", \"latitude\": 34.02577}'), { name: 'Malibu', latitude: null, longitude: null }, 'weather requires both coordinates')\nassertDeepEqual(weather.parseLocationFile('not json'), { name: '', latitude: null, longitude: null }, 'weather treats an unparseable weather.json as auto-detect')\nassertDeepEqual(weather.parseLocationFile(''), { name: '', latitude: null, longitude: null }, 'weather treats a missing weather.json as auto-detect')\n\nassertDeepEqual(weather.locationCommit('  Pasadena  ', [], 0), { name: 'Pasadena', latitude: null, longitude: null }, 'weather commits typed locations before suggestions load')\nassertDeepEqual(weather.locationCommit('', [], 0), { name: '', latitude: null, longitude: null }, 'weather commits an empty location as auto-detect')\nassertDeepEqual(\n  weather.locationCommit('mal', [{ name: 'Malibu', latitude: 34.02577, longitude: -118.7804 }], 0),\n  { name: 'Malibu', latitude: 34.02577, longitude: -118.7804 },\n  'weather commits the selected geocoding suggestion when available'\n)\n\nassertEqual(weather.wttrLocationQuery('Malibu', 34.02577, -118.7804), '34.02577,-118.7804', 'weather prefers coordinates for the wttr query')\nassertEqual(weather.wttrLocationQuery('Malibu', '34.02577', '-118.7804'), '34.02577,-118.7804', 'weather accepts string coordinates')\nassertEqual(weather.wttrLocationQuery('New York', null, null), 'New%20York', 'weather URL-encodes a name-only location')\nassertEqual(weather.wttrLocationQuery('Malibu', 'nope', -118.7804), 'Malibu', 'weather ignores unparseable coordinates')\nassertEqual(weather.wttrLocationQuery('', null, null), '', 'weather falls back to IP auto-detect without a location')\nassertEqual(weather.wttrLocationQuery('  ', null, null), '', 'weather treats a blank location as unset')\n\nassertDeepEqual(\n  weather.parseGeocodingResults(JSON.stringify({\n    results: [\n      { name: 'Malibu', latitude: 34.02577, longitude: -118.7804, admin1: 'California', country: 'United States' },\n      { name: 'Malibu', latitude: -7.18333, longitude: 29.65, admin1: 'Tanganyika', country: 'Democratic Republic of Congo' },\n      { name: 'Broken', latitude: 1.0 },\n      { name: 'Bare', latitude: 2.0, longitude: 3.0 }\n    ]\n  })),\n  [\n    { name: 'Malibu', description: 'California, United States', latitude: 34.02577, longitude: -118.7804 },\n    { name: 'Malibu', description: 'Tanganyika, Democratic Republic of Congo', latitude: -7.18333, longitude: 29.65 },\n    { name: 'Bare', description: '', latitude: 2.0, longitude: 3.0 }\n  ],\n  'weather parses geocoding suggestions and drops incomplete rows'\n)\nassertDeepEqual(weather.parseGeocodingResults('{}'), [], 'weather handles empty geocoding responses')\nassertDeepEqual(weather.parseGeocodingResults('{'), [], 'weather handles invalid geocoding JSON')\n\nassertEqual(weather.roundedTemp('21.6'), '22', 'weather rounds temperatures')\nassertEqual(weather.roundedTemp('nope'), '', 'weather ignores invalid temperatures')\nassertEqual(weather.formatTemp(72, true), '72°F', 'weather formats imperial temperatures')\nassertEqual(weather.formatTemp(22, false), '22°C', 'weather formats metric temperatures')\nassertEqual(weather.shouldUseImperial('', 'en_US', ''), true, 'weather falls back to US locale for imperial units')\nassertEqual(weather.shouldUseImperial('', 'en_US', 'Denmark'), false, 'weather prefers reported metric country over US locale')\nassertEqual(weather.shouldUseImperial('', 'da_DK', 'United States of America'), true, 'weather prefers reported imperial country over metric locale')\nassertEqual(weather.shouldUseImperial('metric', 'en_US', 'United States of America'), false, 'weather metric override wins')\nassertEqual(weather.shouldUseImperial('imperial', 'da_DK', 'Denmark'), true, 'weather imperial override wins')\nassertEqual(weather.dayName('2026-05-25'), 'Monday', 'weather derives day names')\n\nconst openMeteo = {\n  daily: {\n    time: ['2026-05-25', '2026-05-26', '2026-05-27', '2026-05-28', '2026-05-29'],\n    temperature_2m_max: [20.1, 21.6, 18.2, 17.9, 22.4],\n    temperature_2m_min: [12.2, 13.1, 10.8, 9.2, 11.5],\n    weather_code: [0, 63, 95, 3, 1]\n  }\n}\n\nassertDeepEqual(\n  weather.openMeteoForecastDays(openMeteo, '2026-05-25').map(day => ({\n    date: day.date,\n    maxtempC: day.maxtempC,\n    mintempF: day.mintempF,\n    code: day.openMeteoWeatherCode\n  })),\n  [\n    { date: '2026-05-26', maxtempC: '22', mintempF: '56', code: 63 },\n    { date: '2026-05-27', maxtempC: '18', mintempF: '51', code: 95 },\n    { date: '2026-05-28', maxtempC: '18', mintempF: '49', code: 3 }\n  ],\n  'weather builds future Open-Meteo forecast days'\n)\n\nassertDeepEqual(\n  weather.openMeteoCurrentCondition({ current: { temperature_2m: 21.4, apparent_temperature: 19.8, wind_speed_10m: 14.3, relative_humidity_2m: 63 } }),\n  { temp_C: '21', temp_F: '71', FeelsLikeC: '20', FeelsLikeF: '68', windspeedKmph: '14', windspeedMiles: '9', humidity: '63' },\n  'weather normalizes open-meteo current conditions to the wttr shape'\n)\nassertEqual(weather.openMeteoCurrentCondition({}), null, 'weather returns no current conditions without open-meteo data')\nassertEqual(weather.openMeteoCurrentCondition({ current: {} }), null, 'weather requires a current temperature')\n\nconst wttr = {\n  weather: [\n    { date: '2026-05-25', maxtempC: '20', mintempC: '12' },\n    { date: '2026-05-26', maxtempC: '22', mintempC: '13' }\n  ]\n}\nassertEqual(weather.buildForecastDays(wttr, {}, '2026-05-25')[0].date, '2026-05-26', 'weather falls back to wttr forecast')\nassertEqual(weather.bareTempForDay({ maxtempC: '22', mintempC: '13', maxtempF: '72', mintempF: '55' }, 'max', false), '22°', 'weather formats forecast metric highs')\nassertEqual(weather.bareTempForDay({ maxtempC: '22', mintempC: '13', maxtempF: '72', mintempF: '55' }, 'min', true), '55°', 'weather formats forecast imperial lows')\n\nassert(weather.dayIcon({ openMeteoWeatherCode: 95 }).length > 0, 'weather maps Open-Meteo weather icons')\nassertEqual(weather.currentIcon({ openMeteoWeatherCode: 0, isDay: 1 }, ''), weather.iconForOpenMeteoCode(0), 'weather uses the current Open-Meteo icon with current values')\nassertEqual(weather.currentIcon({ openMeteoWeatherCode: 0, isDay: 0 }, ''), weather.iconForCode(113, true), 'weather uses the nighttime Open-Meteo icon after sunset')\nassert(weather.iconForOpenMeteoCode(45, true) !== weather.iconForOpenMeteoCode(45, false), 'weather distinguishes nighttime fog from daytime fog')\nassertEqual(weather.provisionalCurrentIcon({ weatherCode: 113 }, ''), weather.iconForCode(113, false), 'weather uses wttr to fill an empty initial icon')\nassertEqual(weather.provisionalCurrentIcon({ weatherCode: 113 }, 'night'), 'night', 'weather refresh preserves a resolved day-night icon')\n// The bar identifies a panel by the widget in its slot, so the nested panel\n// has to present the host widget rather than itself — otherwise the\n// open-panel dot never lights and Tab cannot leave the panel.\nassert(\n  panelSource.includes('owner: root.barIdentity'),\n  'weather panel gives the bar its host widget as popout identity'\n)\nassert(\n  panelSource.includes('switchPanelFrom(root.barIdentity, direction)'),\n  'weather panel switches panels as its host widget'\n)\nassert(\n  widgetSource.includes('target.hostWidget = root'),\n  'weather widget injects itself as the panel host'\n)\nassert(\n  widgetSource.includes('readonly property bool popoutSwitchClosing:') && widgetSource.includes('function closeForPopoutSwitch()'),\n  'weather widget forwards the popout-switch handshake'\n)\nassert(\n  /Qt\\.callLater\\(function\\(\\) \\{\\s*\\n\\s*if \\(root\\.opened\\) setCenterHoverRevealSuppressed\\(true\\)/.test(panelSource),\n  'weather claims the shared hover-reveal flag after the popout handoff, so the panel taking over wins'\n)\n\nassert(\n  panelSource.includes('text: root.label || \"—\"'),\n  'weather hero and bar use the same resolved icon'\n)\nassert(\n  panelSource.includes('onReturnRequested: root.startEditingLocation()'),\n  'weather focuses city input when Return is pressed'\n)\nassert(\n  panelSource.split('root.controller.show()\\n    locationFile.reload()\\n    root.refresh()').length === 3,\n  'weather reloads external location changes whenever either open path runs'\n)\nassert(!weather.weatherResponseCompletesSave(true, 'wttr'), 'weather keeps the spinner through a non-authoritative pinned-location response')\nassert(weather.weatherResponseCompletesSave(true, 'open-meteo'), 'weather completes a pinned-location save with Open-Meteo data')\nassert(weather.weatherResponseCompletesSave(false, 'wttr'), 'weather completes a name-only location save with wttr data')\nassertEqual(\n  weather.dayIcon({ hourly: [{ time: '900', weatherCode: 113 }, { time: '1200', weatherCode: 389 }, { time: '1800', weatherCode: 116 }] }),\n  weather.iconForCode(389, false),\n  'weather picks hourly forecast icon nearest noon'\n)\n",
+        },
+    ],
+}

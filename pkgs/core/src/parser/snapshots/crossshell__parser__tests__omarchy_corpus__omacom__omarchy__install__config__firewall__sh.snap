@@ -1,0 +1,295 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/config/firewall.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ufw",
+                args: [
+                    "default",
+                    "deny",
+                    "incoming",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ufw",
+                args: [
+                    "default",
+                    "allow",
+                    "outgoing",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ufw",
+                args: [
+                    "allow",
+                    "53317/udp",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ufw",
+                args: [
+                    "allow",
+                    "53317/tcp",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ufw",
+                args: [
+                    "allow",
+                    "in",
+                    "proto",
+                    "udp",
+                    "from",
+                    "172.16.0.0/12",
+                    "to",
+                    "172.17.0.1",
+                    "port",
+                    "53",
+                    "comment",
+                    "allow-docker-dns",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ufw",
+                args: [
+                    "allow",
+                    "in",
+                    "proto",
+                    "udp",
+                    "from",
+                    "192.168.0.0/16",
+                    "to",
+                    "172.17.0.1",
+                    "port",
+                    "53",
+                    "comment",
+                    "allow-docker-dns",
+                ],
+            },
+        ),
+        Function {
+            name: "install_ufw_docker_rules",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "shim_dir",
+                                    "status",
+                                    "ufw_docker_bin",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "ufw_docker_bin",
+                                        value: "$(command -v ufw-docker)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "shim_dir",
+                                        value: "$(mktemp -d)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cat",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$shim_dir/ufw",
+                                },
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<",
+                                    target: "EOF",
+                                    here_document: 0,
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sed",
+                                    args: [
+                                        "0,/^PATH=/s#^PATH=.*#PATH=\"$shim_dir:/bin:/usr/bin:/sbin:/usr/sbin:/snap/bin/\"#",
+                                        "$ufw_docker_bin",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$shim_dir/ufw-docker",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "chmod",
+                                args: [
+                                    "755",
+                                    "$shim_dir/ufw",
+                                    "$shim_dir/ufw-docker",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "$shim_dir/ufw-docker",
+                                                    args: [
+                                                        "install",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "status",
+                                                            value: "0",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "status",
+                                                        value: "$?",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$shim_dir",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "$status",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "install_ufw_docker_rules",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sed",
+                args: [
+                    "-i",
+                    "s/^ENABLED=.*/ENABLED=yes/",
+                    "/etc/ufw/ufw.conf",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "systemctl",
+                args: [
+                    "enable",
+                    "ufw",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nif [[ ${1:-} == \"status\" ]]; then\n  echo \"Status: active\"\n  exit 0\nfi\n\nexec /usr/bin/ufw \"$@\"\n",
+        },
+    ],
+}

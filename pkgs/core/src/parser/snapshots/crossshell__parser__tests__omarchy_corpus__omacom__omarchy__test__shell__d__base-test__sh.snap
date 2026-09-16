@@ -1,0 +1,565 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/base-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " ${BASH_SOURCE[0]} == \"$0\" ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "echo",
+                                        args: [
+                                            "source test/shell.d/base-test.sh from a shell test; do not run it directly",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">&",
+                                        target: "2",
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "ROOT",
+                        value: "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")/../..\" && pwd)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "SHELL_TEST_DIR",
+                        value: "$ROOT/test/shell.d",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "ROOT",
+                ],
+            },
+        ),
+        Function {
+            name: "pass",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "ok - %s\\n",
+                                    "$1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "fail",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "detail=${2:-}",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -n $detail ",
+                            ),
+                            operator: And,
+                            right: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "printf",
+                                        args: [
+                                            "%s\\n",
+                                            "$detail",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">&",
+                                        target: "2",
+                                    },
+                                ],
+                            },
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "not ok - %s\\n",
+                                        "$description",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">&",
+                                    target: "2",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "exit",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "require_command",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "command=$1",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "command",
+                                        args: [
+                                            "-v",
+                                            "$command",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "required command is available: $command",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "compositor_reachable",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "socket=${WAYLAND_DISPLAY:-}",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -n $socket ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " $socket == /* ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "socket",
+                                            value: "${XDG_RUNTIME_DIR:-}/$socket",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " -S $socket ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "attempt",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "attempt",
+                            words: Some(
+                                [
+                                    "1",
+                                    "2",
+                                    "3",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "hyprctl",
+                                                    args: [
+                                                        "-j",
+                                                        "monitors",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">",
+                                                    target: "/dev/null",
+                                                },
+                                                CshAstRedirect {
+                                                    descriptor: Some(
+                                                        "2",
+                                                    ),
+                                                    operator: ">&",
+                                                    target: "1",
+                                                },
+                                            ],
+                                        },
+                                        operator: And,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "return",
+                                                args: [
+                                                    "0",
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                    Binary {
+                                        left: Arithmetic(
+                                            " attempt < 3 ",
+                                        ),
+                                        operator: And,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "sleep",
+                                                args: [
+                                                    "0.5",
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "require_compositor",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "compositor_reachable",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Binary {
+                                                left: Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "ulimit",
+                                                            args: [
+                                                                "-c",
+                                                                "0",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: Some(
+                                                                "2",
+                                                            ),
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                    ],
+                                                },
+                                                operator: Or,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "true",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            },
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "return",
+                                                    args: [
+                                                        "0",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "no Wayland compositor; skipping $description",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "exit",
+                                args: [
+                                    "0",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "run_node_test",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "require_command",
+                                args: [
+                                    "node",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Group(
+                                CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "cat",
+                                                    args: [],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: "<<",
+                                                    target: "JS_PRELUDE",
+                                                    here_document: 0,
+                                                },
+                                            ],
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "cat",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "node",
+                                    args: [],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS_PRELUDE",
+            quoted: true,
+            strip_tabs: false,
+            body: "const path = require('path')\nconst root = process.env.ROOT\n\nfunction fail(description, detail) {\n  if (detail) console.error(detail)\n  console.error(`not ok - ${description}`)\n  process.exit(1)\n}\n\nfunction pass(description) {\n  console.log(`ok - ${description}`)\n}\n\nfunction assert(condition, description, detail) {\n  if (!condition) fail(description, detail)\n  pass(description)\n}\n\nfunction assertEqual(actual, expected, description) {\n  assert(\n    actual === expected,\n    description,\n    `expected: ${expected}\\nactual:   ${actual}`\n  )\n}\n\nfunction assertDeepEqual(actual, expected, description) {\n  const actualJson = JSON.stringify(actual)\n  const expectedJson = JSON.stringify(expected)\n  assert(\n    actualJson === expectedJson,\n    description,\n    `expected: ${expectedJson}\\nactual:   ${actualJson}`\n  )\n}\n\nfunction requireFromRoot(relativePath) {\n  return require(path.join(root, relativePath))\n}\n\n",
+        },
+    ],
+}

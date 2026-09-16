@@ -1,0 +1,157 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/user/first-run/wifi.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Function {
+            name: "notify_update",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "omarchy-notification-send",
+                                args: [
+                                    "-u",
+                                    "critical",
+                                    "-g",
+                                    "\u{f021}",
+                                    "Update System",
+                                    "Click to update the system.",
+                                    "--exec",
+                                    "omarchy-launch-floating-terminal-with-presentation",
+                                    "omarchy-update",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "notify_wifi",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "omarchy-notification-send",
+                                args: [
+                                    "-u",
+                                    "critical",
+                                    "-g",
+                                    "\u{f05a9}",
+                                    "Setup Wi-Fi",
+                                    "Click to configure the wireless network.",
+                                    "--exec",
+                                    "omarchy-shell",
+                                    "shell",
+                                    "toggle",
+                                    "omarchy.network",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "announce_network",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "nm-online",
+                                args: [
+                                    "-q",
+                                    "-s",
+                                    "-t",
+                                    "30",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "nm-online",
+                                                        args: [
+                                                            "-q",
+                                                            "-x",
+                                                            "-t",
+                                                            "30",
+                                                        ],
+                                                    },
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "notify_wifi",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Binary {
+                                                left: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "nm-online",
+                                                        args: [
+                                                            "-q",
+                                                            "-t",
+                                                            "3600",
+                                                        ],
+                                                    },
+                                                ),
+                                                operator: Or,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "return",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "notify_update",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Background(
+            Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "announce_network",
+                    args: [],
+                },
+            ),
+        ),
+    ],
+}

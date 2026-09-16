@@ -1,0 +1,1887 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/agent-usage-codex-scanner-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "jq",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "python3",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TEST_HOME",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TEST_HOME\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$TEST_HOME/.codex/sessions/$(date +%Y/%m/%d)",
+                    "$TEST_HOME/bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TEST_HOME/bin/codex",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$TEST_HOME/bin/codex",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "timestamp",
+                        value: "$(date +%Y-%m-%d)T12:00:00Z",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "session",
+                        value: "$TEST_HOME/.codex/sessions/$(date +%Y/%m/%d)/rollout.jsonl",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$session",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$TEST_HOME\" CODEX_HOME=\"$TEST_HOME/.codex\" CODEX_ARGS_FILE=\"$TEST_HOME/codex-args\" XDG_DATA_HOME=\"$TEST_HOME/.local/share\" PATH=\"$TEST_HOME/bin:$PATH\" \\\n  \"$ROOT/bin/omarchy-agent-usage-codex\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected_args",
+                        value: "(-s read-only -a on-request app-server)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-d",
+                        "",
+                        "-t",
+                        "codex_args",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "$TEST_HOME/codex-args",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ${codex_args[*]@Q} == \"${expected_args[*]@Q}\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector uses the supported approval policy",
+                        "${codex_args[*]@Q}",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector uses the supported approval policy",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"210\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector counts each turn once",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector counts each turn once",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '.modelUsage[\"gpt-test\"]' <<<\"$result\") == '{\"inputTokens\":70,\"outputTokens\":30,\"cacheReadInputTokens\":110,\"cacheCreationInputTokens\":0}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector does not double-count cache or reasoning tokens",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector does not double-count cache or reasoning tokens",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '.id + \"/\" + (.limits|tostring)' <<<\"$result\") == '\"codex/[]\"' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector identifies itself with an empty limits list",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector identifies itself with an empty limits list",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PI_HOME",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TEST_HOME\" \"$PI_HOME\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$PI_HOME/bin",
+                    "$PI_HOME/.pi/agent/sessions/project",
+                    "$PI_HOME/.omp/agent/sessions/project",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$TEST_HOME/bin/codex",
+                    "$PI_HOME/bin/codex",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$PI_HOME/.pi/agent/sessions/project/pi.jsonl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 2,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$PI_HOME/.omp/agent/sessions/project/omp.jsonl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 3,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$PI_HOME\" CODEX_HOME=\"$PI_HOME/.codex\" XDG_DATA_HOME=\"$PI_HOME/.local/share\" \\\n  PATH=\"$PI_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"49\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector counts usage from pi and omp sessions",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -c '.modelUsage' <<<\"$result\") == '{\"gpt-pi\":{\"inputTokens\":10,\"outputTokens\":4,\"cacheReadInputTokens\":3,\"cacheCreationInputTokens\":2},\"gpt-omp\":{\"inputTokens\":20,\"outputTokens\":5,\"cacheReadInputTokens\":4,\"cacheCreationInputTokens\":1}}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector filters pi and omp sessions to Codex providers",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector counts pi and omp subscription usage",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OPENCODE_HOME",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TEST_HOME\" \"$PI_HOME\" \"$OPENCODE_HOME\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$OPENCODE_HOME/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$TEST_HOME/bin/codex",
+                    "$OPENCODE_HOME/bin/codex",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$OPENCODE_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 4,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$OPENCODE_HOME\" CODEX_HOME=\"$OPENCODE_HOME/.codex\" XDG_DATA_HOME=\"$OPENCODE_HOME/.local/share\" \\\n  PATH=\"$OPENCODE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"155\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector counts OpenAI usage, reasoning included, from opencode sessions",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector counts OpenAI usage, reasoning included, from opencode sessions",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '.modelUsage' <<<\"$result\") == '{\"gpt-5.2-codex\":{\"inputTokens\":80,\"outputTokens\":45,\"cacheReadInputTokens\":30,\"cacheCreationInputTokens\":0}}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector ignores prefix-colliding providers, user messages, and malformed rows",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector ignores prefix-colliding providers, user messages, and malformed rows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "CACHE_HOME",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TEST_HOME\" \"$PI_HOME\" \"$OPENCODE_HOME\" \"$CACHE_HOME\" \"$FRESH_HOME\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$CACHE_HOME/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$TEST_HOME/bin/codex",
+                    "$CACHE_HOME/bin/codex",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$CACHE_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 5,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"5\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector writes a fresh local-stats cache on first scan",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "cache_file",
+                        value: "$(ls \"$CACHE_HOME/.cache/omarchy/agent-usage/\"/codex-scan-*.json 2>/dev/null | head -n 1)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -n $cache_file && -s $cache_file ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector leaves a cache file behind",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c %a \"$cache_file\") == \"644\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector keeps cache files readable",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -r '.schemaVersion' \"$cache_file\") == \"1\" && $(jq -r '.stats.todayTotalTokens' \"$cache_file\") == \"5\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector writes a versioned cache envelope",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector writes a local-stats cache on first scan",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "[]",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$cache_file",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"5\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector recovers from a corrupt cache file",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -r '.schemaVersion' \"$cache_file\") == \"1\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector rewrites the cache after a corrupt read",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector recovers from a corrupt cache file",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$CACHE_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 6,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\" --limits-only)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"5\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector --limits-only reuses cached local stats",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -c '.modelUsage' <<<\"$result\") == '{\"gpt-5.2-codex\":{\"inputTokens\":5,\"outputTokens\":0,\"cacheReadInputTokens\":0,\"cacheCreationInputTokens\":0}}' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector --limits-only emits a complete record from cache",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector --limits-only reuses cached local stats",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\" --force)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"15\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector --force rescans past the cache",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector --force rescans past the cache",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\" --limits-only)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"15\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector --limits-only sees a refreshed cache after --force",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector --limits-only sees a refreshed cache after --force",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$CACHE_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 7,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "-d",
+                    "2 hours ago",
+                    "$cache_file",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\" --limits-only)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"25\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector --limits-only rescans when the cache is stale",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector --limits-only rescans when the cache is stale",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$CACHE_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 8,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"25\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector no-flag reuses a seconds-old cache",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "-d",
+                    "30 seconds ago",
+                    "$cache_file",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"35\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector no-flag rescans past the concurrent-run window",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector no-flag mode rescans instead of serving a stale cache",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$CACHE_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 9,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "-d",
+                    "10 minutes ago",
+                    "$cache_file",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\" --limits-only)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"35\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector --limits-only reuses a scan the no-flag mode would refresh",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector --limits-only reuses a scan the no-flag mode would refresh",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "jq",
+                        args: [
+                            "-c",
+                            ".scanDate = \"1999-01-01\"",
+                            "$cache_file",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "$cache_file.tmp",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mv",
+                    args: [
+                        "$cache_file.tmp",
+                        "$cache_file",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\" --limits-only)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"45\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector treats a cache from another day as a miss",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -r '.scanDate' \"$cache_file\") == \"$(date +%Y-%m-%d)\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector stamps the rewritten cache with the scan date",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector treats a cache from another day as a miss",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$CACHE_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 10,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "-d",
+                    "@$(( $(date +%s) + 3600 ))",
+                    "$cache_file",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$CACHE_HOME\" CODEX_HOME=\"$CACHE_HOME/.codex\" XDG_CACHE_HOME=\"$CACHE_HOME/.cache\" XDG_DATA_HOME=\"$CACHE_HOME/.local/share\" \\\n  PATH=\"$CACHE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\" --limits-only)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"55\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector treats a future-dated cache as a miss",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector treats a future-dated cache as a miss",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "FRESH_HOME",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TEST_HOME\" \"$PI_HOME\" \"$OPENCODE_HOME\" \"$CACHE_HOME\" \"$FRESH_HOME\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$FRESH_HOME/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$TEST_HOME/bin/codex",
+                    "$FRESH_HOME/bin/codex",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$FRESH_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 11,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$FRESH_HOME\" CODEX_HOME=\"$FRESH_HOME/.codex\" XDG_CACHE_HOME=\"$FRESH_HOME/.cache\" XDG_DATA_HOME=\"$FRESH_HOME/.local/share\" \\\n  PATH=\"$FRESH_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\" --limits-only)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"7\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector --limits-only falls back to a full scan without a cache",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector --limits-only falls back to a full scan without a cache",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "MALFORMED_HOME",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TEST_HOME\" \"$PI_HOME\" \"$OPENCODE_HOME\" \"$CACHE_HOME\" \"$FRESH_HOME\" \"$MALFORMED_HOME\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$MALFORMED_HOME/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$TEST_HOME/bin/codex",
+                    "$MALFORMED_HOME/bin/codex",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$MALFORMED_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 12,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$MALFORMED_HOME\" CODEX_HOME=\"$MALFORMED_HOME/.codex\" XDG_CACHE_HOME=\"$MALFORMED_HOME/.cache\" XDG_DATA_HOME=\"$MALFORMED_HOME/.local/share\" \\\n  PATH=\"$MALFORMED_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"12\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector counts good opencode rows past malformed ones",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector counts good opencode rows past malformed ones",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "UNWRITABLE_HOME",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TEST_HOME\" \"$PI_HOME\" \"$OPENCODE_HOME\" \"$CACHE_HOME\" \"$FRESH_HOME\" \"$MALFORMED_HOME\" \"$UNWRITABLE_HOME\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$UNWRITABLE_HOME/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$TEST_HOME/bin/codex",
+                    "$UNWRITABLE_HOME/bin/codex",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$UNWRITABLE_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 13,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$UNWRITABLE_HOME/not-a-dir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$UNWRITABLE_HOME\" CODEX_HOME=\"$UNWRITABLE_HOME/.codex\" XDG_CACHE_HOME=\"$UNWRITABLE_HOME/not-a-dir\" XDG_DATA_HOME=\"$UNWRITABLE_HOME/.local/share\" \\\n  PATH=\"$UNWRITABLE_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"3\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector still prints a complete record when the cache is unwritable",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector still prints a complete record when the cache is unwritable",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "INTERRUPTED_HOME",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TEST_HOME\" \"$PI_HOME\" \"$OPENCODE_HOME\" \"$CACHE_HOME\" \"$FRESH_HOME\" \"$MALFORMED_HOME\" \"$UNWRITABLE_HOME\" \"$INTERRUPTED_HOME\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$INTERRUPTED_HOME/bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$TEST_HOME/bin/codex",
+                    "$INTERRUPTED_HOME/bin/codex",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$INTERRUPTED_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 14,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$INTERRUPTED_HOME\" CODEX_HOME=\"$INTERRUPTED_HOME/.codex\" XDG_CACHE_HOME=\"$INTERRUPTED_HOME/.cache\" XDG_DATA_HOME=\"$INTERRUPTED_HOME/.local/share\" \\\n  PATH=\"$INTERRUPTED_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"0\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector reports what it could read from a broken database",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -z $(ls \"$INTERRUPTED_HOME/.cache/omarchy/agent-usage/\"codex-scan-*.json 2>/dev/null) ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector must not cache an interrupted scan",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "python3",
+                    args: [
+                        "-",
+                        "$INTERRUPTED_HOME/.local/share/opencode/opencode.db",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "PY",
+                    here_document: 15,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "result",
+                        value: "$(HOME=\"$INTERRUPTED_HOME\" CODEX_HOME=\"$INTERRUPTED_HOME/.codex\" XDG_CACHE_HOME=\"$INTERRUPTED_HOME/.cache\" XDG_DATA_HOME=\"$INTERRUPTED_HOME/.local/share\" \\\n  PATH=\"$INTERRUPTED_HOME/bin:$PATH\" \"$ROOT/bin/omarchy-agent-usage-codex\" --limits-only)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.todayTotalTokens' <<<\"$result\") == \"9\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Codex collector does not reuse a snapshot from an interrupted scan",
+                        "$result",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Codex collector does not cache an interrupted opencode scan",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nif [[ -n ${CODEX_ARGS_FILE:-} ]]; then\n  printf '%s\\0' \"$@\" >\"$CODEX_ARGS_FILE\"\nfi\n\nwhile read -r request; do\n  id=$(jq -r '.id // empty' <<<\"$request\")\n  method=$(jq -r '.method // empty' <<<\"$request\")\n\n  case \"$method\" in\n    initialize)\n      jq -cn --argjson id \"$id\" '{id: $id, result: {}}'\n      ;;\n    account/read)\n      jq -cn --argjson id \"$id\" '{id: $id, result: {account: {}}}'\n      ;;\n    account/rateLimits/read)\n      jq -cn --argjson id \"$id\" '{id: $id, result: {rateLimits: {}}}'\n      ;;\n  esac\ndone\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: false,
+            strip_tabs: false,
+            body: "{\"timestamp\":\"$timestamp\",\"type\":\"turn_context\",\"payload\":{\"model\":\"gpt-test\"}}\n{\"timestamp\":\"$timestamp\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"total_token_usage\":{\"input_tokens\":100,\"cached_input_tokens\":60,\"output_tokens\":20,\"reasoning_output_tokens\":5,\"total_tokens\":120},\"last_token_usage\":{\"input_tokens\":100,\"cached_input_tokens\":60,\"output_tokens\":20,\"reasoning_output_tokens\":5,\"total_tokens\":120}}}}\n{\"timestamp\":\"$timestamp\",\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"total_token_usage\":{\"input_tokens\":180,\"cached_input_tokens\":110,\"output_tokens\":30,\"reasoning_output_tokens\":8,\"total_tokens\":210},\"last_token_usage\":{\"input_tokens\":80,\"cached_input_tokens\":50,\"output_tokens\":10,\"reasoning_output_tokens\":3,\"total_tokens\":90}}}}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: false,
+            strip_tabs: false,
+            body: "{\"type\":\"message\",\"id\":\"pi-1\",\"timestamp\":\"$timestamp\",\"message\":{\"role\":\"assistant\",\"provider\":\"openai-codex\",\"api\":\"openai-codex-responses\",\"model\":\"gpt-pi\",\"usage\":{\"input\":10,\"output\":4,\"cacheRead\":3,\"cacheWrite\":2,\"totalTokens\":19}}}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: false,
+            strip_tabs: false,
+            body: "{ \"type\": \"message\", \"id\": \"omp-1\", \"timestamp\": \"$timestamp\", \"message\": { \"role\": \"assistant\", \"provider\": \"openai-codex\", \"model\": \"gpt-omp\", \"usage\": { \"input\": 20, \"output\": 5, \"cacheRead\": 4, \"cacheWrite\": 1, \"totalTokens\": 30 } } }\n{\"type\":\"message\",\"id\":\"other-1\",\"timestamp\":\"$timestamp\",\"message\":{\"role\":\"assistant\",\"provider\":\"anthropic\",\"model\":\"claude-test\",\"usage\":{\"input\":999,\"output\":999}}}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\ndb.parent.mkdir(parents=True, exist_ok=True)\nconn = sqlite3.connect(db)\nconn.execute(\"CREATE TABLE message (id text PRIMARY KEY, session_id text NOT NULL, time_created integer NOT NULL, time_updated integer NOT NULL, data text NOT NULL)\")\nnow_ms = int(time.time() * 1000)\n\ndef message(id, provider, model, role=\"assistant\", input=0, output=0, reasoning=0, read=0, write=0):\n  return (id, \"ses_1\", now_ms, now_ms, json.dumps({\n    \"role\": role,\n    \"providerID\": provider,\n    \"modelID\": model,\n    \"tokens\": {\"input\": input, \"output\": output, \"reasoning\": reasoning, \"cache\": {\"read\": read, \"write\": write}},\n    \"time\": {\"created\": now_ms},\n  }))\n\nconn.executemany(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", [\n  message(\"msg_1\", \"openai\", \"gpt-5.2-codex\", input=80, output=40, reasoning=5, read=30),\n  message(\"msg_2\", \"anthropic\", \"claude-opus-5\", input=999, output=999),\n  message(\"msg_3\", \"openai\", \"gpt-5.2-codex\", role=\"user\"),\n  message(\"msg_4\", \"openai-local\", \"gpt-5.2-codex\", input=999, output=999),\n])\nconn.execute(\"INSERT INTO message VALUES ('msg_5', 'ses_1', ?, ?, '[\\\"not\\\",\\\"an\\\",\\\"object\\\"]')\", (now_ms, now_ms))\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\ndb.parent.mkdir(parents=True, exist_ok=True)\nconn = sqlite3.connect(db)\nconn.execute(\"CREATE TABLE message (id text PRIMARY KEY, session_id text NOT NULL, time_created integer NOT NULL, time_updated integer NOT NULL, data text NOT NULL)\")\nnow_ms = int(time.time() * 1000)\n\ndef message(id, provider, model, role=\"assistant\", input=0, output=0, reasoning=0, read=0, write=0):\n  return (id, \"ses_1\", now_ms, now_ms, json.dumps({\n    \"role\": role,\n    \"providerID\": provider,\n    \"modelID\": model,\n    \"tokens\": {\"input\": input, \"output\": output, \"reasoning\": reasoning, \"cache\": {\"read\": read, \"write\": write}},\n    \"time\": {\"created\": now_ms},\n  }))\n\nconn.executemany(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", [\n  message(\"c_1\", \"openai\", \"gpt-5.2-codex\", input=5),\n])\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\nconn = sqlite3.connect(db)\nnow_ms = int(time.time() * 1000)\nconn.execute(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", (\n  \"c_2\", \"ses_1\", now_ms, now_ms, json.dumps({\n    \"role\": \"assistant\",\n    \"providerID\": \"openai\",\n    \"modelID\": \"gpt-5.2-codex\",\n    \"tokens\": {\"input\": 10, \"output\": 0, \"reasoning\": 0, \"cache\": {\"read\": 0, \"write\": 0}},\n    \"time\": {\"created\": now_ms},\n  }),\n))\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\nconn = sqlite3.connect(db)\nnow_ms = int(time.time() * 1000)\nconn.execute(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", (\n  \"c_3\", \"ses_1\", now_ms, now_ms, json.dumps({\n    \"role\": \"assistant\",\n    \"providerID\": \"openai\",\n    \"modelID\": \"gpt-5.2-codex\",\n    \"tokens\": {\"input\": 10, \"output\": 0, \"reasoning\": 0, \"cache\": {\"read\": 0, \"write\": 0}},\n    \"time\": {\"created\": now_ms},\n  }),\n))\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\nconn = sqlite3.connect(db)\nnow_ms = int(time.time() * 1000)\nconn.execute(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", (\n  \"c_4\", \"ses_1\", now_ms, now_ms, json.dumps({\n    \"role\": \"assistant\",\n    \"providerID\": \"openai\",\n    \"modelID\": \"gpt-5.2-codex\",\n    \"tokens\": {\"input\": 10, \"output\": 0, \"reasoning\": 0, \"cache\": {\"read\": 0, \"write\": 0}},\n    \"time\": {\"created\": now_ms},\n  }),\n))\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\nconn = sqlite3.connect(db)\nnow_ms = int(time.time() * 1000)\nconn.execute(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", (\n  \"c_5\", \"ses_1\", now_ms, now_ms, json.dumps({\n    \"role\": \"assistant\",\n    \"providerID\": \"openai\",\n    \"modelID\": \"gpt-5.2-codex\",\n    \"tokens\": {\"input\": 10, \"output\": 0, \"reasoning\": 0, \"cache\": {\"read\": 0, \"write\": 0}},\n    \"time\": {\"created\": now_ms},\n  }),\n))\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\nconn = sqlite3.connect(db)\nnow_ms = int(time.time() * 1000)\nconn.execute(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", (\n  \"c_6\", \"ses_1\", now_ms, now_ms, json.dumps({\n    \"role\": \"assistant\",\n    \"providerID\": \"openai\",\n    \"modelID\": \"gpt-5.2-codex\",\n    \"tokens\": {\"input\": 10, \"output\": 0, \"reasoning\": 0, \"cache\": {\"read\": 0, \"write\": 0}},\n    \"time\": {\"created\": now_ms},\n  }),\n))\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\ndb.parent.mkdir(parents=True, exist_ok=True)\nconn = sqlite3.connect(db)\nconn.execute(\"CREATE TABLE message (id text PRIMARY KEY, session_id text NOT NULL, time_created integer NOT NULL, time_updated integer NOT NULL, data text NOT NULL)\")\nnow_ms = int(time.time() * 1000)\nconn.execute(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", (\n  \"f_1\", \"ses_1\", now_ms, now_ms, json.dumps({\n    \"role\": \"assistant\",\n    \"providerID\": \"openai\",\n    \"modelID\": \"gpt-5.2-codex\",\n    \"tokens\": {\"input\": 7, \"output\": 0, \"reasoning\": 0, \"cache\": {\"read\": 0, \"write\": 0}},\n    \"time\": {\"created\": now_ms},\n  }),\n))\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\ndb.parent.mkdir(parents=True, exist_ok=True)\nconn = sqlite3.connect(db)\nconn.execute(\"CREATE TABLE message (id text PRIMARY KEY, session_id text NOT NULL, time_created integer NOT NULL, time_updated integer NOT NULL, data text NOT NULL)\")\nnow_ms = int(time.time() * 1000)\n\ndef message(id, input=0, compact=False):\n  payload = {\n    \"role\": \"assistant\",\n    \"providerID\": \"openai\",\n    \"modelID\": \"gpt-5.2-codex\",\n    \"tokens\": {\"input\": input, \"output\": 0, \"reasoning\": 0, \"cache\": {\"read\": 0, \"write\": 0}},\n    \"time\": {\"created\": now_ms},\n  }\n  if compact:\n    return (id, \"ses_1\", now_ms, now_ms, json.dumps(payload, separators=(\",\", \":\")))\n  return (id, \"ses_1\", now_ms, now_ms, json.dumps(payload))\n\nconn.executemany(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", [\n  message(\"mm_1\", input=5, compact=True),\n  message(\"mm_2\", input=7),\n])\n# Valid JSON followed by trailing garbage: without json_valid() this row\n# makes json_extract() raise and aborts the whole scan.\ngood = json.dumps({\"role\": \"assistant\", \"providerID\": \"openai\", \"modelID\": \"gpt-5.2-codex\",\n                   \"tokens\": {\"input\": 999, \"output\": 0, \"reasoning\": 0, \"cache\": {\"read\": 0, \"write\": 0}},\n                   \"time\": {\"created\": now_ms}})\nconn.execute(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", (\"mm_3\", \"ses_1\", now_ms, now_ms, good + \" trailing-garbage\"))\n# Completely broken row: not JSON at all.\nconn.execute(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", (\"mm_4\", \"ses_1\", now_ms, now_ms, \"this is not json\"))\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\ndb.parent.mkdir(parents=True, exist_ok=True)\nconn = sqlite3.connect(db)\nconn.execute(\"CREATE TABLE message (id text PRIMARY KEY, session_id text NOT NULL, time_created integer NOT NULL, time_updated integer NOT NULL, data text NOT NULL)\")\nnow_ms = int(time.time() * 1000)\nconn.execute(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", (\n  \"u_1\", \"ses_1\", now_ms, now_ms, json.dumps({\n    \"role\": \"assistant\",\n    \"providerID\": \"openai\",\n    \"modelID\": \"gpt-5.2-codex\",\n    \"tokens\": {\"input\": 3, \"output\": 0, \"reasoning\": 0, \"cache\": {\"read\": 0, \"write\": 0}},\n    \"time\": {\"created\": now_ms},\n  }),\n))\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import sqlite3\nimport sys\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\ndb.parent.mkdir(parents=True, exist_ok=True)\nconn = sqlite3.connect(db)\nconn.execute(\"CREATE TABLE unrelated (id text PRIMARY KEY)\")\nconn.commit()\nconn.close()\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import json\nimport sqlite3\nimport sys\nimport time\nfrom pathlib import Path\n\ndb = Path(sys.argv[1])\nconn = sqlite3.connect(db)\nconn.execute(\"CREATE TABLE message (id text PRIMARY KEY, session_id text NOT NULL, time_created integer NOT NULL, time_updated integer NOT NULL, data text NOT NULL)\")\nnow_ms = int(time.time() * 1000)\nconn.execute(\"INSERT INTO message VALUES (?, ?, ?, ?, ?)\", (\n  \"i_1\", \"ses_1\", now_ms, now_ms, json.dumps({\n    \"role\": \"assistant\",\n    \"providerID\": \"openai\",\n    \"modelID\": \"gpt-5.2-codex\",\n    \"tokens\": {\"input\": 9, \"output\": 0, \"reasoning\": 0, \"cache\": {\"read\": 0, \"write\": 0}},\n    \"time\": {\"created\": now_ms},\n  }),\n))\nconn.commit()\nconn.close()\n",
+        },
+    ],
+}

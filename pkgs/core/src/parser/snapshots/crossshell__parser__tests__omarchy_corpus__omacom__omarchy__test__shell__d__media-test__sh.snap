@@ -1,0 +1,53 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/media-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const media = requireFromRoot('shell/plugins/services/media/MediaModel.js')\n\nassert(media.isProxyPlayer({ dbusName: 'org.mpris.MediaPlayer2.playerctld' }), 'media detects playerctld proxy by DBus name')\nassert(media.isProxyPlayer({ desktopEntry: 'playerctld' }), 'media detects playerctld proxy by desktop entry')\nassert(media.hasMetadata({ identity: 'Spotify' }), 'media detects identity metadata')\nassert(media.hasTrackMetadata({ trackTitle: 'Track' }), 'media detects track metadata')\nassert(media.playerCanControl({ canGoNext: true }), 'media detects controllable players')\nassert(media.canHandleAction({ canTogglePlaying: true }, 'playPause'), 'media maps playPause capability')\nassert(media.canCycleSource({ identity: 'Spotify', canPlay: true }), 'media detects cycleable sources')\n\nassert(media.isPlaybackStream({ isStream: true, type: 'Stream/Output/Audio' }), 'media detects playback streams')\nassertEqual(media.streamLabelKey('PipeWire ALSA [Chromium]'), 'chromium', 'media normalizes stream labels')\nassertEqual(\n  media.rawStreamLabel({ ready: true, properties: { 'application.name': 'Chromium' }, name: 'fallback' }),\n  'Chromium',\n  'media extracts raw stream labels'\n)\nassertEqual(\n  media.playerAppLabel({ dbusName: 'org.mpris.MediaPlayer2.spotify.instance42' }),\n  'spotify',\n  'media derives player app labels from DBus names'\n)\nassert(media.playerHasPlaybackStream(\n  { desktopEntry: 'chromium' },\n  [{ ready: true, properties: { 'application.name': 'Chromium' } }]\n), 'media matches players to playback streams')\n\nassertEqual(media.playerKey({ dbusName: 'org.mpris.MediaPlayer2.spotify' }), 'org.mpris.MediaPlayer2.spotify', 'media derives stable player keys')\nconst track = { trackTitle: 'Song', trackArtist: 'Artist', trackAlbum: 'Album', trackArtUrl: 'file:///cover.jpg' }\nconst trackSignature = media.trackSignature(track)\nassert(!media.trackChanged(trackSignature, { ...track }), 'media detects unchanged track metadata')\nassert(media.trackChanged(trackSignature, { ...track, trackTitle: 'Next song' }), 'media detects changed track metadata')\nassertEqual(media.labelFor({ trackTitle: 'Song', identity: 'Spotify' }), 'Song', 'media labels players by track first')\nassertEqual(media.osdMessage({ trackTitle: 'Song', trackArtist: 'Artist' }, 'Fallback'), 'Song - Artist', 'media builds OSD messages')\nassertEqual(media.osdMessage(null, 'Fallback'), 'Fallback', 'media falls back OSD messages')\n",
+        },
+    ],
+}

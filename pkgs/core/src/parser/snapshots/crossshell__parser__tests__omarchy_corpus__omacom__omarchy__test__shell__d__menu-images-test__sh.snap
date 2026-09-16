@@ -1,0 +1,995 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/menu-images-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "flock",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "cache_home",
+                        value: "$tmp/cache",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "images",
+                        value: "$tmp/images",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$images",
+                    "$stub_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/vipsthumbnail",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/vipsthumbnail",
+                ],
+            },
+        ),
+        For {
+            variable: "name",
+            words: Some(
+                [
+                    "one",
+                    "two",
+                    "three",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "image-%s",
+                                    "$name",
+                                ],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$images/$name.png",
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "cache_dir",
+                        value: "$cache_home/omarchy/image-selector",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$cache_dir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stale_tmp",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "live_lock",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "image",
+            words: Some(
+                [
+                    "$images/*",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "signature",
+                                    value: "$(stat -Lc '%s:%Y' \"$image\")",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "hash",
+                                    value: "$(printf '%s\\t%s' \"$image\" \"$signature\" | md5sum | cut -d ' ' -f 1)",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "mkdir",
+                            args: [
+                                "$cache_dir/$hash.jpg.lock",
+                            ],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "touch",
+                            args: [
+                                "-m",
+                                "-d",
+                                "10 minutes ago",
+                                "$cache_dir/$hash.jpg.lock",
+                            ],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "stale_tmp",
+                                    value: "$cache_dir/$hash.jpg.4242.jpg",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "live_lock",
+                                    value: "$cache_dir/$hash.jpg.lock",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                ],
+            },
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "partial",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stale_tmp",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "cache_key",
+                        value: "$(printf '%s' \"$images\" | md5sum | cut -d ' ' -f 1)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\t%s",
+                        "$images/one.png",
+                        "$cache_dir/missing.jpg",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$cache_dir/$cache_key.rows",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "v2\\n%s:%s\\n",
+                        "$images",
+                        "$(stat -Lc '%Y' \"$images\")",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$cache_dir/$cache_key.signature",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "v1\\n%s:%s\\n",
+                        "$images",
+                        "$(stat -Lc '%Y' \"$images\")",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$cache_dir/$cache_key.fast-signature",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$stub_bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_CACHE_HOME",
+                        value: "$cache_home",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-menu-images",
+                args: [
+                    "--cache-only",
+                    "$images",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " $(find \"$cache_dir\" -maxdepth 1 -name '*.jpg' -type f | wc -l) == 3 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu recovers thumbnails from stranded locks",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " $(awk 'END { print NR }' \"$cache_dir/$cache_key.rows\") == 3 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu rebuilds every row after cache invalidation",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(head -n 1 \"$cache_dir/$cache_key.signature\") == \"v4\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu invalidates stale row caches",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $stale_tmp ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu clears partial thumbnails left by killed generators",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "image menu recovers stranded locks and stale rows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$cache_home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$cache_dir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "$live_lock",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$stub_bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_CACHE_HOME",
+                        value: "$cache_home",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-menu-images",
+                args: [
+                    "--cache-only",
+                    "$images",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " $(find \"$cache_dir\" -maxdepth 1 -name '*.jpg' -type f | wc -l) == 2 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu skips a thumbnail whose fresh legacy lock may still be owned",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -d $live_lock ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu leaves a fresh legacy lock directory alone",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $cache_dir/$cache_key.rows ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu does not cache rows while a legacy generator holds a lock",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "image menu respects a live legacy generator's lock",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$cache_home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$cache_home",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "%s\\n",
+                        "$images/two.png",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp/failures",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$stub_bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_CACHE_HOME",
+                        value: "$cache_home",
+                    },
+                    CshAstAssignment {
+                        name: "VIPSTHUMBNAIL_FAIL_FILE",
+                        value: "$tmp/failures",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-menu-images",
+                args: [
+                    "--cache-only",
+                    "$images",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "cache_dir",
+                        value: "$cache_home/omarchy/image-selector",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $cache_dir/$cache_key.rows ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu does not cache incomplete rows",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $cache_dir/$cache_key.signature ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu does not sign incomplete rows",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -e $cache_dir/$cache_key.fast-signature ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu does not fast-cache incomplete rows",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "image menu leaves failed thumbnail batches uncached",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "$tmp/failures",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$stub_bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_CACHE_HOME",
+                        value: "$cache_home",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-menu-images",
+                args: [
+                    "--cache-only",
+                    "$images",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " $(find \"$cache_dir\" -maxdepth 1 -name '*.jpg' -type f | wc -l) == 3 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu retries a previously failed thumbnail",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " $(awk 'END { print NR }' \"$cache_dir/$cache_key.rows\") == 3 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu caches every row after retry",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "image menu completes and caches a later retry",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$cache_home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$cache_home",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp/calls",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "pids",
+                        value: "()",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        For {
+            variable: "run",
+            words: Some(
+                [
+                    "1",
+                    "2",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Background(
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$stub_bin:$PATH",
+                                    },
+                                    CshAstAssignment {
+                                        name: "XDG_CACHE_HOME",
+                                        value: "$cache_home",
+                                    },
+                                    CshAstAssignment {
+                                        name: "VIPSTHUMBNAIL_CALLS_FILE",
+                                        value: "$tmp/calls",
+                                    },
+                                    CshAstAssignment {
+                                        name: "VIPSTHUMBNAIL_DELAY",
+                                        value: "0.25",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-menu-images",
+                                args: [
+                                    "--cache-only",
+                                    "$images",
+                                ],
+                            },
+                        ),
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "pids+=($!)",
+                            args: [],
+                        },
+                    ),
+                ],
+            },
+        },
+        For {
+            variable: "pid",
+            words: Some(
+                [
+                    "${pids[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "wait",
+                                args: [
+                                    "$pid",
+                                ],
+                            },
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "concurrent image menu runs exit cleanly",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Binary {
+            left: Arithmetic(
+                " $(wc -l <\"$tmp/calls\") == 3 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu serializes concurrent thumbnail generators",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$cache_dir/*.jpg",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$cache_dir/$cache_key.rows",
+                    "$cache_dir/$cache_key.signature",
+                    "$cache_dir/$cache_key.fast-signature",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$stub_bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_CACHE_HOME",
+                        value: "$cache_home",
+                    },
+                    CshAstAssignment {
+                        name: "VIPSTHUMBNAIL_CALLS_FILE",
+                        value: "$tmp/calls",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-menu-images",
+                args: [
+                    "--cache-only",
+                    "$images",
+                ],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " $(wc -l <\"$tmp/calls\") == 6 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image menu releases thumbnail locks after generation",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "image menu owns locks for exactly one generator lifetime",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nimage=\"$1\"\nshift\n\nwhile (( $# > 0 )); do\n  if [[ $1 == \"--path\" ]]; then\n    output=${2%%\\[*}\n    break\n  fi\n  shift\ndone\n\nif [[ -f ${VIPSTHUMBNAIL_FAIL_FILE:-} ]] && grep -Fxq \"$image\" \"$VIPSTHUMBNAIL_FAIL_FILE\"; then\n  exit 1\nfi\n\n[[ -z ${VIPSTHUMBNAIL_CALLS_FILE:-} ]] || printf '%s\\n' \"$image\" >>\"$VIPSTHUMBNAIL_CALLS_FILE\"\n[[ -z ${VIPSTHUMBNAIL_DELAY:-} ]] || sleep \"$VIPSTHUMBNAIL_DELAY\"\nprintf 'thumbnail' >\"$output\"\n",
+        },
+    ],
+}

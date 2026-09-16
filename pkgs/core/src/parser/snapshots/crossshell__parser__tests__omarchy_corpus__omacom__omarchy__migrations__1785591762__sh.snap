@@ -1,0 +1,178 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1785591762.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Add WhatsApp Slim extension to Brave Origin flags for existing installs",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "WHATSAPP_SLIM_EXT",
+                        value: "$OMARCHY_PATH/default/chromium/extensions/whatsapp-slim",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "add_whatsapp_slim_extension",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file=$1",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -f $file ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-q",
+                                        "extensions/whatsapp-slim",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "grep",
+                                                    args: [
+                                                        "-q",
+                                                        "^--load-extension=",
+                                                        "$file",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "sed",
+                                                    args: [
+                                                        "-i",
+                                                        "--follow-symlinks",
+                                                        "s|^--load-extension=\\(.*\\)$|--load-extension=\\1,$WHATSAPP_SLIM_EXT|",
+                                                        "$file",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Test(
+                                                " -n $(tail -c1 \"$file\") ",
+                                            ),
+                                            operator: And,
+                                            right: Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "echo",
+                                                        args: [],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">>",
+                                                        target: "$file",
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "--load-extension=$WHATSAPP_SLIM_EXT",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">>",
+                                                    target: "$file",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "add_whatsapp_slim_extension",
+                args: [
+                    "$HOME/.config/brave-origin-flags.conf",
+                ],
+            },
+        ),
+    ],
+}

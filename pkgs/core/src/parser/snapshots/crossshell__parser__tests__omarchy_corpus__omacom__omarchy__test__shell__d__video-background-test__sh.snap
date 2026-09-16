@@ -1,0 +1,1503 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/video-background-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$test_tmp/bin",
+                    "$test_tmp/backgrounds",
+                    "$test_tmp/generator-cache",
+                    "$test_tmp/direct-cache",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "not a real video\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/backgrounds/sample.mp4",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/bin/ffmpegthumbnailer",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$test_tmp/bin/ffmpegthumbnailer",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/bin/md5sum",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$test_tmp/bin/md5sum",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "md5_file_calls",
+                        value: "$test_tmp/md5-file-calls",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$test_tmp/bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_CACHE_HOME",
+                        value: "$test_tmp/generator-cache",
+                    },
+                    CshAstAssignment {
+                        name: "MD5_FILE_CALLS",
+                        value: "$md5_file_calls",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-menu-images",
+                args: [
+                    "--prepare-only",
+                    "$test_tmp/backgrounds",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "generator_thumbnail",
+                        value: "$(find \"$test_tmp/generator-cache/omarchy/image-selector\" -maxdepth 1 -type f -name '*.jpg' -print -quit)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -s $generator_thumbnail ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "menu image generator creates a video thumbnail",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "generator_row",
+                        value: "$(XDG_CACHE_HOME=\"$test_tmp/generator-cache\" \"$ROOT/shell/plugins/image-picker/list.sh\" \"$test_tmp/backgrounds\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "IFS",
+                            value: "$\\t",
+                        },
+                    ],
+                    name: "read",
+                    args: [
+                        "-r",
+                        "generator_row_path",
+                        "generator_row_thumbnail",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<<",
+                    target: "$generator_row",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " $generator_row_path == \"$test_tmp/backgrounds/sample.mp4\" && $generator_row_thumbnail == \"$generator_thumbnail\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "direct picker consumes the menu image generator thumbnail",
+                        "$generator_row",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "row",
+                        value: "$(PATH=\"$test_tmp/bin:$PATH\" XDG_CACHE_HOME=\"$test_tmp/direct-cache\" MD5_FILE_CALLS=\"$md5_file_calls\" \\\n  \"$ROOT/shell/plugins/image-picker/list.sh\" \"$test_tmp/backgrounds\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "IFS",
+                            value: "$\\t",
+                        },
+                    ],
+                    name: "read",
+                    args: [
+                        "-r",
+                        "row_path",
+                        "row_thumbnail",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<<",
+                    target: "$row",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " $row_path == \"$test_tmp/backgrounds/sample.mp4\" && $row_thumbnail == *.jpg && -s $row_thumbnail ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image picker lists videos with their cached thumbnail",
+                        "$row",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $md5_file_calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "direct video scans avoid hashing the complete media file",
+                        "$(<\"$md5_file_calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "failed_backgrounds",
+                        value: "$test_tmp/failed-backgrounds",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "failed_cache",
+                        value: "$test_tmp/failed-cache",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$failed_backgrounds",
+                    "$failed_cache",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "broken video\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$failed_backgrounds/broken.mp4",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/bin/ffmpegthumbnailer",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 3,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "cached_row",
+                        value: "$(PATH=\"$test_tmp/bin:$PATH\" XDG_CACHE_HOME=\"$test_tmp/direct-cache\" MD5_FILE_CALLS=\"$md5_file_calls\" \\\n  \"$ROOT/shell/plugins/image-picker/list.sh\" \"$test_tmp/backgrounds\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $cached_row == \"$row\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "direct picker reuses its cached video thumbnail",
+                        "$cached_row",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "failed_rows",
+                        value: "$(PATH=\"$test_tmp/bin:$PATH\" XDG_CACHE_HOME=\"$failed_cache\" MD5_FILE_CALLS=\"$md5_file_calls\" \\\n  \"$ROOT/shell/plugins/image-picker/list.sh\" \"$failed_backgrounds\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -z $failed_rows ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "direct picker omits a video whose thumbnail fails",
+                        "$failed_rows",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "failed_marker",
+                        value: "$(find \"$failed_cache/omarchy/image-selector\" -maxdepth 1 -type f -name '*.failed' -print -quit)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -n $failed_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "direct picker remembers a video the converter rejected",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "thumbnailer_calls",
+                        value: "$test_tmp/thumbnailer-calls",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/bin/ffmpegthumbnailer",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 4,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "failed_rows",
+                        value: "$(PATH=\"$test_tmp/bin:$PATH\" XDG_CACHE_HOME=\"$failed_cache\" THUMBNAILER_CALLS=\"$thumbnailer_calls\" \\\n  \"$ROOT/shell/plugins/image-picker/list.sh\" \"$failed_backgrounds\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -z $failed_rows && ! -e $thumbnailer_calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "direct picker skips a rejected video on the next scan",
+                        "$(cat \"$thumbnailer_calls\" 2>/dev/null)",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "generator_failed_cache",
+                        value: "$test_tmp/generator-failed-cache",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$test_tmp/bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_CACHE_HOME",
+                        value: "$generator_failed_cache",
+                    },
+                    CshAstAssignment {
+                        name: "THUMBNAILER_CALLS",
+                        value: "$thumbnailer_calls",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-menu-images",
+                args: [
+                    "--prepare-only",
+                    "$failed_backgrounds",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -s $thumbnailer_calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "menu image generator tries a video it has not seen",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "generator_marker",
+                        value: "$(find \"$generator_failed_cache/omarchy/image-selector\" -maxdepth 1 -type f -name '*.failed' -print -quit)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -n $generator_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "menu image generator remembers a video the converter rejected",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$thumbnailer_calls",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$test_tmp/bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_CACHE_HOME",
+                        value: "$generator_failed_cache",
+                    },
+                    CshAstAssignment {
+                        name: "THUMBNAILER_CALLS",
+                        value: "$thumbnailer_calls",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-menu-images",
+                args: [
+                    "--prepare-only",
+                    "$failed_backgrounds",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $thumbnailer_calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "menu image generator skips a rejected video on the next open",
+                        "$(<\"$thumbnailer_calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "-d",
+                    "2 minutes",
+                    "$failed_backgrounds/broken.mp4",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$test_tmp/bin:$PATH",
+                    },
+                    CshAstAssignment {
+                        name: "XDG_CACHE_HOME",
+                        value: "$generator_failed_cache",
+                    },
+                    CshAstAssignment {
+                        name: "THUMBNAILER_CALLS",
+                        value: "$thumbnailer_calls",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-menu-images",
+                args: [
+                    "--prepare-only",
+                    "$failed_backgrounds",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -s $thumbnailer_calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "menu image generator retries a video that changed since it was rejected",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "timeout_backgrounds",
+                        value: "$test_tmp/timeout-backgrounds",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "timeout_cache",
+                        value: "$test_tmp/timeout-cache",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$timeout_backgrounds",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "slow video\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$timeout_backgrounds/slow.mp4",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$test_tmp/bin/ffmpegthumbnailer",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 5,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "timeout_rows",
+                        value: "$(PATH=\"$test_tmp/bin:$PATH\" XDG_CACHE_HOME=\"$timeout_cache\" \\\n  \"$ROOT/shell/plugins/image-picker/list.sh\" \"$timeout_backgrounds\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -z $timeout_rows ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "direct picker omits a video whose thumbnail timed out",
+                        "$timeout_rows",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "timeout_marker",
+                        value: "$(find \"$timeout_cache/omarchy/image-selector\" -maxdepth 1 -type f -name '*.failed' -print -quit)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -z $timeout_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a timed out video is left to retry rather than remembered as failed",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "qt6-multimedia",
+                        "$ROOT/install/omarchy-base.packages",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Qt Multimedia runtime is a base package",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-qx",
+                        "qt6-multimedia-ffmpeg",
+                        "$ROOT/install/omarchy-base.packages",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Qt Multimedia FFmpeg backend is a base package",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "menu image generator creates thumbnails consumed by the picker",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "direct picker generates and reuses still thumbnails",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "direct picker omits videos whose thumbnails cannot be generated",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a rejected video is remembered so it costs nothing on the next open",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a timed out video is left to retry",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a locked video wallpaper follows the panels' real DPMS state",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Qt Multimedia playback dependencies are declared",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "<(awk '\n  /^(is_video_path|snapshot_background_path|background_transition_uses_snapshots|choose_theme_background|choose_staged_theme_background|set_theme_background)\\(\\) \\{/ { copying=1 }\n  copying { print }\n  copying && /^}$/ { copying=0 }\n' \"$ROOT/bin/omarchy-theme-set\")",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "transition_home",
+                        value: "$test_tmp/transition-home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "CURRENT_THEME_PATH",
+                        value: "$transition_home/.local/state/omarchy/current/theme",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "NEXT_THEME_PATH",
+                        value: "$transition_home/.local/state/omarchy/current/next-theme",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "CURRENT_BACKGROUND_LINK",
+                        value: "$transition_home/.local/state/omarchy/current/background",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "BACKGROUND_TRANSITION_CACHE",
+                        value: "$transition_home/.cache/omarchy/background-transitions",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "THEME_NAME",
+                        value: "video-test",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$transition_home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$CURRENT_THEME_PATH/backgrounds",
+                    "$NEXT_THEME_PATH/backgrounds",
+                    "$HOME/.config/omarchy/backgrounds/$THEME_NAME",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "old image\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$CURRENT_THEME_PATH/backgrounds/old.png",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "old image staged\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$NEXT_THEME_PATH/backgrounds/old.png",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "new video\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$NEXT_THEME_PATH/backgrounds/new.mp4",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$CURRENT_THEME_PATH/backgrounds/old.png",
+                    "$CURRENT_BACKGROUND_LINK",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "choose_staged_theme_background",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "staged video background is selected before the theme swap",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected_staged_background",
+                        value: "$CURRENT_THEME_PATH/backgrounds/new.mp4",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $CHOSEN_THEME_BACKGROUND == $expected_staged_background ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "staged background resolves to its durable post-swap path",
+                        "$CHOSEN_THEME_BACKGROUND",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "background_transition_uses_snapshots",
+                                    args: [
+                                        "$CHOSEN_THEME_BACKGROUND",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "image to video theme transitions skip snapshots",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "background_transition_uses_snapshots",
+                    args: [
+                        "$CURRENT_THEME_PATH/backgrounds/new.png",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image to image theme transitions retain snapshots",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "$CURRENT_BACKGROUND_LINK",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "old video\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$CURRENT_THEME_PATH/backgrounds/old.mp4",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$CURRENT_THEME_PATH/backgrounds/old.mp4",
+                    "$CURRENT_BACKGROUND_LINK",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "background_transition_uses_snapshots",
+                                    args: [
+                                        "$CURRENT_THEME_PATH/backgrounds/new.png",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "video to image theme transitions skip snapshots",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "video_snapshot",
+                        value: "$(snapshot_background_path \"$CURRENT_THEME_PATH/backgrounds/old.mp4\" \"video\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -z $video_snapshot && ! -e $BACKGROUND_TRANSITION_CACHE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "video files are never snapshotted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "CHOSEN_THEME_BACKGROUND",
+                        value: "$transition_home/disappeared.mp4",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "BACKGROUND_TRANSITION_SNAPSHOTS",
+                        value: "false",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OLD_BACKGROUND_SNAPSHOT",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "colors_payload",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "shell_payload",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "shell_ipc",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set_theme_background",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $CHOSEN_THEME_BACKGROUND && $(readlink \"$CURRENT_BACKGROUND_LINK\") == \"$CHOSEN_THEME_BACKGROUND\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "theme changes recover when a preselected background disappears",
+                        "$CHOSEN_THEME_BACKGROUND",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "theme transitions skip snapshots whenever either side is a video",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "theme changes recover from a missing preselected background",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const fs = require('fs')\n\nconst utilQml = fs.readFileSync(path.join(root, 'shell/Commons/Util.qml'), 'utf8')\nconst mediaQml = fs.readFileSync(path.join(root, 'shell/Ui/BackgroundMedia.qml'), 'utf8')\nconst videoQml = fs.readFileSync(path.join(root, 'shell/Ui/BackgroundVideo.qml'), 'utf8')\nconst backgroundQml = fs.readFileSync(path.join(root, 'shell/plugins/background/Background.qml'), 'utf8')\nconst lockQml = fs.readFileSync(path.join(root, 'shell/plugins/lock/LockView.qml'), 'utf8')\nconst themeSwitcher = fs.readFileSync(path.join(root, 'bin/omarchy-theme-switcher'), 'utf8')\nconst quattroUpgrade = fs.readFileSync(path.join(root, 'bin/omarchy-upgrade-to-quattro'), 'utf8')\nconst multimediaMigration = fs.readFileSync(path.join(root, 'migrations/1786609204.sh'), 'utf8')\nconst barTextColor = fs.readFileSync(path.join(root, 'bin/omarchy-bar-text-color'), 'utf8')\nconst menuImages = fs.readFileSync(path.join(root, 'bin/omarchy-menu-images'), 'utf8')\nconst lockView = fs.readFileSync(path.join(root, 'shell/plugins/lock/LockView.qml'), 'utf8')\nconst lockService = fs.readFileSync(path.join(root, 'shell/plugins/lock/Service.qml'), 'utf8')\nconst batteryService = fs.readFileSync(path.join(root, 'shell/plugins/services/battery/Service.qml'), 'utf8')\nconst themeSet = fs.readFileSync(path.join(root, 'bin/omarchy-theme-set'), 'utf8')\nconst directImageList = fs.readFileSync(path.join(root, 'shell/plugins/image-picker/list.sh'), 'utf8')\n\nassert(\n  /function isVideoPath\\(path\\)[\\s\\S]*\\.test\\(String\\(path \\|\\| \"\"\\)\\)/.test(utilQml) &&\n    !utilQml.includes('split(/[?#]/)'),\n  'shared media helper identifies video paths without truncating valid local names'\n)\nassert(\n  videoQml.includes('loops: MediaPlayer.Infinite') &&\n    videoQml.includes('autoPlay: root.playbackEnabled') &&\n    videoQml.includes('fillMode: VideoOutput.PreserveAspectCrop') &&\n    /imageUrl: path && !Util\\.isVideoPath\\(path\\) \\? Util\\.fileUrl\\(path\\) \\+ \\(version \\? \"\\?v=\" \\+ version : \"\"\\) : \"\"/.test(mediaQml) &&\n    /videoUrl: path && Util\\.isVideoPath\\(path\\) \\? Util\\.fileUrl\\(path\\) : \"\"/.test(mediaQml),\n  'background media plays aspect-cropped videos on a loop, and hands each loader only its own kind of file'\n)\nassert(\n  videoQml.includes('MediaPlayer.LoadedMedia') &&\n    videoQml.includes('primePauseTimer') &&\n    videoQml.includes('mediaGeneration') &&\n    videoQml.includes('videoSink') &&\n    videoQml.includes('onVideoFrameChanged') &&\n    videoQml.includes('MediaPlayer.BufferedMedia') &&\n    videoQml.includes('mediaStatus !== MediaPlayer.BufferedMedia') &&\n    videoQml.includes('interval: 1000') &&\n    videoQml.includes('interval: 50') &&\n    videoQml.includes('frameReceived') &&\n    videoQml.includes('output.clearOutput()') &&\n    !videoQml.includes('KeepLastFrame') &&\n    /onPlaybackEnabledChanged:[\\s\\S]*?if \\(playbackEnabled\\) player\\.play\\(\\)[\\s\\S]*?else player\\.pause\\(\\)/.test(videoQml) &&\n    videoQml.includes('primingGeneration') &&\n    videoQml.includes('player.play()') &&\n    videoQml.includes('player.pause()'),\n  'paused video sources are primed to display their first frame'\n)\nassert(\n  !/^\\s*import QtMultimedia/m.test(mediaQml) &&\n    mediaQml.includes('source: \"BackgroundVideo.qml\"'),\n  'the still-image path never imports QtMultimedia, so image-only sessions do not map it'\n)\nassert(\n  !/^\\s*Video\\s*\\{/m.test(videoQml) &&\n    /property bool audioEnabled: false/.test(videoQml) &&\n    /property bool audioEnabled: false/.test(mediaQml) &&\n    /active: root\\.audioEnabled && player\\.hasAudio/.test(videoQml) &&\n    /audioOutput: audioLoader\\.item/.test(videoQml) &&\n    /muted: root\\.priming \\|\\| !root\\.playbackEnabled/.test(videoQml) &&\n    /property: \"audioEnabled\"\\s*\\n\\s*value: root\\.audioEnabled/.test(mediaQml) &&\n    /firstScreen: Quickshell\\.screens\\.length > 0\\s*\\n\\s*&& String\\(Quickshell\\.screens\\[0\\]\\.name/.test(backgroundQml) &&\n    backgroundQml.includes('audioEnabled: panel.firstScreen') &&\n    !lockQml.includes('audioEnabled'),\n  'a sound track plays from the first monitor only, a silent file builds no audio output, and the lock stays quiet'\n)\nassert(\n  /property: \"mediaSource\"[\\s\\S]*?when: videoLoader\\.item !== null && Util\\.isVideoPath\\(root\\.path\\)\\s*\\n\\s*restoreMode: Binding\\.RestoreNone/.test(mediaQml) &&\n    !videoQml.includes('Component.onDestruction'),\n  'a player on its way out keeps its source, so nothing is left loading for its destructor to cancel'\n)\nassert(\n  !mediaQml.includes('mipmap'),\n  'the shared image path leaves mipmapping off, as the desktop background had it'\n)\nassert(\n  /instant \\|\\| !displayedBackground \\|\\| isVideo\\(path\\) \\|\\| isVideo\\(displayedBackground\\)[\\s\\S]*displayedBackground = finalPath/.test(backgroundQml),\n  'video switches bypass the image-only reveal stack and use the durable background path'\n)\nassert(backgroundQml.includes('BackgroundMedia {') && lockQml.includes('BackgroundMedia {'), 'desktop and lock screen share video-capable media rendering')\nassert(\n  lockQml.includes('source: wallpaper.video ? null : wallpaper') &&\n    lockQml.includes('visible: !wallpaper.video') &&\n    lockQml.includes('visible: wallpaper.video'),\n  'lock screen bypasses its image effect for video output'\n)\nassert(\n  /sessionObscured:\\s*lockActive \\|\\| screensaverActive/.test(backgroundQml) &&\n    backgroundQml.includes('playbackEnabled: !root.sessionObscured && !root.powerSaverActive && !panel.fullscreenHere') &&\n    backgroundQml.includes('omarchy.lock') &&\n    backgroundQml.includes('omarchy.idle') &&\n    backgroundQml.includes('omarchy.battery'),\n  'desktop playback stops while covered or on battery power-saver'\n)\nassert(\n  backgroundQml.includes('Hyprland.monitorFor(modelData)') &&\n    /fullscreenHere: visibleWorkspace \\? visibleWorkspace\\.hasFullscreen : false/.test(backgroundQml) &&\n    !backgroundQml.includes('ToplevelManager.activeToplevel'),\n  'a fullscreen window pauses only the output it covers, wherever focus is'\n)\nassert(\n  /if \\(displayedBackground === finalPath\\) displayedReloads \\+= 1/.test(backgroundQml) &&\n    backgroundQml.includes('reloads: root.displayedReloads') &&\n    /active: root\\.path !== \"\" && root\\.video && !root\\.reloading/.test(mediaQml) &&\n    /onReloadsChanged: \\{[\\s\\S]*?reloading = true/.test(mediaQml),\n  'a theme switch that keeps the video path still reopens the replaced file'\n)\nassert(\n  barTextColor.includes('magick \"$background_path[0]\"'),\n  'bar colour sampling reads one frame instead of decoding a whole video'\n)\nassert(\n  menuImages.includes('pending_video_file') && /video_jobs=\\$\\(\\( \\$\\(nproc\\) \\/ 4 \\)\\)/.test(menuImages),\n  'video thumbnails fan out narrower than single-threaded vips jobs'\n)\nassert(\n  themeSwitcher.includes('fast_signature=\"v2\"'),\n  'the theme preview cache rebuilds after preview discovery learned about video'\n)\nassert(\n  /lazy_thumbnails == true && \\$cache_only != true \\]\\] && ! is_video_path/.test(menuImages),\n  'a video never stands in as its own lazy thumbnail, so the fan out cap always applies'\n)\nassert(\n  /thumbnail_command=\\(timeout -k \\d+ \\d+ ffmpegthumbnailer/.test(menuImages),\n  'a stalled video cannot hold the picker shut, because its generator is time bounded'\n)\nassert(\n  directImageList.includes('generate_video_thumbnail') &&\n    /timeout -k \\d+ \\d+ ffmpegthumbnailer/.test(directImageList) &&\n    /if \\[\\[ ! -f \\$thumbnail \\]\\] && ! is_video_path/.test(directImageList),\n  'a direct picker scan generates bounded video thumbnails without content-hashing the media'\n)\nassert(\n  themeSet.includes('choose_staged_theme_background') &&\n    themeSet.includes('background_transition_uses_snapshots') &&\n    themeSet.includes('BACKGROUND_TRANSITION_SNAPSHOTS=false') &&\n    /if \\[\\[ \\$BACKGROUND_TRANSITION_SNAPSHOTS == \"true\" \\]\\]/.test(themeSet) &&\n    /if \\[\\[ -z \\$CHOSEN_THEME_BACKGROUND \\|\\| ! -f \\$CHOSEN_THEME_BACKGROUND \\]\\]/.test(themeSet),\n  'theme changes disable both transition snapshots whenever either side is a video'\n)\nassert(\n  /function onScreensChanged\\(\\) \\{[\\s\\S]*?root\\.displaysBlank = false/.test(lockService),\n  'a display coming back gives up the blank state instead of freezing a visible wallpaper'\n)\nassert(\n  lockService.includes('function screenBlank(screenName)') &&\n    lockService.includes('function applyMonitorDpms(text)') &&\n    lockService.includes('command: [\"hyprctl\", \"monitors\", \"-j\"]') &&\n    lockService.includes('running: root.locked && root.videoBackground') &&\n    /displaysBlank: root\\.screenBlank\\(lockSurface\\.screen/.test(lockService) &&\n    /function runWake\\(\\) \\{[\\s\\S]*?root\\.monitorDpmsKnown = false/.test(lockService) &&\n    /function runBlank\\(\\) \\{[\\s\\S]*?root\\.monitorDpmsKnown = false/.test(lockService),\n  'a locked video wallpaper follows what each panel actually did, not only what the lock asked for'\n)\nassert(\n  lockView.includes('playbackEnabled: root.loadBackground && !root.displaysBlank') &&\n    lockView.includes('&& !root.powerSaverActive') &&\n    /displaysBlank: root\\.screenBlank\\(/.test(lockService) &&\n    /powerSaverActive: root\\.powerSaverActive/.test(lockService) &&\n    /function runBlank\\(\\) \\{\\s*\\n\\s*root\\.displaysBlank = true/.test(lockService) &&\n    /function runWake\\(\\) \\{\\s*\\n\\s*root\\.displaysBlank = false/.test(lockService),\n  'the lock screen stops playback once displays go dark or power-saver is active'\n)\nassert(\n  batteryService.includes('property string activePowerProfile') &&\n    batteryService.includes('UPower.onBattery && activePowerProfile === \"power-saver\"') &&\n    batteryService.includes('\"get-property\", \"net.hadess.PowerProfiles\", \"/net/hadess/PowerProfiles\", \"net.hadess.PowerProfiles\", \"ActiveProfile\"') &&\n    !batteryService.includes('[\"powerprofilesctl\"') &&\n    batteryService.includes('interval: 2000'),\n  'the battery service tracks the active power-saver profile'\n)\nassert(\n  themeSwitcher.includes(\"-iname '*.mp4'\") &&\n    themeSwitcher.includes('mp4 m4v mov webm mkv avi') &&\n    themeSwitcher.includes('preview.mp4'),\n  'theme switcher previews video-only themes, named preview files included'\n)\nassert(quattroUpgrade.includes(\"-iname '*.mp4'\"), 'Quattro upgrade can seed a video-only theme background')\nassert(\n  multimediaMigration.includes('omarchy-pkg-add qt6-multimedia qt6-multimedia-ffmpeg'),\n  'existing Quattro installations receive video playback dependencies'\n)\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nwhile (( $# > 0 )); do\n  case \"$1\" in\n    -i) input=$2; shift 2 ;;\n    -o) output=$2; shift 2 ;;\n    *) shift ;;\n  esac\ndone\nprintf 'thumbnail for %s\\n' \"$input\" >\"$output\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nif (( $# > 0 )); then\n  printf 'unexpected file hash: %s\\n' \"$*\" >>\"$MD5_FILE_CALLS\"\nfi\nexec /usr/bin/md5sum \"$@\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nexit 1\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >>\"$THUMBNAILER_CALLS\"\nexit 1\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nexit 124\n",
+        },
+    ],
+}

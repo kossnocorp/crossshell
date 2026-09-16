@@ -1,0 +1,1048 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/acceptance.d/panels-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "WEATHER_FILE",
+                        value: "$HOME/.local/state/omarchy/settings/weather.json",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "weather_backup",
+                        value: "$(mktemp)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "weather_existed",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -f $WEATHER_FILE ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cp",
+                                    args: [
+                                        "$WEATHER_FILE",
+                                        "$weather_backup",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "weather_existed",
+                                            value: "1",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Function {
+            name: "hide_panels",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "plugin",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "plugin",
+                            words: Some(
+                                [
+                                    "omarchy.weather",
+                                    "omarchy.bluetooth",
+                                    "omarchy.network",
+                                    "omarchy.audio",
+                                    "omarchy.monitor",
+                                    "omarchy.power",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "omarchy-shell",
+                                                    args: [
+                                                        "shell",
+                                                        "hide",
+                                                        "$plugin",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">",
+                                                    target: "/dev/null",
+                                                },
+                                                CshAstRedirect {
+                                                    descriptor: Some(
+                                                        "2",
+                                                    ),
+                                                    operator: ">&",
+                                                    target: "1",
+                                                },
+                                            ],
+                                        },
+                                        operator: Or,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "true",
+                                                args: [],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "restore_weather",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "hide_panels",
+                                args: [],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Arithmetic(
+                                                "weather_existed",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "mkdir",
+                                                    args: [
+                                                        "-p",
+                                                        "$(dirname \"$WEATHER_FILE\")",
+                                                    ],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "cp",
+                                                    args: [
+                                                        "$weather_backup",
+                                                        "$WEATHER_FILE",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "rm",
+                                                args: [
+                                                    "-f",
+                                                    "$WEATHER_FILE",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$weather_backup",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "restore_weather",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "open_and_capture_panel",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "name=$1",
+                                    "plugin=$2",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-shell",
+                                    args: [
+                                        "shell",
+                                        "summon",
+                                        "$plugin",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "wait_until",
+                                args: [
+                                    "$name panel opens",
+                                    "15",
+                                    "layer_present",
+                                    "omarchy-keyboard-panel",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "sleep",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "screenshot",
+                                args: [
+                                    "success-panel-$name",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-shell",
+                                    args: [
+                                        "shell",
+                                        "hide",
+                                        "$plugin",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "wait_until",
+                                args: [
+                                    "$name panel closes",
+                                    "15",
+                                    "layer_absent",
+                                    "omarchy-keyboard-panel",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "omarchy-weather-location",
+                args: [
+                    "--set",
+                    "San Francisco",
+                    "37.7749,-122.4194",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-shell",
+                    args: [
+                        "shell",
+                        "summon",
+                        "omarchy.weather",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "weather panel opens",
+                    "15",
+                    "layer_present",
+                    "omarchy-keyboard-panel",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "weather location is visible",
+                    "30",
+                    "screen_contains",
+                    "SAN FRANCISCO",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "weather details are visible",
+                    "30",
+                    "screen_contains",
+                    "WIND",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-panel-weather",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-shell",
+                    args: [
+                        "shell",
+                        "hide",
+                        "omarchy.weather",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "weather panel closes",
+                    "15",
+                    "layer_absent",
+                    "omarchy-keyboard-panel",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "status",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "panels",
+                        value: "bluetooth|omarchy.bluetooth\nnetwork|omarchy.network\naudio|omarchy.audio\nmonitor|omarchy.monitor",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Loop {
+                until: false,
+                condition: CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "IFS",
+                                        value: "|",
+                                    },
+                                ],
+                                name: "read",
+                                args: [
+                                    "-r",
+                                    "name",
+                                    "plugin",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+                body: CshAst {
+                    commands: [
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Subshell(
+                                                    CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "trap",
+                                                                    args: [
+                                                                        "-",
+                                                                        "EXIT",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "open_and_capture_panel",
+                                                                    args: [
+                                                                        "$name",
+                                                                        "$plugin",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "status",
+                                                            value: "1",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "hide_panels",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "wait_until",
+                                                    args: [
+                                                        "$name failed panel is dismissed",
+                                                        "15",
+                                                        "layer_absent",
+                                                        "omarchy-keyboard-panel",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                    ],
+                },
+            },
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<<",
+                    target: "$panels",
+                },
+            ],
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "upower",
+                                        args: [
+                                            "-e",
+                                        ],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "/battery_",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Subshell(
+                                                        CshAst {
+                                                            commands: [
+                                                                Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "trap",
+                                                                        args: [
+                                                                            "-",
+                                                                            "EXIT",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                                Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "open_and_capture_panel",
+                                                                        args: [
+                                                                            "power",
+                                                                            "omarchy.power",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                            ],
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "status",
+                                                                value: "1",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "hide_panels",
+                                                        args: [],
+                                                    },
+                                                ),
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "wait_until",
+                                                        args: [
+                                                            "power failed panel is dismissed",
+                                                            "15",
+                                                            "layer_absent",
+                                                            "omarchy-keyboard-panel",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "power panel is hidden without battery hardware",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "screenshot",
+                                args: [
+                                    "success-panel-power-unavailable",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-shell",
+                    args: [
+                        "shell",
+                        "summon",
+                        "omarchy.bluetooth",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "panel keyboard navigation starts on bluetooth",
+                    "15",
+                    "screen_contains",
+                    "Bluetooth",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-panel-navigation-01-bluetooth",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wtype",
+                args: [
+                    "-k",
+                    "Tab",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "2",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "Tab keeps a shell panel open",
+                    "15",
+                    "layer_present",
+                    "omarchy-keyboard-panel",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-panel-navigation-02-next",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "hide_panels",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "keyboard-navigated panel closes",
+                    "15",
+                    "layer_absent",
+                    "omarchy-keyboard-panel",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-shell",
+                    args: [
+                        "shell",
+                        "summon",
+                        "omarchy.bluetooth",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "focus-prime panel opens",
+                    "15",
+                    "layer_present",
+                    "omarchy-keyboard-panel",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " $(hyprctl -j monitors | jq length) == 1 ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "layer_absent",
+                                        args: [
+                                            "omarchy-keyboard-panel-dismiss",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "fail",
+                                        args: [
+                                            "single-monitor panel has no dismissal twin",
+                                        ],
+                                    },
+                                ),
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "pass",
+                                    args: [
+                                        "single-monitor panel has no dismissal twin",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-shell",
+                    args: [
+                        "shell",
+                        "hide",
+                        "omarchy.bluetooth",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-shell",
+                    args: [
+                        "shell",
+                        "summon",
+                        "omarchy.bluetooth",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "focus-prime panel reopens",
+                    "15",
+                    "layer_present",
+                    "omarchy-keyboard-panel",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sleep",
+                args: [
+                    "1",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "screenshot",
+                args: [
+                    "success-panel-focus-prime-reopened",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wtype",
+                args: [
+                    "-k",
+                    "Escape",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait_until",
+                args: [
+                    "Escape closes a panel reopened during fade",
+                    "15",
+                    "layer_absent",
+                    "omarchy-keyboard-panel",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "-",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "restore_weather",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "exit",
+                args: [
+                    "$status",
+                ],
+            },
+        ),
+    ],
+}

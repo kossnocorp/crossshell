@@ -1,0 +1,86 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/intel/fix-wifi7-eht.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "lspci",
+                                        args: [
+                                            "-nn",
+                                        ],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-qE",
+                                            "\\[8086:(e440|272b)\\]",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mkdir",
+                                    args: [
+                                        "-p",
+                                        "/etc/modprobe.d",
+                                    ],
+                                },
+                            ),
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "cat",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/etc/modprobe.d/iwlwifi-disable-eht.conf",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<<",
+                                        target: "EOF",
+                                        here_document: 0,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "# Temporary fix Dell XPS 14/16 on Panther lake\n# Disable WiFi 7 (EHT) on Intel BE200/BE211 — broken RX rate adaptation\n# Remove this file when fixes land in the iwlwifi EHT data path\noptions iwlwifi disable_11be=Y\n",
+        },
+    ],
+}

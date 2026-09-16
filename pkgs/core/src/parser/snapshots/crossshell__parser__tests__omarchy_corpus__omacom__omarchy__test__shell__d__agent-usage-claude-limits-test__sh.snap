@@ -1,0 +1,772 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/agent-usage-claude-limits-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "jq",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "python3",
+                ],
+            },
+        ),
+        Function {
+            name: "read_limits",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "COLLECTOR",
+                                            value: "$ROOT/bin/omarchy-agent-usage-claude",
+                                        },
+                                        CshAstAssignment {
+                                            name: "PAYLOAD",
+                                            value: "$1",
+                                        },
+                                    ],
+                                    name: "python3",
+                                    args: [
+                                        "-",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<",
+                                    target: "PY",
+                                    here_document: 0,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "limits",
+                        value: "$(read_limits '{\n  \"five_hour\": { \"utilization\": 78.0 },\n  \"seven_day\": { \"utilization\": 12.0 },\n  \"seven_day_opus\": null,\n  \"limits\": [\n    { \"kind\": \"session\", \"percent\": 78, \"scope\": null },\n    { \"kind\": \"weekly_all\", \"percent\": 12, \"scope\": null },\n    { \"kind\": \"weekly_scoped\", \"percent\": 17, \"resets_at\": \"2026-08-15T03:00:00+00:00\",\n      \"scope\": { \"model\": { \"id\": \"claude-fable-5\", \"display_name\": \"Fable\" }, \"surface\": null } },\n    { \"kind\": \"weekly_scoped\", \"percent\": 99, \"scope\": { \"model\": { \"display_name\": \"Fable\" } } },\n    { \"kind\": \"five_hour_scoped\", \"percent\": 95, \"scope\": { \"model\": { \"display_name\": \"Fable\" } } },\n    { \"kind\": \"weekly_scoped\", \"percent\": 42, \"scope\": { \"model\": { \"id\": \"claude-opus-5\", \"display_name\": null } } },\n    { \"kind\": \"weekly_scoped\", \"percent\": 5, \"scope\": { \"model\": { \"display_name\": \"  \" } } },\n    { \"kind\": \"weekly_scoped\", \"percent\": \"unknown\", \"scope\": { \"model\": { \"display_name\": \"Opus\" } } }\n  ]\n}')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expected",
+                        value: "[{\"label\":\"Session (5-hour)\",\"percent\":0.78,\"resetsAt\":\"\"},{\"label\":\"Weekly (7-day)\",\"percent\":0.12,\"resetsAt\":\"\"},{\"label\":\"Fable Weekly\",\"title\":\"Fable Weekly\",\"percent\":0.17,\"resetsAt\":\"2026-08-15T03:00:00+00:00\"},{\"label\":\"Fable Session\",\"title\":\"Fable Session\",\"percent\":0.95,\"resetsAt\":\"\"},{\"label\":\"claude-opus-5 Weekly\",\"title\":\"claude-opus-5 Weekly\",\"percent\":0.42,\"resetsAt\":\"\"}]",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '.limits' <<<\"$limits\") == \"$expected\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector reads every model-scoped window once and drops unusable entries",
+                        "$limits",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector reads every model-scoped window once and drops unusable entries",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fractions",
+                        value: "$(read_limits '{\n  \"five_hour\": { \"utilization\": 0.78 },\n  \"limits\": [\n    { \"kind\": \"session\", \"percent\": 0.78, \"scope\": null },\n    { \"kind\": \"weekly_scoped\", \"percent\": 0.42, \"scope\": { \"model\": { \"display_name\": \"Fable\" } } }\n  ]\n}')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '[.limits[].percent]' <<<\"$fractions\") == \"[0.78,0.42]\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector reads scoped percentages on the payload's own scale",
+                        "$fractions",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector reads scoped percentages on the payload's own scale",
+                ],
+            },
+        ),
+        For {
+            variable: "payload",
+            words: Some(
+                [
+                    "{\"five_hour\":{\"utilization\":78.0},\"limits\":[{\"kind\":\"session\",\"percent\":78,\"scope\":null}]}",
+                    "{\"five_hour\":{\"utilization\":78.0},\"seven_day\":{\"utilization\":12.0}}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " $(jq -c '[.limits[].label]' <<<\"$(read_limits \"$payload\")\") != *\" Weekly\"* ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "Claude collector adds no limit when the payload scopes none",
+                                    "$payload",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector adds no limit when the payload scopes none",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "CACHE_HOME",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$CACHE_HOME\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "collect_limits",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "COLLECTOR",
+                                            value: "$ROOT/bin/omarchy-agent-usage-claude",
+                                        },
+                                        CshAstAssignment {
+                                            name: "TOKEN",
+                                            value: "$1",
+                                        },
+                                        CshAstAssignment {
+                                            name: "EXPIRES_AT",
+                                            value: "$2",
+                                        },
+                                        CshAstAssignment {
+                                            name: "CACHED",
+                                            value: "$3",
+                                        },
+                                        CshAstAssignment {
+                                            name: "XDG_CACHE_HOME",
+                                            value: "$CACHE_HOME",
+                                        },
+                                    ],
+                                    name: "python3",
+                                    args: [
+                                        "-",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<",
+                                    target: "PY",
+                                    here_document: 1,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "open_at",
+                        value: "$(python3 -c 'import datetime as dt; print((dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=3)).isoformat())')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "past_at",
+                        value: "$(python3 -c 'import datetime as dt; print((dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=3)).isoformat())')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "cache",
+                        value: "$(jq -nc --arg open \"$open_at\" --arg past \"$past_at\" '{\n  fetchedAtMs: 1,\n  limits: [\n    { label: \"Session (5-hour)\", percent: 0.31, resetsAt: $past },\n    { label: \"Weekly (7-day)\", percent: 0.11, resetsAt: $open }\n  ]\n}')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "expired",
+                        value: "$(collect_limits \"token\" 1000 \"$cache\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.usageStatusText' <<<\"$expired\") == \"Sign-in expired\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector reports an expired sign-in",
+                        "$expired",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -r '.authHelpText' <<<\"$expired\") == *\"claude auth login\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector says how to refresh an expired sign-in",
+                        "$expired",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector reports an expired sign-in instead of hiding the section",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '[.limits[].label]' <<<\"$expired\") == '[\"Weekly (7-day)\"]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector keeps only cached windows that have not reset",
+                        "$expired",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector keeps only cached windows that have not reset",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stale",
+                        value: "$(collect_limits \"token\" 1000 \"$(jq -c '.limits |= [.[0]]' <<<\"$cache\")\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '.limits' <<<\"$stale\") == \"[]\" && $(jq -r '.usageStatusText' <<<\"$stale\") == \"Sign-in expired\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector drops a wholly reset cache but keeps explaining itself",
+                        "$stale",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -r '.authHelpText' <<<\"$stale\") != *\"last known\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector promises no last-known limits when it has none",
+                        "$stale",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector drops a wholly reset cache but keeps explaining itself",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "signed_out",
+                        value: "$(collect_limits \"\" 0 \"$cache\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.usageStatusText' <<<\"$signed_out\") == \"Waiting for auth\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector still reports a missing token",
+                        "$signed_out",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -c '[.limits[].label]' <<<\"$signed_out\") == '[\"Weekly (7-day)\"]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector serves open cached windows without a token",
+                        "$signed_out",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector serves open cached windows without a token",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "unreachable",
+                        value: "$(collect_limits \"token\" 0 \"$cache\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '[.limits[].label]' <<<\"$unreachable\") == '[\"Weekly (7-day)\"]' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector falls back to cache when the probe cannot connect",
+                        "$unreachable",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -r '.retryAdvised' <<<\"$unreachable\") == \"true\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector advises a retry after a transport failure",
+                        "$unreachable",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector falls back to cache when the probe cannot connect",
+                ],
+            },
+        ),
+        Function {
+            name: "probe_with_cache",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "COLLECTOR",
+                                            value: "$ROOT/bin/omarchy-agent-usage-claude",
+                                        },
+                                        CshAstAssignment {
+                                            name: "FORCE",
+                                            value: "$1",
+                                        },
+                                        CshAstAssignment {
+                                            name: "CACHED",
+                                            value: "$2",
+                                        },
+                                        CshAstAssignment {
+                                            name: "PAYLOAD",
+                                            value: "$3",
+                                        },
+                                        CshAstAssignment {
+                                            name: "XDG_CACHE_HOME",
+                                            value: "$CACHE_HOME",
+                                        },
+                                    ],
+                                    name: "python3",
+                                    args: [
+                                        "-",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<",
+                                    target: "PY",
+                                    here_document: 2,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fresh",
+                        value: "$(jq -nc --arg open \"$open_at\" --argjson now \"$(python3 -c 'import time; print(round(time.time() * 1000))')\" '{\n  fetchedAtMs: $now,\n  limits: [{ label: \"Weekly (7-day)\", percent: 0.11, resetsAt: $open }]\n}')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "payload",
+                        value: "{\"five_hour\":{\"utilization\":44.0}}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "reused",
+                        value: "$(probe_with_cache false \"$fresh\" \"$payload\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.probes' <<<\"$reused\") == \"0\" && $(jq -c '[.result.limits[].percent]' <<<\"$reused\") == \"[0.11]\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector reuses a cache younger than the probe interval",
+                        "$reused",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector reuses a cache younger than the probe interval",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "forced",
+                        value: "$(probe_with_cache true \"$fresh\" \"$payload\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -r '.probes' <<<\"$forced\") == \"1\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector re-probes on --force despite a fresh cache",
+                        "$forced",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(jq -c '[.result.limits[].percent]' <<<\"$forced\") == \"[0.44]\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector returns the forced probe's numbers",
+                        "$forced",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector re-probes on --force despite a fresh cache",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(jq -c '[.cached.limits[].percent]' <<<\"$forced\") == \"[0.44]\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Claude collector caches a successful probe",
+                        "$forced",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Claude collector caches a successful probe",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 3,
+                },
+            ],
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import importlib.machinery, importlib.util, io, json, os\n\nloader = importlib.machinery.SourceFileLoader(\"collector\", os.environ[\"COLLECTOR\"])\nspec = importlib.util.spec_from_loader(loader.name, loader)\ncollector = importlib.util.module_from_spec(spec)\nloader.exec_module(collector)\n\ncollector.urllib.request.urlopen = lambda request, timeout=None: io.BytesIO(os.environ[\"PAYLOAD\"].encode())\n\nprint(json.dumps(collector.probe_limits(\"token\")))\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import importlib.machinery, importlib.util, json, os, pathlib\n\nloader = importlib.machinery.SourceFileLoader(\"collector\", os.environ[\"COLLECTOR\"])\nspec = importlib.util.spec_from_loader(loader.name, loader)\ncollector = importlib.util.module_from_spec(spec)\nloader.exec_module(collector)\n\ncache = collector.cache_root() / \"claude-limits.json\"\ncached = os.environ[\"CACHED\"]\nif cached:\n  cache.write_text(cached, encoding=\"utf-8\")\nelif cache.exists():\n  cache.unlink()\n\ndef unreachable(request, timeout=None):\n  raise OSError(\"no route to host\")\n\ncollector.urllib.request.urlopen = unreachable\nprint(json.dumps(collector.collect_limits(os.environ[\"TOKEN\"], int(os.environ[\"EXPIRES_AT\"]), False)))\n",
+        },
+        CshAstHereDocument {
+            delimiter: "PY",
+            quoted: true,
+            strip_tabs: false,
+            body: "import importlib.machinery, importlib.util, io, json, os\n\nloader = importlib.machinery.SourceFileLoader(\"collector\", os.environ[\"COLLECTOR\"])\nspec = importlib.util.spec_from_loader(loader.name, loader)\ncollector = importlib.util.module_from_spec(spec)\nloader.exec_module(collector)\n\ncache = collector.cache_root() / \"claude-limits.json\"\ncache.write_text(os.environ[\"CACHED\"], encoding=\"utf-8\")\n\nprobes = []\n\ndef urlopen(request, timeout=None):\n  probes.append(1)\n  return io.BytesIO(os.environ[\"PAYLOAD\"].encode())\n\ncollector.urllib.request.urlopen = urlopen\nresult = collector.collect_limits(\"token\", 0, os.environ[\"FORCE\"] == \"true\")\nprint(json.dumps({\n  \"result\": result,\n  \"probes\": len(probes),\n  \"cached\": json.loads(cache.read_text(encoding=\"utf-8\")),\n}))\n",
+        },
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const fs = require('fs')\nconst source = fs.readFileSync(root + '/shell/plugins/agents/Panel.qml', 'utf8')\nconst start = source.indexOf('function windowIsLong')\nconst end = source.indexOf('// The window that decides')\nassert(start > 0 && end > start, 'agents panel exposes its limit-window helpers')\neval(source.slice(start, end))\n\nassertDeepEqual(\n  limitWindows({ limits: [\n    { label: 'Session (5-hour)', percent: 0.78, resetsAt: '' },\n    { label: 'Opus 5 (1M context) Weekly', title: 'Opus 5 (1M context) Weekly', percent: 0.42, resetsAt: '' }\n  ] }),\n  [\n    { title: 'Session', percent: 0.78, resetAt: '' },\n    { title: 'Opus 5 (1M context) Weekly', percent: 0.42, resetAt: '' }\n  ],\n  'agents panel titles a limit off the collector when it states one'\n)\n\nassertDeepEqual(\n  limitWindows({ limits: [{ label: 'Weekly (7-day)', percent: 0.12, resetsAt: '' }] }),\n  [{ title: 'Weekly', percent: 0.12, resetAt: '' }],\n  'agents panel still reads a window out of a label that carries no title'\n)\n",
+        },
+    ],
+}

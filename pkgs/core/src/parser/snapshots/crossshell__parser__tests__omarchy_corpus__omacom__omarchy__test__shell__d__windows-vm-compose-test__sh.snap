@@ -1,0 +1,5581 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/windows-vm-compose-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " ${OMARCHY_WINDOWS_TEST_NAMESPACE:-0} != 1 ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "unshare",
+                                                            args: [
+                                                                "--user",
+                                                                "--map-current-user",
+                                                                "--keep-caps",
+                                                                "--mount",
+                                                                "true",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: Some(
+                                                                "2",
+                                                            ),
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                    ],
+                                                },
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "exec",
+                                                        args: [
+                                                            "env",
+                                                            "OMARCHY_WINDOWS_TEST_NAMESPACE=1",
+                                                            "unshare",
+                                                            "--user",
+                                                            "--map-current-user",
+                                                            "--keep-caps",
+                                                            "--mount",
+                                                            "--propagation",
+                                                            "private",
+                                                            "bash",
+                                                            "$0",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "pass",
+                                    args: [
+                                        "unprivileged mount namespaces unavailable; skipping Windows VM mount runtime tests",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TMPDIR",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "OMARCHY_WINDOWS_DIR=$TMPDIR/win",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "HOME=$TMPDIR/home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$HOME",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "--",
+                    "help",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "source",
+                    args: [
+                        "$ROOT/bin/omarchy-windows-vm",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+                CshAstRedirect {
+                    descriptor: Some(
+                        "2",
+                    ),
+                    operator: ">&",
+                    target: "1",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "COMPOSE",
+                        value: "$OMARCHY_WINDOWS_DIR/docker-compose.yml",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "unmount_all",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "path",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "resolve_caller",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        For {
+                            variable: "path",
+                            words: Some(
+                                [
+                                    "$EXPECTED_SHARED",
+                                    "$EXPECTED_STORAGE",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Loop {
+                                        until: false,
+                                        condition: CshAst {
+                                            commands: [
+                                                Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "mountpoint",
+                                                            args: [
+                                                                "-q",
+                                                                "--",
+                                                                "$path",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: Some(
+                                                                "2",
+                                                            ),
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                    ],
+                                                },
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "umount",
+                                                            args: [
+                                                                "--",
+                                                                "$path",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    operator: Or,
+                                                    right: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "break",
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "cleanup",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "set",
+                                args: [
+                                    "+e",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "unmount_all",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$TMPDIR",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "cleanup",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "write",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "RAM=%s\\nCORES=%s\\nDISK=%s\\nUSERNAME=%s\\nPASSWORD=%s\\nTZ=%s\\n",
+                                        "$@",
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "__priv_write_compose",
+                                    args: [],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "fd_count",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "find",
+                                    args: [
+                                        "/proc/$$/fd",
+                                        "-mindepth",
+                                        "1",
+                                        "-maxdepth",
+                                        "1",
+                                        "-printf",
+                                        "x",
+                                    ],
+                                },
+                            ),
+                            operator: Pipe,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "wc",
+                                    args: [
+                                        "-c",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "reset_case",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "unmount_all",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-rf",
+                                    "$OMARCHY_WINDOWS_DIR",
+                                    "$HOME/.windows",
+                                    "$HOME/Windows",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mkdir",
+                                args: [
+                                    "-p",
+                                    "$HOME",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "4G",
+                    "2",
+                    "64G",
+                    "alice",
+                    "s3cret",
+                    "Europe/Copenhagen",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "writer produced a compose file",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "image: dockurr/windows",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "image is pinned",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "--",
+                        "- NET_ADMIN",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "cap_add is pinned",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "--",
+                        "- $EXPECTED_STORAGE:/storage",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "storage uses the protected anchor",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "--",
+                        "- $EXPECTED_SHARED:/shared",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "shared uses the protected anchor",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "PROTECT: \"Y\"",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "web console is not password protected",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -L $HOME/.windows && ! -L $HOME/Windows ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "fresh sources stay real directories",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -Lc '%d:%i' \"$HOME/.windows\") == $(stat -Lc '%d:%i' \"$EXPECTED_STORAGE\") ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "storage bind did not pin source",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -Lc '%d:%i' \"$HOME/Windows\") == $(stat -Lc '%d:%i' \"$EXPECTED_SHARED\") ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "shared bind did not pin source",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -Lc '%a' \"$EXPECTED_STORAGE\") == 700 && $(stat -Lc '%a' \"$EXPECTED_SHARED\") == 700 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "mount leaves are not private",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "--",
+                        "- /:/",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "compose contains host-root bind",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "writer emits fixed anchors bound to exact private source inodes",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$COMPOSE",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "write",
+                        args: [
+                            "4G",
+                            "2",
+                            "64G",
+                            "x -v /:/h",
+                            "p",
+                            "UTC",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "malicious username accepted",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bad input wrote compose",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "RAM=4G\\nCORES=2\\nDISK=64G\\nUSERNAME=ok\\nPASSWORD=p\\nTZ=UTC\\nSTORAGE=/\\nSHARED=/etc\\n",
+                    ],
+                },
+            ),
+            operator: Pipe,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "__priv_write_compose",
+                    args: [],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "--",
+                        "- $EXPECTED_STORAGE:/storage",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "caller storage affected compose",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "--",
+                        "- /:/storage",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "host root accepted as storage",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "write",
+                        args: [
+                            "4G; rm -rf /",
+                            "2",
+                            "64G",
+                            "ok",
+                            "p",
+                            "UTC",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "malicious RAM accepted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "input cannot inject a host path or compose field",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tricky",
+                        value: "p@$$w:rd$HOME\"x\\y",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "8G",
+                    "4",
+                    "64G",
+                    "bob",
+                    "$tricky",
+                    "UTC",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "PASSWORD: \".*\\$\\$.*\"",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "dollar not escaped",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(unescape \"$(read_compose_value PASSWORD \"$COMPOSE\")\") == \"$tricky\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "password did not round-trip",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "password with quote, backslash, and dollar round-trips",
+                ],
+            },
+        ),
+        For {
+            variable: "action",
+            words: Some(
+                [
+                    "write_compose",
+                    "up",
+                    "up_wait",
+                    "down",
+                    "status",
+                    "remove",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "valid_priv_action",
+                                args: [
+                                    "$action",
+                                ],
+                            },
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "known action rejected: $action",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        For {
+            variable: "action",
+            words: Some(
+                [
+                    "/../evil/x",
+                    "bogus",
+                    "up;rm",
+                    "",
+                    "__priv_up",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "valid_priv_action",
+                                args: [
+                                    "$action",
+                                ],
+                            },
+                        ),
+                        operator: And,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "action whitelist accepted: [$action]",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "privileged action dispatch is allowlisted",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "attack_bin",
+                        value: "$TMPDIR/attack-bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$attack_bin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "/bin/bash",
+                    "$attack_bin/omarchy-windows-vm",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "printf exploited >\"$TMPDIR/exploited\"\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/__priv",
+                },
+            ],
+        },
+        Function {
+            name: "stat",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Test(
+                                " ${!#} == /usr/bin/omarchy-windows-vm ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "command",
+                                args: [
+                                    "stat",
+                                    "$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "PATH",
+                                value: "$attack_bin:$PATH",
+                            },
+                        ],
+                        name: "priv_target",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">&",
+                        target: "1",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "PATH symlink became a privileged target",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "unset",
+                args: [
+                    "-f",
+                    "stat",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $TMPDIR/exploited ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "attacker __priv script executed",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "pkexec target is only the canonical packaged regular file, never a PATH symlink",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "external_shared",
+                        value: "$TMPDIR/external-shared",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-m",
+                    "0755",
+                    "-p",
+                    "$HOME/.windows",
+                    "$external_shared",
+                    "$HOME/.config/windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$external_shared",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/.windows/existing-disk",
+                    "$external_shared/existing-shared-file",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "LEGACY_COMPOSE_FILE",
+                        value: "$HOME/.config/windows/docker-compose.yml",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "COMPOSE_FILE",
+                        value: "$COMPOSE",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$LEGACY_COMPOSE_FILE",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "LEG",
+                    here_document: 0,
+                },
+            ],
+        },
+        Function {
+            name: "priv",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "action=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "shift",
+                                args: [],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "__priv_$action",
+                                args: [
+                                    "$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "migrate_legacy_compose",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration did not write compose",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "USERNAME: \"legacyuser\"",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration lost settings",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $HOME/.windows/existing-disk && -f $external_shared/existing-shared-file ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration lost data",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -L $HOME/.windows && $(readlink \"$HOME/Windows\") == \"$external_shared\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration consumed source path",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -Lc '%a' \"$HOME/.windows\") == 700 && $(stat -Lc '%a' \"$external_shared\") == 700 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration did not harden legacy directories",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "--",
+                        "- /:/",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration copied malicious storage",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "--",
+                        "- /etc:/shared",
+                        "$COMPOSE",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration copied malicious share",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -f $LEGACY_COMPOSE_FILE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration left legacy compose",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration preserves data and symlinks while hardening permissions",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "assert_mounts_safe",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "verified sources rejected",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sed",
+                args: [
+                    "-i",
+                    "s|$EXPECTED_SHARED:/shared|/etc:/shared|",
+                    "$COMPOSE",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "assert_mounts_safe",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "tampered host path accepted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sed",
+                args: [
+                    "-i",
+                    "s|/etc:/shared|$EXPECTED_SHARED:/shared|",
+                    "$COMPOSE",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "      - %s:/storage\\n",
+                        "$EXPECTED_STORAGE",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">>",
+                    target: "$COMPOSE",
+                },
+            ],
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "assert_mounts_safe",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "duplicate destination accepted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "16G",
+                    "6",
+                    "128G",
+                    "legacyuser",
+                    "legacypass",
+                    "America/New_York",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sed",
+                args: [
+                    "-i",
+                    "s/PROTECT: \"Y\"/PROTECT: \"N\"/",
+                    "$COMPOSE",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "assert_mounts_safe",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "unprotected web console accepted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sed",
+                args: [
+                    "-i",
+                    "s/PROTECT: \"N\"/PROTECT: \"Y\"/",
+                    "$COMPOSE",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "      PROTECT: \"N\"\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">>",
+                    target: "$COMPOSE",
+                },
+            ],
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "assert_mounts_safe",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "duplicate web protection setting accepted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "sed",
+                args: [
+                    "-i",
+                    "$d",
+                    "$COMPOSE",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0666",
+                    "$COMPOSE",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "assert_mounts_safe",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "writable compose accepted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0640",
+                    "$COMPOSE",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "bring-up rejects tampered, duplicate, unprotected, and writable compose inputs",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$HOME/.windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "/",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_fds",
+                        value: "$(fd_count)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "prepare_user_mount_sources",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "root symlink passed user preflight",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -L $HOME/Windows && $(readlink \"$HOME/Windows\") == / ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "rejected symlink consumed",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Binary {
+                left: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "printf",
+                        args: [
+                            "RAM=4G\\nCORES=2\\nDISK=64G\\nUSERNAME=x\\nPASSWORD=p\\nTZ=UTC\\n",
+                        ],
+                    },
+                ),
+                operator: Pipe,
+                right: Redirected {
+                    expression: Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "__priv_write_compose",
+                            args: [],
+                        },
+                    ),
+                    redirects: [
+                        CshAstRedirect {
+                            descriptor: Some(
+                                "2",
+                            ),
+                            operator: ">",
+                            target: "/dev/null",
+                        },
+                    ],
+                },
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "root symlink passed privileged preflight",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(mount_layer_count \"$EXPECTED_STORAGE\") == 0 && $(mount_layer_count \"$EXPECTED_SHARED\") == 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "one source mounted before other failed",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(fd_count) == \"$before_fds\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "source preflight leaked FD",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Binary {
+                left: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "find",
+                        args: [
+                            "$CALLER_DATA_ROOT",
+                            "-name",
+                            "rejected-*",
+                            "-print",
+                            "-quit",
+                        ],
+                    },
+                ),
+                operator: Pipe,
+                right: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            ".",
+                        ],
+                    },
+                ),
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "source was quarantined",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "invalid second source leaves paths and anchors untouched and leaks no FD",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "external_storage",
+                        value: "$TMPDIR/external-storage",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "external_shared2",
+                        value: "$TMPDIR/external-shared-2",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$external_storage",
+                    "$external_shared2",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$external_storage",
+                    "$HOME/.windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$external_shared2",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "4G",
+                    "2",
+                    "64G",
+                    "symlinked",
+                    "pw",
+                    "UTC",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(readlink \"$HOME/.windows\") == \"$external_storage\" && $(readlink \"$HOME/Windows\") == \"$external_shared2\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "writer replaced symlinks",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -Lc '%d:%i' \"$EXPECTED_STORAGE\") == $(stat -Lc '%d:%i' \"$external_storage\") ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "symlink target not pinned",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "legitimate caller-owned symlinks remain in place",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "raced_shared",
+                        value: "$HOME/Windows.before-race",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "shared_id_before_race",
+                        value: "$(stat -Lc '%d:%i' \"$external_shared2\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "race_ran",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "dc",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Test(
+                                " $1 == up && ${2:-} == -d ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mv",
+                                args: [
+                                    "-T",
+                                    "--",
+                                    "$HOME/Windows",
+                                    "$raced_shared",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "ln",
+                                args: [
+                                    "-s",
+                                    "/",
+                                    "$HOME/Windows",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "race_ran",
+                                        value: "1",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $(get_mount_source /shared) == \"$EXPECTED_SHARED\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " $(stat -Lc '%d:%i' \"$EXPECTED_SHARED\") == \"$shared_id_before_race\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "__priv_up",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "post-validation home-path swap changed the Docker mount source",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " race_ran == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "post-validation race hook did not run",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -L $HOME/Windows && $(readlink \"$HOME/Windows\") == / ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "race did not replace the familiar shared path",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mv",
+                args: [
+                    "-T",
+                    "--",
+                    "$raced_shared",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "unset",
+                args: [
+                    "-f",
+                    "dc",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a post-validation path swap cannot redirect Docker away from the pinned shared inode",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/Windows/safe-marker",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "4G",
+                    "2",
+                    "64G",
+                    "concurrent",
+                    "pw",
+                    "UTC",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "concurrent_shared_id",
+                        value: "$(stat -Lc '%d:%i' \"$HOME/Windows\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "host_root_id",
+                        value: "$(stat -Lc '%d:%i' /)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "race_source",
+                        value: "$HOME/Windows.race-source",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "race_stop",
+                        value: "$TMPDIR/stop-concurrent-race",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "race_swaps",
+                        value: "$TMPDIR/concurrent-race-swaps",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Background(
+            Subshell(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "set",
+                                args: [
+                                    "+e",
+                                ],
+                            },
+                        ),
+                        Loop {
+                            until: false,
+                            condition: CshAst {
+                                commands: [
+                                    Test(
+                                        " ! -e $race_stop ",
+                                    ),
+                                ],
+                            },
+                            body: CshAst {
+                                commands: [
+                                    If {
+                                        branches: [
+                                            CshAstBranch {
+                                                condition: CshAst {
+                                                    commands: [
+                                                        Binary {
+                                                            left: Test(
+                                                                " -d $HOME/Windows && ! -L $HOME/Windows ",
+                                                            ),
+                                                            operator: And,
+                                                            right: Redirected {
+                                                                expression: Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "mv",
+                                                                        args: [
+                                                                            "-T",
+                                                                            "--",
+                                                                            "$HOME/Windows",
+                                                                            "$race_source",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                                redirects: [
+                                                                    CshAstRedirect {
+                                                                        descriptor: Some(
+                                                                            "2",
+                                                                        ),
+                                                                        operator: ">",
+                                                                        target: "/dev/null",
+                                                                    },
+                                                                ],
+                                                            },
+                                                        },
+                                                    ],
+                                                },
+                                                body: CshAst {
+                                                    commands: [
+                                                        Binary {
+                                                            left: Redirected {
+                                                                expression: Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "ln",
+                                                                        args: [
+                                                                            "-s",
+                                                                            "/",
+                                                                            "$HOME/Windows",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                                redirects: [
+                                                                    CshAstRedirect {
+                                                                        descriptor: Some(
+                                                                            "2",
+                                                                        ),
+                                                                        operator: ">",
+                                                                        target: "/dev/null",
+                                                                    },
+                                                                ],
+                                                            },
+                                                            operator: Or,
+                                                            right: Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "true",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        },
+                                                        Redirected {
+                                                            expression: Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "printf",
+                                                                    args: [
+                                                                        "x",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                            redirects: [
+                                                                CshAstRedirect {
+                                                                    descriptor: None,
+                                                                    operator: ">>",
+                                                                    target: "$race_swaps",
+                                                                },
+                                                            ],
+                                                        },
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "sleep",
+                                                                args: [
+                                                                    "0.002",
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        otherwise: None,
+                                    },
+                                    If {
+                                        branches: [
+                                            CshAstBranch {
+                                                condition: CshAst {
+                                                    commands: [
+                                                        Test(
+                                                            " -L $HOME/Windows ",
+                                                        ),
+                                                    ],
+                                                },
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "rm",
+                                                                args: [
+                                                                    "-f",
+                                                                    "--",
+                                                                    "$HOME/Windows",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        Binary {
+                                                            left: Redirected {
+                                                                expression: Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "mv",
+                                                                        args: [
+                                                                            "-T",
+                                                                            "--",
+                                                                            "$race_source",
+                                                                            "$HOME/Windows",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                                redirects: [
+                                                                    CshAstRedirect {
+                                                                        descriptor: Some(
+                                                                            "2",
+                                                                        ),
+                                                                        operator: ">",
+                                                                        target: "/dev/null",
+                                                                    },
+                                                                ],
+                                                            },
+                                                            operator: Or,
+                                                            right: Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "true",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        },
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "sleep",
+                                                                args: [
+                                                                    "0.005",
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        otherwise: None,
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ),
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "racer_pid",
+                        value: "$!",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "concurrent_dc_calls",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "dc",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "attempt",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $1 == up && ${2:-} == -d ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        ArithmeticFor {
+                            clauses: "attempt = 0; attempt < 20000; attempt++",
+                            body: CshAst {
+                                commands: [
+                                    If {
+                                        branches: [
+                                            CshAstBranch {
+                                                condition: CshAst {
+                                                    commands: [
+                                                        Test(
+                                                            " -L $HOME/Windows && $(readlink \"$HOME/Windows\" 2>/dev/null) == / ",
+                                                        ),
+                                                    ],
+                                                },
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "break",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        otherwise: None,
+                                    },
+                                ],
+                            },
+                        },
+                        Binary {
+                            left: Test(
+                                " -L $HOME/Windows && $(readlink \"$HOME/Windows\" 2>/dev/null) == / ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Arithmetic(
+                            "concurrent_dc_calls++",
+                        ),
+                        Binary {
+                            left: Test(
+                                " $(get_mount_source /shared) == \"$EXPECTED_SHARED\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " $(stat -Lc '%d:%i' \"$EXPECTED_SHARED\") == \"$concurrent_shared_id\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " $(stat -Lc '%d:%i' \"$EXPECTED_SHARED\") != \"$host_root_id\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Test(
+                            " -f $EXPECTED_SHARED/safe-marker ",
+                        ),
+                    ],
+                },
+            ),
+        },
+        ArithmeticFor {
+            clauses: "attempt = 0; attempt < 200; attempt++",
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "__priv_up",
+                                                    args: [],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: Some(
+                                                        "2",
+                                                    ),
+                                                    operator: ">",
+                                                    target: "/dev/null",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "break",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$race_stop",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "wait",
+                args: [
+                    "$racer_pid",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "unset",
+                args: [
+                    "-f",
+                    "dc",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -L $HOME/Windows ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "rm",
+                                    args: [
+                                        "-f",
+                                        "--",
+                                        "$HOME/Windows",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " ! -e $HOME/Windows && -d $race_source ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mv",
+                                    args: [
+                                        "-T",
+                                        "--",
+                                        "$race_source",
+                                        "$HOME/Windows",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " -s $race_swaps ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "concurrent attacker never swapped the shared path",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                "concurrent_dc_calls > 0",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "concurrent race never reached Docker while the familiar path named host root",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -Lc '%d:%i' \"$EXPECTED_SHARED\") == \"$concurrent_shared_id\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "concurrent race changed the protected shared inode",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a concurrent home-path swap cannot redirect Docker away from the pinned shared inode",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "same",
+                        value: "$TMPDIR/same-source",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$same",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$same",
+                    "$HOME/.windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$same",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_fds",
+                        value: "$(fd_count)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "prepare_user_mount_sources",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "same source passed user preflight",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Binary {
+                left: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "printf",
+                        args: [
+                            "RAM=4G\\nCORES=2\\nDISK=64G\\nUSERNAME=x\\nPASSWORD=p\\nTZ=UTC\\n",
+                        ],
+                    },
+                ),
+                operator: Pipe,
+                right: Redirected {
+                    expression: Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "__priv_write_compose",
+                            args: [],
+                        },
+                    ),
+                    redirects: [
+                        CshAstRedirect {
+                            descriptor: Some(
+                                "2",
+                            ),
+                            operator: ">",
+                            target: "/dev/null",
+                        },
+                    ],
+                },
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "same source passed root preflight",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(mount_layer_count \"$EXPECTED_STORAGE\") == 0 && $(mount_layer_count \"$EXPECTED_SHARED\") == 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "same source left mount",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(fd_count) == \"$before_fds\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "same source leaked FDs",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "storage and shared must differ and failure closes FDs",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "shared_inside",
+                        value: "$TMPDIR/shared-inside-storage",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$shared_inside/storage/shared",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$shared_inside/storage",
+                    "$HOME/.windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$shared_inside/storage/shared",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_fds",
+                        value: "$(fd_count)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "write",
+                        args: [
+                            "4G",
+                            "2",
+                            "64G",
+                            "nested",
+                            "pw",
+                            "UTC",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "shared-inside-storage sources were accepted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(mount_layer_count \"$EXPECTED_STORAGE\") == 0 && $(mount_layer_count \"$EXPECTED_SHARED\") == 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "shared-inside-storage failure left a mount",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(fd_count) == \"$before_fds\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "shared-inside-storage failure leaked FDs",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "storage_inside",
+                        value: "$TMPDIR/storage-inside-shared",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$storage_inside/shared/storage",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$storage_inside/shared/storage",
+                    "$HOME/.windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$storage_inside/shared",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_fds",
+                        value: "$(fd_count)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "write",
+                        args: [
+                            "4G",
+                            "2",
+                            "64G",
+                            "nested",
+                            "pw",
+                            "UTC",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "storage-inside-shared sources were accepted",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(mount_layer_count \"$EXPECTED_STORAGE\") == 0 && $(mount_layer_count \"$EXPECTED_SHARED\") == 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "storage-inside-shared failure left a mount",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(fd_count) == \"$before_fds\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "storage-inside-shared failure leaked FDs",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "pinned-FD ancestry checks reject overlap in both directions before mounting",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "alias_under",
+                        value: "$TMPDIR/bind-alias-under",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "alias_shared",
+                        value: "$TMPDIR/bind-alias-shared",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$alias_under/storage/shared",
+                    "$alias_shared",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mount",
+                args: [
+                    "--no-canonicalize",
+                    "--bind",
+                    "$alias_under/storage/shared",
+                    "$alias_shared",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$alias_under/storage",
+                    "$HOME/.windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$alias_shared",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "before_fds",
+                        value: "$(fd_count)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "open_mount_source",
+                args: [
+                    "$LEGACY_STORAGE",
+                    "storage",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "alias_storage_fd",
+                        value: "$OPENED_MOUNT_FD",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "alias_storage_id",
+                        value: "$OPENED_MOUNT_ID",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "open_mount_source",
+                args: [
+                    "$LEGACY_SHARED",
+                    "shared",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "alias_shared_fd",
+                        value: "$OPENED_MOUNT_FD",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "pinned_dir_contains",
+                    args: [
+                        "$alias_storage_id",
+                        "$alias_shared_fd",
+                    ],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bind-alias repro unexpectedly shared the underlying parent walk",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "pinned_tree_contains",
+                    args: [
+                        "$alias_storage_fd",
+                        "$alias_shared_fd",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "tree-rooted discovery missed the bind-alias inode",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exec",
+                    args: [
+                        "{alias_storage_fd}",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<&",
+                    target: "-",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exec",
+                    args: [
+                        "{alias_shared_fd}",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<&",
+                    target: "-",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "4G",
+                    "2",
+                    "64G",
+                    "alias",
+                    "pw",
+                    "UTC",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/.windows/disk.img",
+                    "$HOME/Windows/keep.txt",
+                ],
+            },
+        ),
+        Function {
+            name: "dc",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "docker",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Test(
+                                " $1 == inspect ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "__priv_remove",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal accepted a shared bind alias into storage",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $HOME/.windows/disk.img && -f $HOME/Windows/keep.txt && -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bind-alias removal refusal changed state",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(mount_layer_count \"$EXPECTED_STORAGE\") == 1 && $(mount_layer_count \"$EXPECTED_SHARED\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bind-alias removal refusal changed mounts",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(fd_count) == \"$before_fds\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "bind-alias removal refusal leaked FDs",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "unmount_all",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "umount",
+                args: [
+                    "--",
+                    "$alias_shared",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "cheap startup permits a bind alias, but bounded removal discovery refuses it",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Function {
+            name: "mv",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "write",
+                        args: [
+                            "4G",
+                            "2",
+                            "64G",
+                            "rollback",
+                            "pw",
+                            "UTC",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "forced writer failure succeeded",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "unset",
+                args: [
+                    "-f",
+                    "mv",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(mount_layer_count \"$EXPECTED_STORAGE\") == 0 && $(mount_layer_count \"$EXPECTED_SHARED\") == 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "writer failure left binds",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "writer failure replaced compose",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "atomic writer failure rolls back both new bind mounts",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "4G",
+                    "2",
+                    "64G",
+                    "moved",
+                    "pw",
+                    "UTC",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/.windows/disk.img",
+                    "$HOME/Windows/keep.txt",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mv",
+                args: [
+                    "$HOME/Windows",
+                    "$HOME/.windows/moved-shared",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$HOME/.windows/moved-shared",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Function {
+            name: "dc",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "docker",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Test(
+                                " $1 == inspect ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "__priv_remove",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal accepted a shared inode moved below storage",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $HOME/.windows/disk.img && -f $HOME/.windows/moved-shared/keep.txt && -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "overlap rejection changed disk, shared data, or compose",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "removal revalidates pinned ancestry and leaves moved shared data untouched",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "4G",
+                    "2",
+                    "64G",
+                    "removal-alias",
+                    "pw",
+                    "UTC",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/.windows/disk.img",
+                    "$HOME/Windows/keep.txt",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "$HOME/.windows/shared-bind-alias",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mount",
+                args: [
+                    "--no-canonicalize",
+                    "--bind",
+                    "$HOME/Windows",
+                    "$HOME/.windows/shared-bind-alias",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "__priv_remove",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal missed a shared bind alias introduced below storage",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $HOME/.windows/disk.img && -f $HOME/Windows/keep.txt && -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal bind-alias rejection changed state",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "umount",
+                args: [
+                    "--",
+                    "$HOME/.windows/shared-bind-alias",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "removal tree discovery catches a shared alias not used by either home path",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mount",
+                args: [
+                    "-t",
+                    "tmpfs",
+                    "-o",
+                    "uid=$(id -u),gid=$(id -g),mode=0700,size=8m",
+                    "crossdev-shared",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/Windows/keep.txt",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "4G",
+                    "2",
+                    "64G",
+                    "crossdev-alias",
+                    "pw",
+                    "UTC",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/.windows/disk.img",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "$HOME/.windows/crossdev-shared-alias",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mount",
+                args: [
+                    "--no-canonicalize",
+                    "--bind",
+                    "$HOME/Windows",
+                    "$HOME/.windows/crossdev-shared-alias",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "__priv_remove",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal missed a different-device shared alias below storage",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $HOME/.windows/disk.img && -f $HOME/Windows/keep.txt && -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "cross-device alias rejection changed state",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "umount",
+                args: [
+                    "--",
+                    "$HOME/.windows/crossdev-shared-alias",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "unmount_all",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "umount",
+                args: [
+                    "--",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "removal catches a direct different-filesystem shared alias at the xdev boundary",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "4G",
+                    "2",
+                    "64G",
+                    "scan-failure",
+                    "pw",
+                    "UTC",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/.windows/disk.img",
+                    "$HOME/Windows/keep.txt",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "scan_helper",
+                        value: "$TMPDIR/tree-scan-helper",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "saved_tree_scan_find",
+                        value: "$TREE_SCAN_FIND",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "saved_tree_scan_timeout",
+                        value: "$TREE_SCAN_TIMEOUT_SECONDS",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "saved_tree_scan_kill_after",
+                        value: "$TREE_SCAN_KILL_AFTER_SECONDS",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "#!/bin/bash\\n/bin/sleep 10\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$scan_helper",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "0700",
+                    "$scan_helper",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TREE_SCAN_FIND",
+                        value: "$scan_helper",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TREE_SCAN_TIMEOUT_SECONDS",
+                        value: "0.05",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TREE_SCAN_KILL_AFTER_SECONDS",
+                        value: "0.05",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "__priv_remove",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal continued after its containment scan timed out",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $HOME/.windows/disk.img && -f $HOME/Windows/keep.txt && -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "timed-out containment scan changed state",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(mount_layer_count \"$EXPECTED_STORAGE\") == 1 && $(mount_layer_count \"$EXPECTED_SHARED\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "timed-out containment scan changed mounts",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "#!/bin/bash\\nexit 42\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$scan_helper",
+                },
+            ],
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "__priv_remove",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal continued after its containment scanner failed",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $HOME/.windows/disk.img && -f $HOME/Windows/keep.txt && -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "failed containment scan changed state",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(mount_layer_count \"$EXPECTED_STORAGE\") == 1 && $(mount_layer_count \"$EXPECTED_SHARED\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "failed containment scan changed mounts",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TREE_SCAN_FIND",
+                        value: "$saved_tree_scan_find",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TREE_SCAN_TIMEOUT_SECONDS",
+                        value: "$saved_tree_scan_timeout",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TREE_SCAN_KILL_AFTER_SECONDS",
+                        value: "$saved_tree_scan_kill_after",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "removal scan timeout and errors fail closed without changing VM state",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write",
+                args: [
+                    "4G",
+                    "2",
+                    "64G",
+                    "remove",
+                    "pw",
+                    "UTC",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "touch",
+                args: [
+                    "$HOME/.windows/disk.img",
+                    "$HOME/Windows/keep.txt",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mount",
+                args: [
+                    "--no-canonicalize",
+                    "--bind",
+                    "$HOME/.windows",
+                    "$EXPECTED_STORAGE",
+                ],
+            },
+        ),
+        Function {
+            name: "dc",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "docker",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Test(
+                                " $1 == inspect ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "__priv_remove",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal accepted stacked storage mount",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $HOME/.windows/disk.img && -f $HOME/Windows/keep.txt && -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "rejected removal changed state",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "umount",
+                args: [
+                    "--",
+                    "$EXPECTED_STORAGE",
+                ],
+            },
+        ),
+        Function {
+            name: "dc",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "__priv_remove",
+                        args: [],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal deleted data after docker-compose down failed",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $HOME/.windows/disk.img && -f $HOME/Windows/keep.txt && -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "failed down changed data or compose",
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "dc",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: ":",
+                                args: [],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "__priv_remove",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $HOME/.windows/disk.img ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal preserved disk data",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -e $HOME/Windows/keep.txt ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal deleted shared data",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -f $COMPOSE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal left compose",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "resolve_caller",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(mount_layer_count \"$EXPECTED_STORAGE\") == 0 && $(mount_layer_count \"$EXPECTED_SHARED\") == 0 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "removal left binds",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "removal rejects stacks, deletes disk, and preserves shared files",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "credentials_dir",
+                        value: "$TMPDIR/credentials",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "CREDENTIALS_FILE",
+                        value: "$credentials_dir/credentials",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "credentials_victim",
+                        value: "$TMPDIR/credentials-victim",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-m",
+                    "0755",
+                    "-p",
+                    "$credentials_dir",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "victim\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$credentials_victim",
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$credentials_victim",
+                    "$CREDENTIALS_FILE",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "write_credentials",
+                args: [
+                    "carol",
+                    "p=a$$w\"x",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $CREDENTIALS_FILE && ! -L $CREDENTIALS_FILE ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "credentials did not replace a planted symlink",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(stat -c '%a' \"$credentials_dir\") == 700 && $(stat -c '%a' \"$CREDENTIALS_FILE\") == 600 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "credentials path is not private",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(cat \"$credentials_victim\") == victim ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "credentials write changed a symlink victim",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(read_credential USERNAME) == carol && $(read_credential PASSWORD) == 'p=a$$w\"x' ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "credentials did not round-trip",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "credentials_before",
+                        value: "$(cat \"$CREDENTIALS_FILE\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "mv",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "write_credentials",
+                        args: [
+                            "changed",
+                            "replacement",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: Some(
+                            "2",
+                        ),
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "forced credentials rename failure succeeded",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "unset",
+                args: [
+                    "-f",
+                    "mv",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(cat \"$CREDENTIALS_FILE\") == \"$credentials_before\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "failed credentials rename replaced the live file",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Binary {
+                    left: Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "find",
+                            args: [
+                                "$credentials_dir",
+                                "-name",
+                                ".credentials.*",
+                                "-print",
+                                "-quit",
+                            ],
+                        },
+                    ),
+                    operator: Pipe,
+                    right: Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "grep",
+                            args: [
+                                "-q",
+                                ".",
+                            ],
+                        },
+                    ),
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "failed credentials write left a temporary file",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "credentials are atomically replaced as a private regular file",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_case",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$external_storage",
+                    "$HOME/Windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ln",
+                args: [
+                    "-s",
+                    "$external_storage",
+                    "$HOME/.windows",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_user_mount_sources",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "df_log",
+                        value: "$TMPDIR/df-path",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "df",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "printf",
+                                    args: [
+                                        "%s\\n",
+                                        "${!#}",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$df_log",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "Filesystem 1024-blocks Used Available Capacity Mounted on\\nmock 104857600 0 94371840 0%% /mock\\n",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(available_storage_gb) == 90 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "free-space parsed wrong value",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "unset",
+                args: [
+                    "-f",
+                    "df",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(cat \"$df_log\") == \"$external_storage\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "free-space used home filesystem",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "disk-space checks follow the storage symlink target",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "LEG",
+            quoted: true,
+            strip_tabs: false,
+            body: "services:\n  windows:\n    environment:\n      RAM_SIZE: \"16G\"\n      CPU_CORES: \"6\"\n      DISK_SIZE: \"128G\"\n      USERNAME: \"legacyuser\"\n      PASSWORD: \"legacypass\"\n      TZ: \"America/New_York\"\n    volumes:\n      - /./:/storage\n      - /etc:/shared\n",
+        },
+    ],
+}

@@ -1,0 +1,191 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1787843905.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Link Omarchy agent skills into Hermes skill directories",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "OMARCHY_PATH",
+                        value: "${OMARCHY_PATH:-/usr/share/omarchy}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "skills_source",
+                        value: "$OMARCHY_PATH/default/agents/skills",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -d $skills_source ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$HOME/.hermes/skills",
+                ],
+            },
+        ),
+        For {
+            variable: "skill",
+            words: Some(
+                [
+                    "$skills_source/*/",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -d $skill ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "name",
+                                    value: "${skill%/}",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "name",
+                                    value: "${name##*/}",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "ln",
+                            args: [
+                                "-sfn",
+                                "$skills_source/$name",
+                                "$HOME/.hermes/skills/$name",
+                            ],
+                        },
+                    ),
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Test(
+                                            " -d $HOME/.hermes/profiles ",
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        For {
+                                            variable: "profile",
+                                            words: Some(
+                                                [
+                                                    "$HOME/.hermes/profiles/*/",
+                                                ],
+                                            ),
+                                            body: CshAst {
+                                                commands: [
+                                                    Binary {
+                                                        left: Test(
+                                                            " -d $profile ",
+                                                        ),
+                                                        operator: Or,
+                                                        right: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "continue",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    },
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "mkdir",
+                                                            args: [
+                                                                "-p",
+                                                                "$profile/skills",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "ln",
+                                                            args: [
+                                                                "-sfn",
+                                                                "$skills_source/$name",
+                                                                "$profile/skills/$name",
+                                                            ],
+                                                        },
+                                                    ),
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+    ],
+}

@@ -1,0 +1,80 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hyprland-qconsole-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"${BASH_SOURCE[0]}\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "lua",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "OMARCHY_PATH",
+                                value: "$ROOT",
+                            },
+                        ],
+                        name: "lua",
+                        args: [
+                            "-",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<",
+                        target: "LUA",
+                        here_document: 0,
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the console is a centered panel until a second app joins it",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the console is a centered panel until a second app joins it",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "LUA",
+            quoted: true,
+            strip_tabs: false,
+            body: "local rules, handlers = {}, {}\nlocal monitor = nil\nlocal workspace = nil\n\nhl = {\n  config = function() end,\n  animation = function() end,\n  workspace_rule = function(rule) table.insert(rules, rule) end,\n  on = function(event, callback) handlers[event] = callback end,\n  get_active_monitor = function() return monitor end,\n  get_workspace = function() return workspace end,\n  -- workspace.windows is the tiled count here and workspace.floats the floating\n  -- one, so the fixtures can say which kind of window is on the console.\n  get_workspace_windows = function()\n    local list = {}\n    for _ = 1, workspace and workspace.windows or 0 do table.insert(list, { floating = false }) end\n    for _ = 1, workspace and workspace.floats or 0 do table.insert(list, { floating = true }) end\n    return list\n  end,\n  exec_scheduled_prop_refresh_immediately = function() end,\n}\n\ndofile(os.getenv(\"OMARCHY_PATH\") .. \"/default/hypr/bootstrap.lua\")\nrequire(\"default.hypr.qconsole\")\n\nlocal function current()\n  return rules[#rules]\nend\n\nlocal function gaps()\n  local g = current().gaps_out\n  return g.top, g.right, g.bottom, g.left\nend\n\n-- Config loads before the outputs are up, so the first pass has no monitor to\n-- read. It still has to leave a rule behind, or the console would open unseeded.\nassert(#rules > 0, \"console is ruled even before a monitor can be read\")\nassert(current().on_created_empty:find(\"omarchy%-agent\"), \"console is seeded with the default agent\")\nassert(current().on_created_empty:find(\"^%[workspace special:scratchpad silent%]\"),\n  \"the seed is pinned to the console rather than trusting the spawn to inherit it\")\nassert(current().workspace == \"special:scratchpad\")\n\nlocal function rescale(height, scale, bar)\n  monitor = { width = 1920, height = height, scale = scale, transform = 0, reserved = { top = bar, bottom = 0, left = 0, right = 0 } }\n  handlers[\"monitor.layout_changed\"]()\n  return current().gaps_out.bottom\nend\n\n-- Same panel, same logical size, different scale: the console must not care.\nassert(rescale(1080, 1, 40) == 520, \"half of a 1080p work area, unscaled\")\nassert(rescale(2160, 2, 40) == 520, \"the same half once the monitor is scaled 2x\")\nassert(rescale(2160, 1.5, 40) == 700, \"and at a fractional scale\")\n\n-- The bar is already out of the work area; counting it twice would push the\n-- console short.\nassert(rescale(1440, 1, 0) == 720, \"a monitor with nothing reserved\")\n\nlocal final = current()\nassert(final.gaps_out.top == 0, \"the console stays flush with the top, the way a drop-down arrives\")\nassert(final.gaps_out.left == final.gaps_out.right, \"the panel is centered\")\nassert(final.on_created_empty:find(\"omarchy%-agent\"), \"refitting keeps the console seeded\")\nassert(final.no_border == true, \"the console drops the active window border\")\n\n-- A monitor that cannot be read must not wipe the last good rule.\nlocal before = current().gaps_out.bottom\nmonitor = nil\nhandlers[\"monitor.layout_changed\"]()\nassert(current().gaps_out.bottom == before, \"an absent monitor leaves the console as it was\")\n\n-- A monitor handle outliving its output answers nil to everything, which is\n-- what a layout change looks like mid-flight. Reading height or reserved off\n-- that would throw, so the scale guard has to catch it first.\nlocal expired = setmetatable({}, { __index = function() return nil end })\nmonitor = expired\nhandlers[\"monitor.layout_changed\"]()\nassert(current().gaps_out.bottom == before, \"an expired monitor handle is not read to pieces\")\n\n-- Refitting to the size it already is would still cost a state refresh, and\n-- monitor.focused fires on every hop between screens.\nmonitor = { width = 2560, height = 1440, scale = 1, transform = 0, reserved = { top = 0, bottom = 0, left = 0, right = 0 } }\nhandlers[\"monitor.layout_changed\"]()\nlocal written = #rules\nhandlers[\"monitor.focused\"]()\nhandlers[\"monitor.layout_changed\"]()\nassert(#rules == written, \"refitting to the same size does not rewrite the rule\")\n\n-- A centered 2:1 panel, not a full-width drop-down.\nmonitor = { width = 1920, height = 1080, scale = 1, transform = 0, reserved = { top = 0, bottom = 0, left = 0, right = 0 } }\nhandlers[\"monitor.layout_changed\"]()\nlocal top, right, bottom, left = gaps()\nassert(top == 0 and left == 420 and right == 420 and bottom == 540, \"16:9 leaves a 1080x540 panel\")\n\nlocal dell = { name = \"DP-1\", width = 6144, height = 2560, scale = 1, transform = 0, reserved = { top = 30, bottom = 0, left = 0, right = 0 } }\nmonitor = dell\nhandlers[\"monitor.layout_changed\"]()\ntop, right, bottom, left = gaps()\nassert(left == 1807 and right == 1807 and bottom == 1265, \"the same 2:1 panel on 6K\")\n\n-- Same logical box at scale 2x (physical 12288x5120): scale does not change the\n-- panel's logical size.\nmonitor = { name = \"DP-1\", width = 12288, height = 5120, scale = 2, transform = 0, reserved = { top = 30, bottom = 0, left = 0, right = 0 } }\nhandlers[\"monitor.layout_changed\"]()\ntop, right, bottom, left = gaps()\nassert(left == 1807 and right == 1807 and bottom == 1265, \"the 6K box is in logical pixels\")\n\n-- Same height, different width: the sides have to move even though the bottom\n-- gap is identical, so the cache cannot key on height alone.\nmonitor = { width = 2560, height = 1440, scale = 1, transform = 0, reserved = { top = 0, bottom = 0, left = 0, right = 0 } }\nhandlers[\"monitor.layout_changed\"]()\nwritten = #rules\nmonitor = { width = 3440, height = 1440, scale = 1, transform = 0, reserved = { top = 0, bottom = 0, left = 0, right = 0 } }\nhandlers[\"monitor.layout_changed\"]()\nassert(#rules == written + 1, \"a same-height ultrawide hop still rewrites the sides\")\ntop, right, bottom, left = gaps()\nassert(left == 1000 and right == 1000 and bottom == 720, \"3440x1440 leaves a 1440x720 box\")\n\n-- A panel wider than the screen is just the screen: a portrait monitor has no\n-- room for a 2:1 box and falls back to the full width rather than a negative gap.\nmonitor = { width = 1080, height = 1920, scale = 1, transform = 0, reserved = { top = 0, bottom = 0, left = 0, right = 0 } }\nhandlers[\"monitor.layout_changed\"]()\ntop, right, bottom, left = gaps()\nassert(left == 0 and right == 0 and bottom == 960, \"a portrait monitor keeps the full width\")\nassert(left >= 0 and right >= 0 and bottom >= 0, \"gaps are never negative\")\n\n-- A monitor turned on its side still reports the panel's own pixels, so the\n-- work area has to be turned with it. Measured against Hyprland 0.56.2: a\n-- rotated 1920x1080 lays its windows out in 1080x1920 while width and height\n-- still read 1920 and 1080. Quarter turns are the odd transforms; a half turn\n-- leaves the shape alone.\nmonitor = { width = 1920, height = 1080, scale = 1, transform = 1, reserved = { top = 30, bottom = 0, left = 0, right = 0 } }\nhandlers[\"monitor.layout_changed\"]()\ntop, right, bottom, left = gaps()\nassert(left == 0 and right == 0 and bottom == 945, \"a quarter-turned monitor is sized portrait\")\n\nmonitor = { width = 1920, height = 1080, scale = 1, transform = 3, reserved = { top = 30, bottom = 0, left = 0, right = 0 } }\nhandlers[\"monitor.layout_changed\"]()\ntop, right, bottom, left = gaps()\nassert(left == 0 and right == 0 and bottom == 945, \"and so is the other quarter turn\")\n\nmonitor = { width = 1920, height = 1080, scale = 1, transform = 2, reserved = { top = 30, bottom = 0, left = 0, right = 0 } }\nhandlers[\"monitor.layout_changed\"]()\ntop, right, bottom, left = gaps()\nassert(left == 435 and right == 435 and bottom == 525, \"a half turn is still landscape\")\n\n-- Special workspaces open on the monitor they are toggled on, not on whichever\n-- output was focused when the rule was last written. Opening on 1080p after a\n-- 6K fit has to resize the box.\nlocal acer = { name = \"HDMI-A-1\", width = 1920, height = 1080, scale = 1, transform = 0, reserved = { top = 30, bottom = 0, left = 0, right = 0 } }\nmonitor = dell\nhandlers[\"monitor.layout_changed\"]()\nhandlers[\"workspace.special_active\"]({ name = \"special:scratchpad\" }, acer)\ntop, right, bottom, left = gaps()\nassert(left == 435 and right == 435 and bottom == 525, \"opening on 1080p after a 6K fit resizes the box\")\nassert(1920 - left - right > 0 and 1080 - 30 - bottom > 0, \"1080p leftover is never negative\")\n\n-- follow_mouse onto the 6K while the console is already showing on 1080p must\n-- not steal the rule; that is what oversized the Dell after a hop.\nworkspace = { name = \"special:scratchpad\", visible = true, monitor = acer, windows = 1 }\nmonitor = dell\nwritten = #rules\nhandlers[\"monitor.focused\"](dell)\nassert(#rules == written, \"focus on another output does not rewrite an open console\")\n\n-- The output the console is showing on can go away mid-layout-change. Its\n-- handle then answers nil to everything, and preferring it blindly would leave\n-- the console stranded at the gaps of the monitor that is gone. The rule is\n-- still the 1080p one here, so only refitting on the Dell can satisfy this.\nworkspace = { name = \"special:scratchpad\", visible = true, monitor = expired, windows = 1 }\nmonitor = dell\nhandlers[\"monitor.layout_changed\"]()\ntop, right, bottom, left = gaps()\nassert(left == 1807 and right == 1807 and bottom == 1265,\n  \"a console whose output vanished refits on the monitor that is still there\")\n\n-- Back onto the 1080p panel for the window-count checks below.\nworkspace = { name = \"special:scratchpad\", visible = true, monitor = acer, windows = 1 }\nmonitor = acer\nhandlers[\"monitor.layout_changed\"]()\ntop, right, bottom, left = gaps()\nassert(left == 435 and right == 435 and bottom == 525, \"and refits again once it is back on a live output\")\n\n-- One window reads as a console and keeps the panel. A second app has turned\n-- the scratchpad into a workspace, and a workspace wants the whole width.\nworkspace = { name = \"special:scratchpad\", visible = true, monitor = acer, windows = 2 }\nhandlers[\"window.open\"]()\ntop, right, bottom, left = gaps()\nassert(left == 0 and right == 0, \"a second app on the scratchpad restores the full width\")\nassert(bottom == 525, \"and the console keeps its half-height drop\")\n\nworkspace.windows = 3\nwritten = #rules\nhandlers[\"window.open\"]()\nassert(#rules == written, \"a third app changes nothing that is already full width\")\n\nworkspace.windows = 1\nhandlers[\"window.destroy\"]()\ntop, right, bottom, left = gaps()\nassert(left == 435 and right == 435, \"closing back down to one window recenters the panel\")\n\n-- An empty scratchpad is about to be seeded with a single agent, so it is sized\n-- as a console rather than as a workspace.\nworkspace.windows = 0\nhandlers[\"window.destroy\"]()\ntop, right, bottom, left = gaps()\nassert(left == 435 and right == 435, \"an empty console is still a console\")\n\n-- A hidden console is refitted on its way back in, so the count does not have to\n-- be chased while it is off screen; every window on the desktop would otherwise\n-- rewrite the rule.\nworkspace = { name = \"special:scratchpad\", visible = false, monitor = acer, windows = 4 }\nmonitor = dell\nwritten = #rules\nhandlers[\"window.open\"]()\nassert(#rules == written, \"a window opening elsewhere does not rewrite a hidden console\")\n\n-- A scratchpad nothing has opened yet has no workspace to read at all, and is\n-- sized as the console the seed is about to put a single agent into.\nworkspace = nil\nmonitor = { width = 1920, height = 1080, scale = 1, transform = 0, reserved = { top = 0, bottom = 0, left = 0, right = 0 } }\nhandlers[\"monitor.layout_changed\"]()\ntop, right, bottom, left = gaps()\nassert(left == 420 and right == 420 and bottom == 540, \"a scratchpad that does not exist yet is sized as a console\")\n\n-- Back to a console on screen for the move and float checks.\nworkspace = { name = \"special:scratchpad\", visible = true, monitor = acer, windows = 1 }\nmonitor = acer\nhandlers[\"monitor.layout_changed\"]()\ntop, right, bottom, left = gaps()\nassert(left == 435 and right == 435, \"a single tiled window is a console\")\n\n-- A floating window on top of the console is not laid out by the gaps, so it\n-- must not stretch the panel out from under the agent.\nworkspace.floats = 1\nhandlers[\"window.open\"]()\ntop, right, bottom, left = gaps()\nassert(left == 435 and right == 435, \"a floating window on the console keeps the panel\")\n\n-- Tiling that float (Super+T) makes it a second app, and floating it again\n-- gives the panel back. Both arrive as window.update_rules.\nworkspace.floats, workspace.windows = 0, 2\nhandlers[\"window.update_rules\"]()\ntop, right, bottom, left = gaps()\nassert(left == 0 and right == 0, \"tiling a float on the console restores the full width\")\n\nworkspace.floats, workspace.windows = 1, 1\nhandlers[\"window.update_rules\"]()\ntop, right, bottom, left = gaps()\nassert(left == 435 and right == 435, \"floating it again recenters the panel\")\n\n-- Sending an app onto the scratchpad (Super+Alt+S) or off it (Super+Shift+1)\n-- does not open or destroy anything, so the move itself has to refit.\nworkspace.floats, workspace.windows = 0, 2\nhandlers[\"window.move_to_workspace\"]()\ntop, right, bottom, left = gaps()\nassert(left == 0 and right == 0, \"moving a second app onto the console restores the full width\")\n\nworkspace.windows = 1\nhandlers[\"window.move_to_workspace\"]()\ntop, right, bottom, left = gaps()\nassert(left == 435 and right == 435, \"moving it back off recenters the panel\")\n\n-- window.close still counts the window on its way out, and window.destroy\n-- follows it with the settled count, so only destroy is hooked.\nassert(handlers[\"window.close\"] == nil, \"window.close counts the window on its way out\")\n",
+        },
+    ],
+}

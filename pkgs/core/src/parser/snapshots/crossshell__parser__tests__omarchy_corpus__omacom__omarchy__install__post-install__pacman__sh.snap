@@ -1,0 +1,84 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/post-install/pacman.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "-f",
+                    "$OMARCHY_PATH/default/pacman/pacman-${OMARCHY_MIRROR:-stable}.conf",
+                    "/etc/pacman.conf",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "-f",
+                    "$OMARCHY_PATH/default/pacman/mirrorlist-${OMARCHY_MIRROR:-stable}",
+                    "/etc/pacman.d/mirrorlist",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -f $OMARCHY_PATH/etc-overrides/cups-cups-files.conf && -f /etc/cups/cups-files.conf ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "install",
+                                    args: [
+                                        "-m",
+                                        "0640",
+                                        "-o",
+                                        "root",
+                                        "-g",
+                                        "cups",
+                                        "$OMARCHY_PATH/etc-overrides/cups-cups-files.conf",
+                                        "/etc/cups/cups-files.conf",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "rm",
+                                    args: [
+                                        "-f",
+                                        "/etc/cups/cups-files.conf.pacnew",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$OMARCHY_INSTALL/hardware/pacman.sh",
+                ],
+            },
+        ),
+    ],
+}

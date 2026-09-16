@@ -1,0 +1,332 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1787573629.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Regenerate mise wrappers that still print mise's own output to stdout",
+                ],
+            },
+        ),
+        Function {
+            name: "stale_template",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "form=$1",
+                                    "package=$2",
+                                    "bin=$3",
+                                ],
+                            },
+                        ),
+                        Case {
+                            word: "$form",
+                            arms: [
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "cooldown-export",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "printf",
+                                                    args: [
+                                                        "#!/bin/bash\\nexport MISE_MINIMUM_RELEASE_AGE=0\\nmise use -g \"%s\" || exit 1\\nexec mise x \"%s\" -- \"%s\" \"$@\"",
+                                                        "$package",
+                                                        "$package",
+                                                        "$bin",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "bail-on-failure",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "printf",
+                                                    args: [
+                                                        "#!/bin/bash\\nmise use -g \"%s\" || exit 1\\nexec mise x \"%s\" -- \"%s\" \"$@\"",
+                                                        "$package",
+                                                        "$package",
+                                                        "$bin",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "mise-exec",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "printf",
+                                                    args: [
+                                                        "#!/bin/bash\\nmise use -g \"%s\"\\nexec mise exec \"%s\" -- \"%s\" \"$@\"",
+                                                        "$package",
+                                                        "$package",
+                                                        "$bin",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "bare-exec",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "printf",
+                                                    args: [
+                                                        "#!/bin/bash\\nmise use -g \"%s\"\\nexec \"%s\" \"$@\"",
+                                                        "$package",
+                                                        "$bin",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "bin_dir",
+                        value: "$HOME/.local/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -d $bin_dir ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        For {
+            variable: "wrapper",
+            words: Some(
+                [
+                    "$bin_dir/*",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Test(
+                            " -f $wrapper && ! -L $wrapper && -r $wrapper ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Binary {
+                        left: Arithmetic(
+                            "$(stat -c%s \"$wrapper\") <= 1024",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "contents",
+                                    value: "$(<\"$wrapper\")",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "package",
+                                    value: "$(sed -n 's/^mise use -g \"\\(.*\\)\"\\( || exit 1\\)*$/\\1/p' <<<\"$contents\")",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "bin",
+                                    value: "$(sed -n \\\n    -e 's/^exec mise x \".*\" -- \"\\(.*\\)\" \"\\$@\"$/\\1/p' \\\n    -e 's/^exec mise exec \".*\" -- \"\\(.*\\)\" \"\\$@\"$/\\1/p' \\\n    -e 's/^exec \"\\(.*\\)\" \"\\$@\"$/\\1/p' <<<\"$contents\")",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Test(
+                            " -n $package && -n $bin ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "stale",
+                                    value: "0",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    For {
+                        variable: "form",
+                        words: Some(
+                            [
+                                "cooldown-export",
+                                "bail-on-failure",
+                                "mise-exec",
+                                "bare-exec",
+                            ],
+                        ),
+                        body: CshAst {
+                            commands: [
+                                If {
+                                    branches: [
+                                        CshAstBranch {
+                                            condition: CshAst {
+                                                commands: [
+                                                    Test(
+                                                        " $contents == \"$(stale_template \"$form\" \"$package\" \"$bin\")\" ",
+                                                    ),
+                                                ],
+                                            },
+                                            body: CshAst {
+                                                commands: [
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [
+                                                                CshAstAssignment {
+                                                                    name: "stale",
+                                                                    value: "1",
+                                                                },
+                                                            ],
+                                                            name: "",
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "break",
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                    otherwise: None,
+                                },
+                            ],
+                        },
+                    },
+                    Binary {
+                        left: Arithmetic(
+                            "stale",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "omarchy-mise-install",
+                            args: [
+                                "$package",
+                                "${wrapper##*/}",
+                                "$bin",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+    ],
+}

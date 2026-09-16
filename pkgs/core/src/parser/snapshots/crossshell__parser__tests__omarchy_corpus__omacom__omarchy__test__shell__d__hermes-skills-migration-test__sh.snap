@@ -1,0 +1,557 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hermes-skills-migration-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration",
+                        value: "$ROOT/migrations/1787843905.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $migration ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Hermes skills migration exists",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "home",
+                        value: "$test_dir/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "run_migration",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "HOME",
+                                                value: "$home",
+                                            },
+                                            CshAstAssignment {
+                                                name: "OMARCHY_PATH",
+                                                value: "$ROOT",
+                                            },
+                                        ],
+                                        name: "bash",
+                                        args: [
+                                            "-euo",
+                                            "pipefail",
+                                            "$migration",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "migration exits clean",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "assert_link",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "link=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "skill=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$3",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -L $link && $(readlink \"$link\") == \"$ROOT/default/agents/skills/$skill\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$description",
+                                        "$link -> $(readlink \"$link\" 2>/dev/null || echo missing)",
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        For {
+            variable: "skill",
+            words: Some(
+                [
+                    "omarchy",
+                    "diagnose-crash",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "assert_link",
+                            args: [
+                                "$home/.hermes/skills/$skill",
+                                "$skill",
+                                "migration links $skill into the default Hermes home",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Binary {
+            left: Test(
+                " -e $home/.hermes/profiles ",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not create Hermes profiles",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration links the default Hermes home and does not create profiles",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        For {
+            variable: "skill",
+            words: Some(
+                [
+                    "omarchy",
+                    "diagnose-crash",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "assert_link",
+                            args: [
+                                "$home/.hermes/skills/$skill",
+                                "$skill",
+                                "migration is idempotent on the default home for $skill",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration is idempotent on the default home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$home/.hermes/profiles/james",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        For {
+            variable: "skill",
+            words: Some(
+                [
+                    "omarchy",
+                    "diagnose-crash",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "assert_link",
+                            args: [
+                                "$home/.hermes/skills/$skill",
+                                "$skill",
+                                "migration links $skill into the default Hermes home when a profile exists",
+                            ],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "assert_link",
+                            args: [
+                                "$home/.hermes/profiles/james/skills/$skill",
+                                "$skill",
+                                "migration links $skill into a pre-existing Hermes profile",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Binary {
+            left: Test(
+                " -d $home/.hermes/profiles/james ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration leaves the pre-existing profile in place",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "profile_count",
+                        value: "$(find \"$home/.hermes/profiles\" -mindepth 1 -maxdepth 1 -type d | wc -l)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                " profile_count == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration does not create extra profiles",
+                        "count=$profile_count",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration links a pre-existing Hermes profile and does not create extras",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_migration",
+                args: [],
+            },
+        ),
+        For {
+            variable: "skill",
+            words: Some(
+                [
+                    "omarchy",
+                    "diagnose-crash",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "assert_link",
+                            args: [
+                                "$home/.hermes/skills/$skill",
+                                "$skill",
+                                "migration is idempotent on the default home when a profile exists for $skill",
+                            ],
+                        },
+                    ),
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "assert_link",
+                            args: [
+                                "$home/.hermes/profiles/james/skills/$skill",
+                                "$skill",
+                                "migration is idempotent on a pre-existing profile for $skill",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration is idempotent on a pre-existing profile",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$home",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$home",
+                    "$test_dir/empty-omarchy",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "HOME",
+                                value: "$home",
+                            },
+                            CshAstAssignment {
+                                name: "OMARCHY_PATH",
+                                value: "$test_dir/empty-omarchy",
+                            },
+                        ],
+                        name: "bash",
+                        args: [
+                            "-euo",
+                            "pipefail",
+                            "$migration",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration exits clean when the skill source is missing",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -e $home/.hermes ",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "migration no-ops when the skill source is missing",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "migration no-ops when the skill source is missing",
+                ],
+            },
+        ),
+    ],
+}

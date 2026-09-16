@@ -1,0 +1,553 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/chromium-copy-url-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"${BASH_SOURCE[0]}\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "PATH=$ROOT/bin:$PATH",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TMPDIR",
+                        value: "",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "cleanup",
+            body: Group(
+                CshAst {
+                    commands: [
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -n $TMPDIR && -d $TMPDIR ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "rm",
+                                                    args: [
+                                                        "-rf",
+                                                        "$TMPDIR",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "cleanup",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "jq",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "node",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "copy_url_id",
+                        value: "$(node - <<'JS' \"$ROOT/default/chromium/extensions/copy-url/manifest.json\"\nconst crypto = require('crypto')\nconst fs = require('fs')\n\nconst manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))\nconst hash = crypto.createHash('sha256').update(Buffer.from(manifest.key, 'base64')).digest()\nconst alphabet = 'abcdefghijklmnop'\nlet id = ''\n\nfor (const byte of hash.subarray(0, 16)) {\n  id += alphabet[byte >> 4]\n  id += alphabet[byte & 0x0f]\n}\n\nprocess.stdout.write(id)\nJS\n)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $copy_url_id == \"bgpiichlckmfanooecilcjemknkcpngb\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "copy-url extension manifest has the stable id",
+                        "$copy_url_id",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "copy-url extension manifest has the stable id",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "jq",
+                        args: [
+                            "-e",
+                            "\n  .manifest_version == 3 and\n  (.permissions | index(\"nativeMessaging\")) and\n  (.permissions | index(\"notifications\") | not) and\n  (.permissions | index(\"clipboardWrite\") | not) and\n  (.permissions | index(\"offscreen\") | not) and\n  .background.service_worker == \"background-4.js\"\n",
+                            "$ROOT/default/chromium/extensions/copy-url/manifest.json",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "copy-url extension uses its native messaging host",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "sendNativeMessage('com.omarchy.copy_url'",
+                        "$ROOT/default/chromium/extensions/copy-url/background-4.js",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "copy-url extension sends URLs to its native messaging host",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "copy-url extension uses its native messaging host",
+                ],
+            },
+        ),
+        Binary {
+            left: Binary {
+                left: Redirected {
+                    expression: Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "jq",
+                            args: [
+                                "-e",
+                                ".action != null",
+                                "$ROOT/default/chromium/extensions/copy-url/manifest.json",
+                            ],
+                        },
+                    ),
+                    redirects: [
+                        CshAstRedirect {
+                            descriptor: None,
+                            operator: ">",
+                            target: "/dev/null",
+                        },
+                    ],
+                },
+                operator: And,
+                right: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "action.onClicked",
+                            "$ROOT/default/chromium/extensions/copy-url/background-*.js",
+                        ],
+                    },
+                ),
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "copy-url extension is clickable from the toolbar",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "copy-url extension is clickable from the toolbar",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TMPDIR",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_home",
+                        value: "$TMPDIR/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "native_manifest",
+                        value: "$test_home/.config/chromium/NativeMessagingHosts/com.omarchy.copy_url.json",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$test_home",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_PATH",
+                        value: "$ROOT",
+                    },
+                ],
+                name: "omarchy-install-chromium-copy-url",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $native_manifest ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "copy-url native host installer creates fresh Chromium profile root",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "jq",
+                        args: [
+                            "-e",
+                            "--arg",
+                            "path",
+                            "$ROOT/bin/omarchy-chromium-copy-url-host",
+                            "\n  .name == \"com.omarchy.copy_url\" and\n  .path == $path and\n  (.allowed_origins | index(\"chrome-extension://bgpiichlckmfanooecilcjemknkcpngb/\"))\n",
+                            "$native_manifest",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "copy-url native host manifest uses Omarchy host path and extension id",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "copy-url native host installer registers the stable extension id",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $test_home/.config/BraveSoftware/Brave-Origin/NativeMessagingHosts/com.omarchy.copy_url.json ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "copy-url native host installer covers Brave Origin",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "copy-url native host installer covers Brave Origin",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "user/chromium.sh",
+                        "$ROOT/install/user/all.sh",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "user install runs the Chromium native messaging host setup",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fresh_home",
+                        value: "$TMPDIR/fresh-install",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "HOME",
+                        value: "$fresh_home",
+                    },
+                    CshAstAssignment {
+                        name: "OMARCHY_PATH",
+                        value: "$ROOT",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$ROOT/bin:$PATH",
+                    },
+                ],
+                name: "bash",
+                args: [
+                    "-euo",
+                    "pipefail",
+                    "-c",
+                    "source \"$ROOT/install/user/chromium.sh\"",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -f $fresh_home/.config/chromium/NativeMessagingHosts/com.omarchy.copy_url.json ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "fresh install registers the copy-url native messaging host",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "fresh install registers the copy-url native messaging host",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "copied_url",
+                        value: "$(bash -c '\n  source \"$1\"\n  wl-copy() { cat; }\n  omarchy-notification-send() { :; }\n  copy_url \"$2\"\n' bash \"$ROOT/bin/omarchy-chromium-copy-url-host\" 'https://example.test/path?q=one&name=two')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $copied_url == \"https://example.test/path?q=one&name=two\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "copy-url native host writes the complete URL",
+                        "$copied_url",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "copy-url native host writes the complete URL",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "native_reply",
+                        value: "$(bash -c '\n  source \"$1\"\n  reply_copied true\n' bash \"$ROOT/bin/omarchy-chromium-copy-url-host\" | od -An -v -tx1 | tr -d ' \\n')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $native_reply == \"0f0000007b22636f70696564223a747275657d\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "copy-url native host returns a framed success response",
+                        "$native_reply",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "copy-url native host returns a framed success response",
+                ],
+            },
+        ),
+    ],
+}

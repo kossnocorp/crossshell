@@ -1,0 +1,355 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hyprland-keyboard-layout-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"${BASH_SOURCE[0]}\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "lua",
+                ],
+            },
+        ),
+        Function {
+            name: "resolved_input",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "OMARCHY_PATH",
+                                            value: "$ROOT",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_VCONSOLE",
+                                            value: "${1-}",
+                                        },
+                                    ],
+                                    name: "lua",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<",
+                                    target: "LUA",
+                                    here_document: 0,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "assert_input",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "description=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "expected=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "actual",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Arithmetic(
+                                                " $# > 2 ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "actual",
+                                                            value: "$(resolved_input \"$3\")",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "actual",
+                                                        value: "$(resolved_input)",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " $actual == \"$expected\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$description",
+                                        "expected: $expected$\\nactual:   $actual",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "base_options",
+                        value: "compose:caps,shift:both_capslock_cancel",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "toggle_options",
+                        value: "$base_options,grp:alts_toggle",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_input",
+                args: [
+                    "missing vconsole.conf falls back to us",
+                    "[us] [] [$base_options]",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_input",
+                args: [
+                    "us layout passes through",
+                    "[us] [intl] [$base_options]",
+                    "XKBLAYOUT=us\nXKBVARIANT=intl\n",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_input",
+                args: [
+                    "latin layouts are left alone",
+                    "[de] [nodeadkeys] [$base_options]",
+                    "XKBLAYOUT=de\nXKBVARIANT=nodeadkeys\n",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_input",
+                args: [
+                    "non-latin layout gains us in front",
+                    "[us,ara] [,] [$toggle_options]",
+                    "XKBLAYOUT=ara\n",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_input",
+                args: [
+                    "prepended us keeps variants aligned",
+                    "[us,ru] [,phonetic] [$toggle_options]",
+                    "XKBLAYOUT=ru\nXKBVARIANT=phonetic\n",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_input",
+                args: [
+                    "non-latin layout in front gains us even when us trails",
+                    "[us,il,us] [,] [$toggle_options]",
+                    "XKBLAYOUT=il,us\n",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hooks_conf",
+                        value: "$ROOT/etc/mkinitcpio.conf.d/omarchy_hooks.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "input_lua",
+                        value: "$ROOT/default/hypr/input.lua",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "hooks_layouts",
+                        value: "$(awk -F')' '/\\) ;;$/ { gsub(/[[:space:]|]+/, \"\\n\", $1); print $1 }' \"$hooks_conf\" | grep '^[a-z]\\+$' | sort)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "lua_layouts",
+                        value: "$(sed -n '/^local non_latin_layouts =/,+1p' \"$input_lua\" | grep -o '\"[^\"]*\"' | tr -d '\"' | tr ' ' '\\n' | grep '^[a-z]\\+$' | sort)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -n $hooks_layouts ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "non-latin layout list is readable from omarchy_hooks.conf",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $hooks_layouts == \"$lua_layouts\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "non-latin layout lists stay in sync",
+                        "$(diff <(echo \"$hooks_layouts\") <(echo \"$lua_layouts\"))",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "non-latin layout lists stay in sync with the initramfs hook",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "LUA",
+            quoted: true,
+            strip_tabs: false,
+            body: "package.path = os.getenv(\"OMARCHY_PATH\") .. \"/?.lua;\" .. package.path\n\nlocal vconsole = os.getenv(\"OMARCHY_VCONSOLE\")\nlocal real_open = io.open\n\nio.open = function(path, mode)\n  if path ~= \"/etc/vconsole.conf\" then\n    return real_open(path, mode)\n  end\n\n  if not vconsole then\n    return nil\n  end\n\n  local file = io.tmpfile()\n  file:write(vconsole)\n  file:seek(\"set\")\n  return file\nend\n\nhl = {\n  config = function(config)\n    local input = config.input\n    print((\"[%s] [%s] [%s]\"):format(input.kb_layout, input.kb_variant, input.kb_options))\n  end,\n}\n\no = { window = function() end }\n\nrequire(\"default.hypr.input\")\n",
+        },
+    ],
+}

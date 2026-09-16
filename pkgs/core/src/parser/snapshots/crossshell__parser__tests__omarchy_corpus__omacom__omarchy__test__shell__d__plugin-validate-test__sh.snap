@@ -1,0 +1,880 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/plugin-validate-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "jq",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TMPDIR",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TMPDIR\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "write_plugin",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "name=$1",
+                                    "kinds=$2",
+                                    "entry_points=$3",
+                                    "bar_widget=${4:-null}",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "dir=$TMPDIR/$name",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "entry",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "mkdir",
+                                args: [
+                                    "-p",
+                                    "$dir",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cat",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$dir/manifest.json",
+                                },
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<",
+                                    target: "JSON",
+                                    here_document: 0,
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Loop {
+                                until: false,
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "IFS",
+                                                        value: "",
+                                                    },
+                                                ],
+                                                name: "read",
+                                                args: [
+                                                    "-r",
+                                                    "entry",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Test(
+                                                " -n $entry ",
+                                            ),
+                                            operator: Or,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "continue",
+                                                    args: [],
+                                                },
+                                            ),
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "touch",
+                                                args: [
+                                                    "$dir/$entry",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(jq -r '.[]' <<<\"$entry_points\")",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "%s\\n",
+                                    "$dir",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "validate",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "OMARCHY_PATH",
+                                            value: "$ROOT",
+                                        },
+                                    ],
+                                    name: "$ROOT/bin/omarchy-plugin-validate",
+                                    args: [
+                                        "$1",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: Some(
+                                        "2",
+                                    ),
+                                    operator: ">&",
+                                    target: "1",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Loop {
+                until: false,
+                condition: CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "IFS",
+                                        value: ":",
+                                    },
+                                ],
+                                name: "read",
+                                args: [
+                                    "-r",
+                                    "kind",
+                                    "entry_point",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+                body: CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "dir",
+                                        value: "$(write_plugin \"wants-$kind\" \"[\\\"$kind\\\"]\" \"{\\\"$entry_point\\\": \\\"Entry.qml\\\"}\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "validate",
+                                        args: [
+                                            "$dir",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "validate accepts $kind with its $entry_point entry point",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "validate accepts $kind with its $entry_point entry point",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "other_key",
+                                        value: "service",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $entry_point == \"service\" ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "other_key",
+                                            value: "panel",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "dir",
+                                        value: "$(write_plugin \"missing-$kind\" \"[\\\"$kind\\\"]\" \"{\\\"$other_key\\\": \\\"Entry.qml\\\"}\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "output",
+                                            value: "$(validate \"$dir\")",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "validate refuses $kind without its $entry_point entry point",
+                                        "$output",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-qF",
+                                            "kind '$kind' requires an 'entryPoints.$entry_point' to load",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<<<",
+                                        target: "$output",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "validate names the entry point $kind is missing",
+                                        "$output",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "validate refuses $kind without its $entry_point entry point",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            },
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "KINDS",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dir",
+                        value: "$(write_plugin \"both\" '[\"bar\",\"bar-widget\"]' '{\"bar\": \"Bar.qml\", \"barWidget\": \"Widget.qml\"}')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "validate",
+                        args: [
+                            "$dir",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "validate accepts a plugin that satisfies every kind it declares",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "validate accepts a plugin that satisfies every kind it declares",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dir",
+                        value: "$(write_plugin \"half\" '[\"bar\",\"bar-widget\"]' '{\"bar\": \"Bar.qml\"}')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "output",
+                            value: "$(validate \"$dir\")",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "validate refuses a plugin that satisfies only one of its kinds",
+                        "$output",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-qF",
+                            "kind 'bar-widget' requires",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$output",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "validate names the unsatisfied kind",
+                        "$output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "validate refuses a plugin that satisfies only one of its kinds",
+                ],
+            },
+        ),
+        For {
+            variable: "section",
+            words: Some(
+                [
+                    "left",
+                    "center",
+                    "right",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "dir",
+                                    value: "$(write_plugin \"defaults-$section\" '[\"bar-widget\"]' '{\"barWidget\": \"Widget.qml\"}' \"{\\\"defaultSection\\\": \\\"$section\\\"}\")",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "validate",
+                                    args: [
+                                        "$dir",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "validate accepts $section as a default bar widget section",
+                                ],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "pass",
+                            args: [
+                                "validate accepts $section as a default bar widget section",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dir",
+                        value: "$(write_plugin \"defaults-bottom\" '[\"bar-widget\"]' '{\"barWidget\": \"Widget.qml\"}' '{\"defaultSection\": \"bottom\"}')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "output",
+                            value: "$(validate \"$dir\")",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "validate refuses an invalid default bar widget section",
+                        "$output",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-qF",
+                            "'barWidget.defaultSection' must be left, center, or right",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$output",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "validate explains the default bar widget section contract",
+                        "$output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "validate refuses an invalid default bar widget section",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dir",
+                        value: "$(write_plugin \"unknown\" '[\"future-thing\"]' '{\"service\": \"Entry.qml\"}')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "validate",
+                        args: [
+                            "$dir",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "validate leaves a kind it does not know alone",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "validate leaves a kind it does not know alone",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "dir",
+                        value: "$TMPDIR/ghost",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$dir",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$dir/manifest.json",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JSON",
+                    here_document: 2,
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "output",
+                            value: "$(validate \"$dir\")",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "validate refuses an entry point file that is not there",
+                        "$output",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-qF",
+                            "entry point file not found",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$output",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "validate reports a missing file as a missing file",
+                        "$output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "validate refuses an entry point file that is not there",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JSON",
+            quoted: false,
+            strip_tabs: false,
+            body: "{\n  \"schemaVersion\": 1,\n  \"id\": \"acme.$name\",\n  \"name\": \"Acme $name\",\n  \"version\": \"1.0.0\",\n  \"kinds\": $kinds,\n  \"entryPoints\": $entry_points,\n  \"barWidget\": $bar_widget\n}\n",
+        },
+        CshAstHereDocument {
+            delimiter: "KINDS",
+            quoted: true,
+            strip_tabs: false,
+            body: "bar:bar\nbar-widget:barWidget\nmenu:menu\noverlay:overlay\npanel:panel\nservice:service\n",
+        },
+        CshAstHereDocument {
+            delimiter: "JSON",
+            quoted: true,
+            strip_tabs: false,
+            body: "{\n  \"schemaVersion\": 1,\n  \"id\": \"acme.ghost\",\n  \"name\": \"Acme Ghost\",\n  \"version\": \"1.0.0\",\n  \"kinds\": [\"bar\"],\n  \"entryPoints\": { \"bar\": \"Missing.qml\" }\n}\n",
+        },
+    ],
+}

@@ -1,0 +1,217 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/idle-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_home",
+                        value: "$test_tmp/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$test_home",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "HOME",
+                            value: "$test_home",
+                        },
+                    ],
+                    name: "$ROOT/bin/omarchy-toggle-idle",
+                    args: [
+                        "stay-awake",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -f $test_home/.local/state/omarchy/indicators/stay-awake ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Stay Awake toggle persists enabled state",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "HOME",
+                            value: "$test_home",
+                        },
+                    ],
+                    name: "$ROOT/bin/omarchy-toggle-idle",
+                    args: [
+                        "allow-idle",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " ! -f $test_home/.local/state/omarchy/indicators/stay-awake ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "Stay Awake toggle persists disabled state",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "rg",
+                                    args: [
+                                        "-q",
+                                        "omarchy-shell",
+                                        "$ROOT/bin/omarchy-toggle-idle",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "Stay Awake toggle avoids reentrant shell IPC",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "Stay Awake toggle persists state without reentrant shell IPC",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const idle = requireFromRoot('shell/plugins/services/idle/IdleModel.js')\n\nassertEqual(idle.secondsFromConfig('42.9', 10), 42, 'idle floors configured seconds')\nassertEqual(idle.secondsFromConfig('-1', 10), 10, 'idle rejects negative seconds')\nassertEqual(idle.secondsFromConfig('nope', 10), 10, 'idle rejects invalid seconds')\n\nassertDeepEqual(idle.eventParts({ data: 'a,b,c' }, 2), ['a', 'b', 'c'], 'idle parses raw event data')\nassertDeepEqual(\n  idle.eventParts({ parse: function(count) { return ['parsed', count] } }, 4),\n  ['parsed', 4],\n  'idle prefers event parser when available'\n)\n\nassertDeepEqual(\n  idle.screensaverWindowsAfter({ a: true }, 'b', true),\n  { windows: { a: true, b: true }, count: 2 },\n  'idle adds visible screensaver windows'\n)\nassertDeepEqual(\n  idle.screensaverWindowsAfter({ a: true, b: true }, 'a', false),\n  { windows: { b: true }, count: 1 },\n  'idle removes closed screensaver windows'\n)\nassertDeepEqual(\n  idle.screensaverWindowsAfter({ a: true }, '', false),\n  { windows: { a: true }, count: 1 },\n  'idle leaves screensaver windows unchanged without an address'\n)\n",
+        },
+    ],
+}

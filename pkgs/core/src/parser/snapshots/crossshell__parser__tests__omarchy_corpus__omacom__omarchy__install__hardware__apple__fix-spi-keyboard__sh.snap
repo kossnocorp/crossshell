@@ -1,0 +1,153 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/apple/fix-spi-keyboard.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "product_name",
+                        value: "$(cat /sys/class/dmi/id/product_name 2>/dev/null)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " $product_name =~ MacBook[89],1|MacBook1[02],1|MacBookPro13,[123]|MacBookPro14,[123] ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "echo",
+                                    args: [
+                                        "Detected MacBook with SPI keyboard",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "omarchy-pkg-add",
+                                    args: [
+                                        "macbook12-spi-driver-dkms",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "sudo",
+                                    args: [
+                                        "mkdir",
+                                        "-p",
+                                        "/etc/mkinitcpio.conf.d",
+                                    ],
+                                },
+                            ),
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Test(
+                                                    " $product_name == \"MacBook8,1\" ",
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "echo",
+                                                            args: [
+                                                                "MODULES=(applespi spi_pxa2xx_platform spi_pxa2xx_pci)",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    operator: Pipe,
+                                                    right: Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "sudo",
+                                                                args: [
+                                                                    "tee",
+                                                                    "/etc/mkinitcpio.conf.d/macbook_spi_modules.conf",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: None,
+                                                                operator: ">",
+                                                                target: "/dev/null",
+                                                            },
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: Some(
+                                    CshAst {
+                                        commands: [
+                                            Binary {
+                                                left: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "echo",
+                                                        args: [
+                                                            "MODULES=(applespi intel_lpss_pci spi_pxa2xx_platform)",
+                                                        ],
+                                                    },
+                                                ),
+                                                operator: Pipe,
+                                                right: Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "sudo",
+                                                            args: [
+                                                                "tee",
+                                                                "/etc/mkinitcpio.conf.d/macbook_spi_modules.conf",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

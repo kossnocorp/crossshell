@@ -96,6 +96,8 @@ pub(super) struct Cursor<'a> {
     pos: usize,
     nodes: Vec<CshAstExpression>,
     depth: usize,
+    here_documents: Vec<CshAstHereDocument>,
+    pending_here_documents: Vec<usize>,
 }
 
 impl<'a> Cursor<'a> {
@@ -105,14 +107,20 @@ impl<'a> Cursor<'a> {
             pos: 0,
             nodes: Vec::new(),
             depth: 0,
+            here_documents: Vec::new(),
+            pending_here_documents: Vec::new(),
         };
         let commands = cursor.list(Stop::Eof, false)?;
+        if !cursor.pending_here_documents.is_empty() {
+            return Err(cursor.expected("a here-document body"));
+        }
         if cursor.pos != source.len() {
             return Err(cursor.expected("end of file"));
         }
         Ok(CshAst {
             commands,
             nodes: cursor.nodes,
+            here_documents: cursor.here_documents,
         })
     }
 
@@ -224,14 +232,44 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    fn continuation(&mut self) {
+    fn continuation(&mut self) -> Parsed<'a, ()> {
         loop {
             self.space();
             self.comment();
-            if !self.eat(b'\n') {
+            if !self.newline()? {
                 break;
             }
         }
+        Ok(())
+    }
+
+    fn newline(&mut self) -> Parsed<'a, bool> {
+        if !self.eat(b'\n') {
+            return Ok(false);
+        }
+        for id in std::mem::take(&mut self.pending_here_documents) {
+            let doc = &mut self.here_documents[id];
+            loop {
+                let rest = &self.source[self.pos..];
+                let len = rest.find('\n').unwrap_or(rest.len());
+                let mut line = &rest[..len];
+                if doc.strip_tabs {
+                    line = line.trim_start_matches('\t');
+                }
+                self.pos += len + usize::from(len < rest.len());
+                if line == doc.delimiter {
+                    break;
+                }
+                if rest.is_empty() {
+                    return Err(self.expected("a here-document delimiter"));
+                }
+                doc.body.push_str(line);
+                if len < rest.len() {
+                    doc.body.push('\n');
+                }
+            }
+        }
+        Ok(true)
     }
 
     fn alloc(&mut self, expression: CshAstExpression) -> CshAstNodeId {
@@ -283,7 +321,7 @@ impl<'a> Cursor<'a> {
             if self.at_stop(stop) {
                 break;
             }
-            if self.eat(b'\n') {
+            if self.newline()? {
                 continue;
             }
             if self.byte() == Some(b';') && !matches!(self.peek(1), Some(b';' | b'&')) {
@@ -303,7 +341,7 @@ impl<'a> Cursor<'a> {
             if self.at_stop(stop) {
                 break;
             }
-            if self.eat(b'\n') {
+            if self.newline()? {
                 continue;
             }
             if self.byte() == Some(b';') && !matches!(self.peek(1), Some(b';' | b'&')) {
@@ -329,7 +367,7 @@ impl<'a> Cursor<'a> {
                 _ => break,
             };
             self.pos += 2;
-            self.continuation();
+            self.continuation()?;
             let right = self.pipeline()?;
             left = self.alloc(CshAstExpression::Binary {
                 left,
@@ -355,7 +393,7 @@ impl<'a> Cursor<'a> {
             } else {
                 CshAstOperator::Pipe
             };
-            self.continuation();
+            self.continuation()?;
             let right = self.command()?;
             left = self.alloc(CshAstExpression::Binary {
                 left,
@@ -372,7 +410,29 @@ impl<'a> Cursor<'a> {
 
     fn command(&mut self) -> Parsed<'a, CshAstNodeId> {
         self.space();
-        let expression = if self.eat(b'(') {
+        let expression = if let Some(name) = self.function_header()? {
+            self.continuation()?;
+            if !matches!(self.byte(), Some(b'(' | b'{')) {
+                return Err(self.expected("a function body"));
+            }
+            let body = self.command()?;
+            CshAstExpression::Function { name, body }
+        } else if self.byte() == Some(b'[') && self.peek(1) == Some(b'[') {
+            CshAstExpression::Test(self.test_expression()?)
+        } else if self.byte() == Some(b'(') && self.peek(1) == Some(b'(') {
+            // Bash also permits adjacent nested subshells: ((cmd) || other).
+            // Arithmetic requires a matching, adjacent closing `))`.
+            let start = self.pos;
+            match self.arithmetic() {
+                Ok(text) => CshAstExpression::Arithmetic(text),
+                Err(_) => {
+                    self.pos = start + 1;
+                    let body = self.list(Stop::Subshell, true)?;
+                    self.require_close_paren()?;
+                    CshAstExpression::Subshell(body)
+                }
+            }
+        } else if self.eat(b'(') {
             let body = self.list(Stop::Subshell, true)?;
             self.require_close_paren()?;
             CshAstExpression::Subshell(body)
@@ -424,6 +484,104 @@ impl<'a> Cursor<'a> {
         Ok(self.redirected(id, redirects))
     }
 
+    fn function_header(&mut self) -> Parsed<'a, Option<String>> {
+        let explicit = matches!(
+            &self.source.as_bytes()[self.pos..],
+            [b'f', b'u', b'n', b'c', b't', b'i', b'o', b'n']
+                | [
+                    b'f',
+                    b'u',
+                    b'n',
+                    b'c',
+                    b't',
+                    b'i',
+                    b'o',
+                    b'n',
+                    b' ' | b'\t' | b'\n',
+                    ..
+                ]
+        );
+        if explicit {
+            self.pos += 8;
+            self.space();
+        }
+        let start = self.pos;
+        let bytes = self.source.as_bytes();
+        if !matches!(self.byte(), Some(b'a'..=b'z' | b'A'..=b'Z' | b'_')) {
+            return if explicit {
+                Err(self.expected("a function name"))
+            } else {
+                Ok(None)
+            };
+        }
+        let mut end = start + 1;
+        while matches!(
+            bytes.get(end),
+            Some(b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-')
+        ) {
+            end += 1;
+        }
+        let mut after = end;
+        while matches!(bytes.get(after), Some(b' ' | b'\t')) {
+            after += 1;
+        }
+        if bytes.get(after) == Some(&b'(') && bytes.get(after + 1) == Some(&b')') {
+            self.pos = after + 2;
+        } else if explicit {
+            self.pos = after;
+        } else {
+            return Ok(None);
+        }
+        Ok(Some(self.source[start..end].to_owned()))
+    }
+
+    fn arithmetic(&mut self) -> Parsed<'a, String> {
+        self.pos += 2;
+        let start = self.pos;
+        self.balanced(b')')?;
+        let end = self.pos - 1;
+        self.require_close_paren()?;
+        Ok(self.source[start..end].to_owned())
+    }
+
+    fn test_expression(&mut self) -> Parsed<'a, String> {
+        self.pos += 2;
+        let start = self.pos;
+        let mut scratch = String::new();
+        let mut boundary = true;
+        loop {
+            match self.byte() {
+                None => return Err(self.expected("a closing ]]")),
+                Some(b']') if boundary && self.peek(1) == Some(b']') => {
+                    let text = self.source[start..self.pos].to_owned();
+                    self.pos += 2;
+                    return Ok(text);
+                }
+                Some(b'\'') => {
+                    self.single(&mut scratch)?;
+                    boundary = false;
+                }
+                Some(b'"') => {
+                    self.double(&mut scratch)?;
+                    boundary = false;
+                }
+                Some(b'$' | b'`') => {
+                    self.expansion(&mut scratch)?;
+                    boundary = false;
+                }
+                Some(b'\\') => {
+                    self.skip_escape()?;
+                    boundary = false;
+                }
+                Some(b) => {
+                    boundary = b.is_ascii_whitespace() || matches!(b, b'(' | b')' | b'&' | b'|');
+                    self.pos += 1;
+                }
+            }
+            scratch.clear();
+        }
+    }
+
     fn conditional(&mut self) -> Parsed<'a, CshAstExpression> {
         let mut branches = Vec::new();
         loop {
@@ -449,6 +607,16 @@ impl<'a> Cursor<'a> {
 
     fn for_loop(&mut self) -> Parsed<'a, CshAstExpression> {
         self.space();
+        if self.byte() == Some(b'(') && self.peek(1) == Some(b'(') {
+            let clauses = self.arithmetic()?;
+            self.space();
+            self.eat(b';');
+            self.continuation()?;
+            self.require_keyword(Keyword::Do)?;
+            let body = self.list(Stop::Done, true)?;
+            self.require_keyword(Keyword::Done)?;
+            return Ok(CshAstExpression::ArithmeticFor { clauses, body });
+        }
         let variable = self.required_word()?;
         self.space();
         let words = if self.eat_keyword(Keyword::In) {
@@ -468,7 +636,7 @@ impl<'a> Cursor<'a> {
         if !self.eat(b';') && !self.eat(b'\n') {
             return Err(self.expected("`;` or a newline"));
         }
-        self.continuation();
+        self.continuation()?;
         self.require_keyword(Keyword::Do)?;
         let body = self.list(Stop::Done, true)?;
         self.require_keyword(Keyword::Done)?;
@@ -484,7 +652,7 @@ impl<'a> Cursor<'a> {
         let word = self.required_word()?;
         self.space();
         self.require_keyword(Keyword::In)?;
-        self.continuation();
+        self.continuation()?;
         let mut arms = Vec::new();
         while !self.eat_keyword(Keyword::Esac) {
             self.eat(b'(');
@@ -512,7 +680,7 @@ impl<'a> Cursor<'a> {
                 body,
                 terminator,
             });
-            self.continuation();
+            self.continuation()?;
         }
         Ok(CshAstExpression::Case { word, arms })
     }
@@ -608,13 +776,28 @@ impl<'a> Cursor<'a> {
         self.pos += digits + operator.len();
         let descriptor = (digits > 0).then(|| self.source[start..start + digits].to_owned());
         self.space();
+        let delimiter_start = self.pos;
         let target = self
             .word()?
             .ok_or_else(|| self.expected("a redirection target"))?;
+        let here_document = if matches!(operator, "<<" | "<<-") {
+            let id = self.here_documents.len();
+            self.here_documents.push(CshAstHereDocument {
+                delimiter: target.clone(),
+                quoted: self.source[delimiter_start..self.pos].contains(['\'', '"', '\\']),
+                strip_tabs: operator == "<<-",
+                body: String::new(),
+            });
+            self.pending_here_documents.push(id);
+            Some(id)
+        } else {
+            None
+        };
         Ok(Some(CshAstRedirect {
             descriptor,
             operator: operator.to_owned(),
             target,
+            here_document,
         }))
     }
 
@@ -630,6 +813,18 @@ impl<'a> Cursor<'a> {
         let mut text = String::new();
         loop {
             match self.byte() {
+                Some(b'(') if text.ends_with('=') => {
+                    let start = self.pos;
+                    self.pos += 1;
+                    loop {
+                        self.continuation()?;
+                        if self.eat(b')') {
+                            break;
+                        }
+                        self.required_word()?;
+                    }
+                    text.push_str(&self.source[start..self.pos]);
+                }
                 None | Some(b' ' | b'\t' | b'\r' | b'\n' | b';' | b'|' | b'&' | b'(' | b')') => {
                     break;
                 }
@@ -782,9 +977,16 @@ impl<'a> Cursor<'a> {
         // Validate nested shell syntax with the same parser. Expansion text is
         // retained for execution; temporary nodes are reclaimed in one truncate.
         let checkpoint = self.nodes.len();
+        let document_checkpoint = self.here_documents.len();
+        let outer_pending = std::mem::take(&mut self.pending_here_documents);
         self.list(Stop::Subshell, false)?;
         self.require_close_paren()?;
+        if !self.pending_here_documents.is_empty() {
+            return Err(self.expected("a here-document body"));
+        }
         self.nodes.truncate(checkpoint);
+        self.here_documents.truncate(document_checkpoint);
+        self.pending_here_documents = outer_pending;
         text.push_str(&self.source[start..self.pos]);
         Ok(())
     }

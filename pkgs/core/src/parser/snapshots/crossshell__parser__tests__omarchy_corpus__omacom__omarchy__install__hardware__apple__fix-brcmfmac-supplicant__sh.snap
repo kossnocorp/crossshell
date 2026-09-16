@@ -1,0 +1,161 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/apple/fix-brcmfmac-supplicant.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "sys_vendor",
+                        value: "$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Binary {
+                                    left: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "lspci",
+                                            args: [
+                                                "-nn",
+                                            ],
+                                        },
+                                    ),
+                                    operator: Pipe,
+                                    right: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "106b:180[12]",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                        ],
+                                    },
+                                },
+                                operator: Or,
+                                right: Group(
+                                    CshAst {
+                                        commands: [
+                                            Binary {
+                                                left: Test(
+                                                    " $sys_vendor == Apple* ",
+                                                ),
+                                                operator: And,
+                                                right: Binary {
+                                                    left: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "lspci",
+                                                            args: [
+                                                                "-nn",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    operator: Pipe,
+                                                    right: Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "grep",
+                                                                args: [
+                                                                    "-E",
+                                                                    "14e4:(43ba|43bb|43bc|43a3|43dc|4464|4488|4425|4433)",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: None,
+                                                                operator: ">",
+                                                                target: "/dev/null",
+                                                            },
+                                                        ],
+                                                    },
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "echo",
+                                    args: [
+                                        "Detected a Mac with Broadcom Wi-Fi; running the WPA handshake in software",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "mkdir",
+                                    args: [
+                                        "-p",
+                                        "/etc/modprobe.d",
+                                    ],
+                                },
+                            ),
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "cat",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/etc/modprobe.d/brcmfmac.conf",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<<",
+                                        target: "EOF",
+                                        here_document: 0,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "# Broadcom's firmware supplicant and authenticator fail the WPA four-way\n# handshake on Apple hardware, which surfaces as a rejected password. Disable\n# both so wpa_supplicant performs the handshake instead.\noptions brcmfmac feature_disable=0x82000\n",
+        },
+    ],
+}

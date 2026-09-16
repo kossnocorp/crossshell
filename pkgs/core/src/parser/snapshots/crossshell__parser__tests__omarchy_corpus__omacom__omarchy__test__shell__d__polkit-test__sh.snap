@@ -1,0 +1,53 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/polkit-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const polkit = requireFromRoot('shell/plugins/polkit/PolkitModel.js')\n\nassert(polkit.promptLooksFingerprint('Swipe your finger'), 'polkit detects fingerprint prompts')\nassert(polkit.promptLooksFingerprint('fprintd verification'), 'polkit detects fprint prompts')\nassert(!polkit.promptLooksFingerprint('Password:'), 'polkit ignores password prompts')\n\nassertEqual(\n  polkit.authorizationLabel(\"Authentication is needed to run `/usr/bin/true' as the super user\"),\n  \"Authorize running '/usr/bin/true'\",\n  'polkit shortens the standard pkexec message'\n)\nassertEqual(\n  polkit.authorizationLabel('Authentication is required to change system settings'),\n  'Authentication is required to change system settings',\n  'polkit preserves custom authorization messages'\n)\n\nassert(\n  polkit.fingerprintConfiguredFromPamConfig(`\n# comment\nauth sufficient pam_fprintd.so\nauth include system-auth\n`),\n  'polkit detects fingerprint in a PAM config'\n)\nassert(\n  polkit.fingerprintConfiguredFromPamConfig(`\nauth [success=1 default=ignore] pam_exec.so quiet /usr/bin/omarchy-hw-laptop-closed\nauth sufficient pam_fprintd.so\nauth required pam_unix.so\n`),\n  'polkit detects fingerprint even behind a clamshell gate'\n)\nassert(\n  !polkit.fingerprintConfiguredFromPamConfig(`\naccount include system-auth\nauth include system-auth\nauth required pam_unix.so\n`),\n  'polkit reports no fingerprint when pam_fprintd is absent'\n)\n",
+        },
+    ],
+}

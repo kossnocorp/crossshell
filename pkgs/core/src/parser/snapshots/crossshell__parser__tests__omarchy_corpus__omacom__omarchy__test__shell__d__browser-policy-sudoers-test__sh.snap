@@ -1,0 +1,1384 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/browser-policy-sudoers-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "helper",
+                        value: "$ROOT/bin/omarchy-theme-set-browser-policy",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "setter",
+                        value: "$ROOT/bin/omarchy-theme-set-browser",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "sudoers_file",
+                        value: "$ROOT/etc/sudoers.d/omarchy-theme-browser",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rule",
+                        value: "%wheel ALL=(root) NOPASSWD: /usr/bin/omarchy-theme-set-browser-policy [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rules",
+                        value: "$(grep -vE '^[[:space:]]*(#|$)' \"$sudoers_file\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $rules == \"$rule\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "browser policy sudoers file carries exactly the six-hex-digit rule and nothing else",
+                        "got: $rules",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "command",
+                                        args: [
+                                            "-v",
+                                            "visudo",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "visudo",
+                                            args: [
+                                                "-cf",
+                                                "$sudoers_file",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "fail",
+                                        args: [
+                                            "browser policy sudoers rule parses",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "PACKAGED_PATH=/usr/bin/omarchy-theme-set-browser-policy",
+                            "$helper",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser-policy elevates the path the sudoers rule names",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-E",
+                            "sudo -n -l -l",
+                            "$helper",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser-policy reads the grant from the long sudo listing",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Eq",
+                        "^\\s*export PATH=/usr/local/sbin:/usr/local/bin:/usr/bin",
+                        "$helper",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser-policy pins PATH to trusted system directories when it holds root",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "gated",
+                        value: "$(grep -A1 -E '^if \\(\\( EUID == 0 \\)\\); then$' \"$helper\" || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $gated == *\"export PATH=/usr/local/sbin:/usr/local/bin:/usr/bin\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser-policy gates the trusted-PATH pin on holding root",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "browser policy sudoers rule is scoped to a single color argument",
+                ],
+            },
+        ),
+        For {
+            variable: "dir",
+            words: Some(
+                [
+                    "/etc/chromium/policies/managed",
+                    "/etc/opt/chrome/policies/managed",
+                    "/etc/opt/edge/policies/managed",
+                    "/etc/brave/policies/managed",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-Fx",
+                                        "  $dir",
+                                        "$helper",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "/dev/null",
+                                },
+                            ],
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-theme-set-browser-policy names $dir in its fixed policy directory list",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "policy_dir_count",
+                        value: "$(sed -n '/^POLICY_DIRS=(/,/^)/p' \"$helper\" | grep -c '^  /')",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Arithmetic(
+                "policy_dir_count == 4",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser-policy writes only the four known policy directories",
+                        "got: $policy_dir_count",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "install -m 0644 -o root -g root -T",
+                            "$helper",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser-policy installs color.json with install -T",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-E",
+                                            "mv -f",
+                                            "$helper",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "omarchy-theme-set-browser-policy does not mv into a planted color.json directory",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "browser policy helper writes a fixed set of policy directories",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/pkexec",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/pkexec",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/sudo",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                "EUID == 0",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "pass",
+                                    args: [
+                                        "running as root; skipping the elevation checks, which would rewrite this machine's browser policy",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: Some(
+                CshAst {
+                    commands: [
+                        Function {
+                            name: "elevation_for",
+                            body: Group(
+                                CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: ":",
+                                                    args: [],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">",
+                                                    target: "$test_tmp/elevation",
+                                                },
+                                            ],
+                                        },
+                                        Binary {
+                                            left: Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "ELEVATION_LOG",
+                                                                value: "$test_tmp/elevation",
+                                                            },
+                                                            CshAstAssignment {
+                                                                name: "PATH",
+                                                                value: "$stub_bin:$PATH",
+                                                            },
+                                                        ],
+                                                        name: "bash",
+                                                        args: [
+                                                            "$helper",
+                                                            "$@",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: "<",
+                                                        target: "/dev/null",
+                                                    },
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "/dev/null",
+                                                    },
+                                                    CshAstRedirect {
+                                                        descriptor: Some(
+                                                            "2",
+                                                        ),
+                                                        operator: ">&",
+                                                        target: "1",
+                                                    },
+                                                ],
+                                            },
+                                            operator: Or,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "true",
+                                                    args: [],
+                                                },
+                                            ),
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "cat",
+                                                args: [
+                                                    "$test_tmp/elevation",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "elevation",
+                                        value: "$(elevation_for 1c2027)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $elevation == \"sudo /usr/bin/omarchy-theme-set-browser-policy 1c2027\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "omarchy-theme-set-browser-policy takes the passwordless sudo grant without a terminal",
+                                        "got: $elevation",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "dev_linked",
+                                        value: "$(OMARCHY_PATH=\"$test_tmp/checkout\" elevation_for 1c2027)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $dev_linked == \"sudo /usr/bin/omarchy-theme-set-browser-policy 1c2027\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "omarchy-theme-set-browser-policy elevates the system install wherever OMARCHY_PATH points",
+                                        "got: $dev_linked",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "browser policy helper elevates a valid color through the sudo grant",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "ungranted",
+                                        value: "$(STUB_GRANTED=\"\" elevation_for 1c2027)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $ungranted == \"pkexec /usr/bin/omarchy-theme-set-browser-policy 1c2027\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "omarchy-theme-set-browser-policy falls back to polkit where the grant does not reach",
+                                        "got: $ungranted",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "browser policy helper falls back to polkit wherever the grant does not reach",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "bad",
+                            words: Some(
+                                [
+                                    "",
+                                    "1C2027",
+                                    "abc12",
+                                    "abc1234",
+                                    "1c202g",
+                                    "../../etc/passwd",
+                                    "1c2027 1c2027",
+                                    "$(id)",
+                                    "1c2027;id",
+                                    "#1c2027",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    If {
+                                        branches: [
+                                            CshAstBranch {
+                                                condition: CshAst {
+                                                    commands: [
+                                                        Redirected {
+                                                            expression: Command(
+                                                                CshAstCommand {
+                                                                    assignments: [
+                                                                        CshAstAssignment {
+                                                                            name: "PATH",
+                                                                            value: "$stub_bin:$PATH",
+                                                                        },
+                                                                        CshAstAssignment {
+                                                                            name: "ELEVATION_LOG",
+                                                                            value: "$test_tmp/elevation",
+                                                                        },
+                                                                    ],
+                                                                    name: "bash",
+                                                                    args: [
+                                                                        "$helper",
+                                                                        "$bad",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                            redirects: [
+                                                                CshAstRedirect {
+                                                                    descriptor: None,
+                                                                    operator: "<",
+                                                                    target: "/dev/null",
+                                                                },
+                                                                CshAstRedirect {
+                                                                    descriptor: None,
+                                                                    operator: ">",
+                                                                    target: "/dev/null",
+                                                                },
+                                                                CshAstRedirect {
+                                                                    descriptor: Some(
+                                                                        "2",
+                                                                    ),
+                                                                    operator: ">&",
+                                                                    target: "1",
+                                                                },
+                                                            ],
+                                                        },
+                                                    ],
+                                                },
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "fail",
+                                                                args: [
+                                                                    "omarchy-theme-set-browser-policy rejects '$bad'",
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        otherwise: None,
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [
+                                                CshAstAssignment {
+                                                    name: "rejected",
+                                                    value: "$(elevation_for \"$bad\")",
+                                                },
+                                            ],
+                                            name: "",
+                                            args: [],
+                                        },
+                                    ),
+                                    Binary {
+                                        left: Test(
+                                            " -z $rejected ",
+                                        ),
+                                        operator: Or,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "fail",
+                                                args: [
+                                                    "omarchy-theme-set-browser-policy rejects '$bad' before elevating",
+                                                    "got: $rejected",
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "PATH",
+                                                                value: "$stub_bin:$PATH",
+                                                            },
+                                                        ],
+                                                        name: "bash",
+                                                        args: [
+                                                            "$helper",
+                                                            "1c2027",
+                                                            "ffffff",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: "<",
+                                                        target: "/dev/null",
+                                                    },
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "/dev/null",
+                                                    },
+                                                    CshAstRedirect {
+                                                        descriptor: Some(
+                                                            "2",
+                                                        ),
+                                                        operator: ">&",
+                                                        target: "1",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "fail",
+                                                    args: [
+                                                        "omarchy-theme-set-browser-policy rejects more than one argument",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "browser policy helper accepts nothing but six lowercase hex digits",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "setter_bin",
+                        value: "$test_tmp/setter-bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$setter_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$setter_bin/omarchy-theme-set-browser-policy",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$setter_bin/omarchy-theme-set-browser-policy",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$setter_bin/omarchy-cmd-present",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 3,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$setter_bin/omarchy-cmd-present",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "setter_home",
+                        value: "$test_tmp/home",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "theme_dir",
+                        value: "$setter_home/.local/state/omarchy/current/theme",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$theme_dir",
+                ],
+            },
+        ),
+        Function {
+            name: "color_for_theme",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: ":",
+                                    args: [],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$test_tmp/color",
+                                },
+                            ],
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " $# -gt 0 ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "%s",
+                                                            "$1",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "$theme_dir/chromium.theme",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "rm",
+                                                args: [
+                                                    "-f",
+                                                    "$theme_dir/chromium.theme",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "HOME",
+                                                value: "$setter_home",
+                                            },
+                                            CshAstAssignment {
+                                                name: "COLOR_LOG",
+                                                value: "$test_tmp/color",
+                                            },
+                                            CshAstAssignment {
+                                                name: "PATH",
+                                                value: "$setter_bin:$stub_bin:$PATH",
+                                            },
+                                            CshAstAssignment {
+                                                name: "OMARCHY_PATH",
+                                                value: "$ROOT",
+                                            },
+                                        ],
+                                        name: "bash",
+                                        args: [
+                                            "$setter",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "true",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "cat",
+                                args: [
+                                    "$test_tmp/color",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(color_for_theme \"242,240,229\") == \"f2f0e5\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser converts an RGB triple to six hex digits",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(color_for_theme $'14,31,41\\n') == \"0e1f29\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser accepts a trailing newline",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(color_for_theme \"0,0,0\") == \"000000\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser pads single-digit components",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $(color_for_theme \" 12 , 11 , 12 \") == \"0c0b0c\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser tolerates surrounding whitespace",
+                    ],
+                },
+            ),
+        },
+        For {
+            variable: "malformed",
+            words: Some(
+                [
+                    "",
+                    "not,a,color",
+                    "1,2",
+                    "1,2,3,4",
+                    "256,0,0",
+                    "999,999,999",
+                    "-1,0,0",
+                    "1,2,3;id",
+                    "1,2,$(id)",
+                    "0x10,0,0",
+                    "1,2,3 4,5,6",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "color",
+                                    value: "$(color_for_theme \"$malformed\")",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Test(
+                            " $color == \"1c2027\" ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-theme-set-browser falls back to the stock colour for '$malformed'",
+                                    "got: $color",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Binary {
+            left: Test(
+                " $(color_for_theme) == \"1c2027\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-theme-set-browser falls back to the stock colour with no theme file",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "browser theme color is derived as six hex digits or falls back to the stock grey",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf 'pkexec %s\\n' \"$*\" >\"$ELEVATION_LOG\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nif [[ $1 == -n && $2 == -l ]]; then\n  if [[ ${STUB_GRANTED-granted} == \"granted\" ]]; then\n    echo \"    Options: !authenticate\"\n  else\n    echo \"    Matched: ${!#}\"\n  fi\n  exit 0\nfi\nprintf 'sudo %s\\n' \"$*\" >\"$ELEVATION_LOG\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >\"$COLOR_LOG\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nexit 1\n",
+        },
+    ],
+}

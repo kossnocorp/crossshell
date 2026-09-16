@@ -1,0 +1,104 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/hardware/fix-synaptic-touchpad.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Binary {
+                                    left: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-qi",
+                                                "synaptics",
+                                                "${OMARCHY_SYNAPTIC_INPUT_DEVICES:-/proc/bus/input/devices}",
+                                            ],
+                                        },
+                                    ),
+                                    operator: And,
+                                    right: Negated(
+                                        Binary {
+                                            left: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "lsmod",
+                                                    args: [],
+                                                },
+                                            ),
+                                            operator: Pipe,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "grep",
+                                                    args: [
+                                                        "-q",
+                                                        "^psmouse",
+                                                    ],
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                                operator: And,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "modprobe",
+                                        args: [
+                                            "-qn",
+                                            "psmouse",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "modprobe",
+                                        args: [
+                                            "psmouse",
+                                            "synaptics_intertouch=1",
+                                        ],
+                                    },
+                                ),
+                                operator: Or,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "echo",
+                                            args: [
+                                                "Warning: could not enable Synaptics InterTouch on psmouse",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">&",
+                                            target: "2",
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

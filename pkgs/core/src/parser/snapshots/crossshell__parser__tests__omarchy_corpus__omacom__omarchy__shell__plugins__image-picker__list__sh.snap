@@ -1,0 +1,926 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/shell/plugins/image-picker/list.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "image_dirs",
+                        value: "${1:-}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "cache_dir",
+                        value: "${XDG_CACHE_HOME:-$HOME/.cache}/omarchy/image-selector",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "index_file",
+                        value: "$cache_dir/index.tsv",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "pending_video_file",
+                        value: "$(mktemp)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$cache_dir",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -f \"$pending_video_file\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Function {
+            name: "is_video_path",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Test(
+                            " ${1,,} =~ \\.(mp4|m4v|mov|webm|mkv|avi)$ ",
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "thumbnail_path_for",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "image=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "signature",
+                                    "hash",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "signature",
+                                            value: "$(stat -Lc '%s:%Y' \"$image\")",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "hash",
+                                        value: "$(awk -F '\\t' -v path=\"$image\" -v sig=\"$signature\" '$1 == path && $2 == sig { print $3; exit }' \"$index_file\" 2>/dev/null)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -z $hash ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "hash",
+                                                            value: "$(printf '%s\\t%s' \"$image\" \"$signature\" | md5sum | cut -d ' ' -f 1)",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "%s/%s.jpg",
+                                    "$cache_dir",
+                                    "$hash",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "generate_video_thumbnail",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "image=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "thumbnail=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "lock=$thumbnail.lock",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "lock_fd",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "tmp=$thumbnail.$$.jpg",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Binary {
+                                                left: Test(
+                                                    " -d $lock ",
+                                                ),
+                                                operator: And,
+                                                right: Arithmetic(
+                                                    " $(date +%s) - $(stat -c '%Y' \"$lock\" 2>/dev/null || date +%s) > 120 ",
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "rmdir",
+                                                        args: [
+                                                            "$lock",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: Some(
+                                                            "2",
+                                                        ),
+                                                        operator: ">",
+                                                        target: "/dev/null",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "exec",
+                                        args: [
+                                            "{lock_fd}",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "$lock",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "flock",
+                                    args: [
+                                        "-w",
+                                        "30",
+                                        "$lock_fd",
+                                    ],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$thumbnail.*.jpg",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -f $thumbnail ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "timeout",
+                                                        args: [
+                                                            "-k",
+                                                            "5",
+                                                            "10",
+                                                            "ffmpegthumbnailer",
+                                                            "-i",
+                                                            "$image",
+                                                            "-o",
+                                                            "$tmp",
+                                                            "-s",
+                                                            "1536",
+                                                            "-q",
+                                                            "8",
+                                                            "{lock_fd}",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">&",
+                                                        target: "-",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "mv",
+                                                    args: [
+                                                        "-f",
+                                                        "$tmp",
+                                                        "$thumbnail",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "status",
+                                                        value: "$?",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "rm",
+                                                args: [
+                                                    "-f",
+                                                    "$tmp",
+                                                    "$thumbnail",
+                                                ],
+                                            },
+                                        ),
+                                        Binary {
+                                            left: Arithmetic(
+                                                " status == 124 || status == 137 ",
+                                            ),
+                                            operator: Or,
+                                            right: Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: ":",
+                                                        args: [],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "$thumbnail.failed",
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "return",
+                                                args: [
+                                                    "1",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "drain_pending_video_thumbnails",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "video_jobs",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -s $pending_video_file ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "video_jobs",
+                                        value: "$(( $(nproc) / 4 ))",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Binary {
+                            left: Arithmetic(
+                                " video_jobs > 0 ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "video_jobs",
+                                            value: "1",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "export",
+                                args: [
+                                    "-f",
+                                    "generate_video_thumbnail",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "xargs",
+                                        args: [
+                                            "-a",
+                                            "$pending_video_file",
+                                            "-0",
+                                            "-n",
+                                            "2",
+                                            "-P",
+                                            "$video_jobs",
+                                            "bash",
+                                            "-c",
+                                            "generate_video_thumbnail \"$1\" \"$2\"",
+                                            "_",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "true",
+                                    args: [],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "thumbnail_for",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "image=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "thumbnail",
+                                    "legacy_hash",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "thumbnail",
+                                            value: "$(thumbnail_path_for \"$image\")",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Binary {
+                                                left: Test(
+                                                    " ! -f $thumbnail ",
+                                                ),
+                                                operator: And,
+                                                right: Negated(
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "is_video_path",
+                                                            args: [
+                                                                "$image",
+                                                            ],
+                                                        },
+                                                    ),
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "legacy_hash",
+                                                            value: "$(md5sum \"$image\" 2>/dev/null | cut -d ' ' -f 1)",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Binary {
+                                                left: Test(
+                                                    " -n $legacy_hash && -f $cache_dir/$legacy_hash.jpg ",
+                                                ),
+                                                operator: And,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "thumbnail",
+                                                                value: "$cache_dir/$legacy_hash.jpg",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Test(
+                                                " -f $thumbnail ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "printf",
+                                                    args: [
+                                                        "%s",
+                                                        "$thumbnail",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "is_video_path",
+                                                        args: [
+                                                            "$image",
+                                                        ],
+                                                    },
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "printf",
+                                                    args: [
+                                                        "%s",
+                                                        "$image",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "mapfile",
+                    args: [
+                        "-d",
+                        "",
+                        "-t",
+                        "images",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<",
+                    target: "<(\n  while IFS= read -r dir; do\n    [[ -n $dir && -d $dir ]] || continue\n    find -L \"$dir\" -maxdepth 1 -type f \\\n      \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.gif' -o -iname '*.bmp' -o -iname '*.webp' \\\n         -o -iname '*.mp4' -o -iname '*.m4v' -o -iname '*.mov' -o -iname '*.webm' -o -iname '*.mkv' -o -iname '*.avi' \\) \\\n      -print0 2>/dev/null\n  done <<<\"$image_dirs\" | sort -z\n)",
+                },
+            ],
+        },
+        For {
+            variable: "image",
+            words: Some(
+                [
+                    "${images[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "is_video_path",
+                                                args: [
+                                                    "$image",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "thumbnail",
+                                                            value: "$(thumbnail_path_for \"$image\")",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            operator: Or,
+                                            right: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "continue",
+                                                    args: [],
+                                                },
+                                            ),
+                                        },
+                                        Binary {
+                                            left: Test(
+                                                " -f $thumbnail || -f $thumbnail.failed ",
+                                            ),
+                                            operator: Or,
+                                            right: Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "printf",
+                                                        args: [
+                                                            "%s\\0%s\\0",
+                                                            "$image",
+                                                            "$thumbnail",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">>",
+                                                        target: "$pending_video_file",
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "drain_pending_video_thumbnails",
+                args: [],
+            },
+        ),
+        For {
+            variable: "image",
+            words: Some(
+                [
+                    "${images[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [
+                                CshAstAssignment {
+                                    name: "thumbnail",
+                                    value: "$(thumbnail_for \"$image\")",
+                                },
+                            ],
+                            name: "",
+                            args: [],
+                        },
+                    ),
+                    Binary {
+                        left: Test(
+                            " -n $thumbnail ",
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "continue",
+                                args: [],
+                            },
+                        ),
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "printf",
+                            args: [
+                                "%s\\t%s\\n",
+                                "$image",
+                                "$thumbnail",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+    ],
+}

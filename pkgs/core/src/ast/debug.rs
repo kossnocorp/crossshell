@@ -10,7 +10,12 @@ struct Arm<'a>(&'a CshAst, &'a CshAstCaseArm);
 
 impl Debug for CshAst {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        List(self, &self.commands).fmt(f)
+        let mut debug = f.debug_struct("CshAst");
+        debug.field("commands", &Nodes(self, &self.commands));
+        if !self.here_documents.is_empty() {
+            debug.field("here_documents", &self.here_documents);
+        }
+        debug.finish()
     }
 }
 
@@ -71,6 +76,18 @@ impl Debug for Node<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let ast = self.0;
         match &ast[self.1] {
+            CshAstExpression::Function { name, body } => f
+                .debug_struct("Function")
+                .field("name", name)
+                .field("body", &Node(ast, *body))
+                .finish(),
+            CshAstExpression::Test(text) => f.debug_tuple("Test").field(text).finish(),
+            CshAstExpression::Arithmetic(text) => f.debug_tuple("Arithmetic").field(text).finish(),
+            CshAstExpression::ArithmeticFor { clauses, body } => f
+                .debug_struct("ArithmeticFor")
+                .field("clauses", clauses)
+                .field("body", &List(ast, body))
+                .finish(),
             CshAstExpression::Command(command) => f.debug_tuple("Command").field(command).finish(),
             CshAstExpression::Binary {
                 left,
@@ -136,5 +153,19 @@ impl Debug for Node<'_> {
                 .field("redirects", redirects)
                 .finish(),
         }
+    }
+}
+
+impl Debug for CshAstRedirect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut debug = f.debug_struct("CshAstRedirect");
+        debug
+            .field("descriptor", &self.descriptor)
+            .field("operator", &self.operator)
+            .field("target", &self.target);
+        if let Some(id) = self.here_document {
+            debug.field("here_document", &id);
+        }
+        debug.finish()
     }
 }

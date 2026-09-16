@@ -1,0 +1,53 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/keyboard-layout-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const model = requireFromRoot('shell/plugins/bar/widgets/KeyboardLayoutModel.js')\n\n// Trimmed from xkbcli list, keeping the format of every section it prints,\n// including the options nested under an option group: those quote their\n// description and print an empty brief, one indent deeper than a layout's.\nconst listing = [\n  'models:',\n  '- name: pc105',\n  '  vendor: Generic',\n  '  description: Generic 105-key PC',\n  'layouts:',\n  \"- layout: 'us'\",\n  \"  variant: ''\",\n  \"  brief: 'en'\",\n  '  description: English (US)',\n  \"  iso639: ['eng']\",\n  \"  iso3166: ['USA']\",\n  \"- layout: 'us'\",\n  \"  variant: 'intl'\",\n  \"  brief: 'en'\",\n  '  description: English (US, intl., with dead keys)',\n  \"- layout: 'br'\",\n  \"  variant: ''\",\n  \"  brief: 'pt'\",\n  '  description: Portuguese (Brazil)',\n  \"- layout: 'epo'\",\n  \"  variant: ''\",\n  \"  brief: 'eo'\",\n  '  description: Esperanto',\n  \"- layout: 'latam'\",\n  \"  variant: ''\",\n  \"  brief: 'es'\",\n  '  description: Spanish (Latin American)',\n  \"- layout: 'mm'\",\n  \"  variant: 'zawgyi'\",\n  \"  brief: 'my-zwg'\",\n  '  description: Burmese (Zawgyi)',\n  'option_groups:',\n  \"- name: 'grp'\",\n  '  description: Switching to another layout',\n  '  allows_multiple: true',\n  '  options:',\n  \"  - name: 'grp:switch'\",\n  \"    brief: ''\",\n  \"    description: 'Right Alt (while pressed)'\",\n  '    layout-specific: false',\n].join('\\n')\n\nconst briefs = model.layoutBriefs(listing)\n\nassertEqual(briefs['English (US)'], 'en', 'the table reads a layout brief')\nassertEqual(briefs['English (US, intl., with dead keys)'], 'en', 'the table reads a variant brief')\nassertEqual(briefs['Generic 105-key PC'], undefined, 'the table skips keyboard models')\nassertEqual(briefs['Switching to another layout'], undefined, 'the table skips option groups')\nassertEqual(briefs[\"'Right Alt (while pressed)'\"], undefined, 'the table skips the options under a group')\nassertEqual(Object.keys(briefs).length, 6, 'the table holds nothing but the layouts')\n\nassertEqual(model.shortLabel('English (US)', briefs), 'EN', 'the label is the language, not the country')\nassertEqual(model.shortLabel('Portuguese (Brazil)', briefs), 'PT', 'a country variant keeps its language')\nassertEqual(model.shortLabel('Esperanto', briefs), 'EO', 'a layout without a country still gets a code')\nassertEqual(model.shortLabel('Spanish (Latin American)', briefs), 'ES', 'a layout spanning countries still gets a code')\nassertEqual(model.shortLabel('Burmese (Zawgyi)', briefs), 'MY', 'a brief carrying a script drops it')\nassertEqual(model.shortLabel('A user-defined custom Layout', { 'A user-defined custom Layout': 'custom' }), 'CUS', 'a brief that is a word is cut to size')\n\n// A brief pairs with the description printed under it, so a block that prints\n// one without the other must not hand its code to the block that follows.\nconst orphaned = model.layoutBriefs([\n  'layouts:',\n  \"- layout: 'us'\",\n  \"  brief: 'en'\",\n  \"- layout: 'gr'\",\n  '  description: Greek',\n].join('\\n'))\n\nassertEqual(orphaned['Greek'], undefined, 'a brief stops at the end of its block')\n\nassertEqual(model.shortLabel('Elvish (Tengwar)', briefs), 'ELV', 'an unlisted layout falls back to its description')\nassertEqual(model.shortLabel('English (US)', {}), 'ENG', 'the label survives an empty table')\nassertEqual(model.shortLabel('constructor', {}), 'CON', 'a description naming a built-in still falls back')\nassertEqual(model.shortLabel('', briefs), '', 'no keymap means no label')\n\n// The seat as hyprctl reports it, virtual keyboards already filtered out: the\n// buttons libinput calls keyboards sit beside the one being typed on, and the\n// main flag lands on either, or on the virtual keyboard that isn't here.\nconst seat = (activeIndex, main) => [\n  { name: 'power-button', active_layout_index: 0, active_keymap: 'English (US)', main: main === 'power-button' },\n  { name: 'at-translated-set-2-keyboard', active_layout_index: activeIndex, active_keymap: activeIndex ? 'French' : 'English (US)', main: main === 'keyboard' },\n]\n\nassertEqual(model.selectKeyboard(seat(1)).active_keymap, 'French', 'the keyboard that switched is read when nothing holds main')\nassertEqual(model.selectKeyboard(seat(1, 'power-button')).active_keymap, 'French', 'the keyboard that switched outranks a button holding main')\nassertEqual(model.selectKeyboard(seat(0)).active_keymap, 'English (US)', 'before a switch every keyboard reads the same layout')\nassertEqual(model.selectKeyboard(seat(0), 'at-translated-set-2-keyboard').name, 'at-translated-set-2-keyboard', 'the keyboard activelayout named is kept once it switches back')\nassertEqual(model.selectKeyboard([{ name: 'a' }, { name: 'b' }]).name, 'a', 'a keyboard reporting no index still gets picked')\nassertEqual(model.selectKeyboard([]), undefined, 'a seat with no typed keyboard picks none')\n\n// Two real keyboards on the layout the seat started on, so nothing but the name\n// says which one is being typed on. The one that wrapped from the last layout\n// back to the first sits behind the other and is still the one that switched.\nconst pair = (activeIndex, otherIndex) => [\n  { name: 'at-translated-set-2-keyboard', active_layout_index: otherIndex, active_keymap: otherIndex ? 'German' : 'English (US)' },\n  { name: 'usb-keyboard', active_layout_index: activeIndex, active_keymap: activeIndex ? 'German' : 'English (US)' },\n]\n\nassertEqual(model.selectKeyboard(pair(0, 0), 'usb-keyboard').name, 'usb-keyboard', 'the keyboard that switched is read once it is named')\nassertEqual(model.selectKeyboard(pair(0, 2), 'usb-keyboard').name, 'usb-keyboard', 'a keyboard that wrapped back to the first layout is still the one that switched')\nassertEqual(model.selectKeyboard(pair(0, 2), 'gone-keyboard').name, 'at-translated-set-2-keyboard', 'a name no keyboard answers to falls back to layout progress')\n\n// Hyprland calls the ACPI buttons keyboards too, and hands them the seat's\n// layout list. Reading one would describe a layout nobody typed, and switching\n// one would leave the keyboard where it was.\nassertEqual(model.isTypedKeyboard('at-translated-set-2-keyboard'), true, 'a real keyboard is typed on')\nassertEqual(model.isTypedKeyboard('power-button'), false, 'a power button is not')\nassertEqual(model.isTypedKeyboard('lid-switch'), false, 'a lid switch is not')\nassertEqual(model.isTypedKeyboard('sleep-button'), false, 'a sleep button is not')\nassertEqual(model.isTypedKeyboard('hl-virtual-keyboard-1'), false, 'the keyboard an input method injects through is not')\nassertEqual(model.isTypedKeyboard(''), true, 'a keyboard reporting no name is left where it was found')\n\n// The activelayout event names the keyboard ahead of the layout it moved to,\n// and a description with a comma in it has to survive the split.\nconst rawEvent = data => ({ data })\nconst parsedEvent = data => ({ data, parse: count => data.split(',', count - 1).concat(data.split(',').slice(count - 1).join(',')) })\n\nassertEqual(model.eventKeyboardName(rawEvent('at-translated-set-2-keyboard,French')), 'at-translated-set-2-keyboard', 'the event names its keyboard')\nassertEqual(model.eventKeyboardName(parsedEvent('at-translated-set-2-keyboard,English (US, intl.)')), 'at-translated-set-2-keyboard', 'a description carrying a comma leaves the name alone')\nassertEqual(model.eventKeyboardName(rawEvent('hl-virtual-keyboard,English (US)')), '', 'the keyboard an input method injects through is not typed on')\nassertEqual(model.eventKeyboardName({ parse: () => { throw new Error('unsupported') }, data: 'kb,French' }), 'kb', 'a binding without parse falls back to the raw data')\nassertEqual(model.eventKeyboardName({}), '', 'an event with nothing in it names no keyboard')\n",
+        },
+    ],
+}

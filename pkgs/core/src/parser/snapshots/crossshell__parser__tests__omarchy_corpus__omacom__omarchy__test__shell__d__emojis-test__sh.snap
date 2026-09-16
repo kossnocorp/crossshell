@@ -1,0 +1,279 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/emojis-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "TMPDIR",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$TMPDIR\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$TMPDIR/bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/wl-copy",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/wtype",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$TMPDIR/bin/sleep",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 3,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$TMPDIR/bin/wl-copy",
+                    "$TMPDIR/bin/wtype",
+                    "$TMPDIR/bin/sleep",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "WL_COPY_OUT",
+                        value: "$TMPDIR/copy",
+                    },
+                    CshAstAssignment {
+                        name: "WL_COPY_EMOJI_OUT",
+                        value: "$TMPDIR/emoji",
+                    },
+                    CshAstAssignment {
+                        name: "WTYPE_OUT",
+                        value: "$TMPDIR/wtype",
+                    },
+                    CshAstAssignment {
+                        name: "PATH",
+                        value: "$TMPDIR/bin:$PATH",
+                    },
+                ],
+                name: "$ROOT/bin/omarchy-menu-emoji-insert",
+                args: [
+                    "😀",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/emoji\") == \"😀\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "emoji insert helper copies emoji transiently",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "emoji insert helper copies emoji transiently",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/emoji.args\") == \"--type text/plain --sensitive --foreground\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "emoji insert helper serves sensitive transient clipboard in foreground",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "emoji insert helper serves transient clipboard in foreground",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $(<\"$TMPDIR/wtype\") == \"-M shift -k Insert -m shift\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "emoji insert helper pastes with shift insert",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "emoji insert helper pastes with shift insert",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const fs = require('fs')\nconst emojis = requireFromRoot('shell/plugins/emojis/EmojiSearch.js')\n\nconst raw = fs.readFileSync(path.join(root, 'shell/plugins/emojis/emojis.json'), 'utf8')\nconst data = emojis.parseEmojis(raw)\n\nassert(data.length > 1000, 'emoji dataset parses')\nassertDeepEqual(emojis.parseEmojis('{'), [], 'invalid emoji JSON parses as empty list')\nassertDeepEqual(emojis.parseEmojis('{\"e\":\"nope\"}'), [], 'non-array emoji JSON parses as empty list')\n\nconst fixture = [\n  { e: 'a', k: 'grinning face smile happy' },\n  { e: 'b', k: 'face with tears of joy joy tears' },\n  { e: 'c', k: 'flag: united states us america' }\n]\n\nassertDeepEqual(\n  emojis.filterEmojis(fixture, '  JOY  ').map(item => item.e),\n  ['b'],\n  'emoji filtering trims and lowercases query'\n)\n\nassertDeepEqual(\n  emojis.filterEmojis(fixture, '', 2).map(item => item.e),\n  ['a', 'b'],\n  'emoji filtering honors result limit'\n)\n\nassertDeepEqual(\n  emojis.filterEmojis(fixture, '', 0),\n  [],\n  'emoji filtering supports zero result limit'\n)\n\nassertEqual(\n  emojis.filterEmojis(data, 'face with tears')[0].e,\n  '\\u{1F602}',\n  'emoji filtering finds face with tears of joy'\n)\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nargs=\"$*\"\ntarget=\"$WL_COPY_OUT\"\nif [[ $args == \"--type text/plain --sensitive --foreground\" ]]; then\n  target=\"$WL_COPY_EMOJI_OUT\"\nfi\n\nprintf '%s\\n' \"$args\" >\"$target.args\"\ncat >\"$target\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >\"$WTYPE_OUT\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\nexit 0\n",
+        },
+    ],
+}

@@ -1,0 +1,1437 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/apply-lock-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "apply_lock",
+                        value: "$ROOT/bin/omarchy-apply-lock",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "root_path_guard",
+                        value: "$(awk '\n  /^if \\(\\( EUID == 0 \\)\\); then$/ { inside = 1 }\n  inside { print }\n  inside && /^fi$/ { exit }\n' \"$apply_lock\")",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "  export PATH=/usr/share/omarchy/bin:/usr/local/bin:/usr/bin:/bin",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: "<<<",
+                        target: "$root_path_guard",
+                    },
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the root lock helper replaces its inherited command path",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "grep",
+                                        args: [
+                                            "-E",
+                                            "(\\.local/bin|target_user|target_home)",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: "<<<",
+                                        target: "$root_path_guard",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "the root lock helper does not retain a user-controlled command directory",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the root lock helper uses only trusted command directories",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "[[ -x /usr/bin/fprintd-list ]]",
+                            "$apply_lock",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the lock helper checks the trusted fprintd-list executable",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-F",
+                            "/usr/bin/fprintd-list \"$target_user\"",
+                            "$apply_lock",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the lock helper invokes fprintd-list by its trusted absolute path",
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Binary {
+                                    left: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "-F",
+                                                    "omarchy-cmd-present fprintd-list",
+                                                    "$apply_lock",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                        ],
+                                    },
+                                    operator: Or,
+                                    right: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "grep",
+                                                args: [
+                                                    "-E",
+                                                    "(^|[[:space:];&|])fprintd-list([[:space:]]|$)",
+                                                    "$apply_lock",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "/dev/null",
+                                            },
+                                        ],
+                                    },
+                                },
+                                operator: Or,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "grep",
+                                            args: [
+                                                "-E",
+                                                "command[[:space:]]+-v[[:space:]]+fprintd-list",
+                                                "$apply_lock",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "the lock helper does not resolve fprintd-list through PATH",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the lock helper pins fprintd-list to its packaged system path",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "root_runner",
+                        value: "()",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "root_runtime_available",
+                        value: "1",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " EUID != 0 ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "command",
+                                                                args: [
+                                                                    "-v",
+                                                                    "unshare",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: None,
+                                                                operator: ">",
+                                                                target: "/dev/null",
+                                                            },
+                                                        ],
+                                                    },
+                                                    operator: And,
+                                                    right: Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "unshare",
+                                                                args: [
+                                                                    "--user",
+                                                                    "--map-root-user",
+                                                                    "true",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: Some(
+                                                                    "2",
+                                                                ),
+                                                                operator: ">",
+                                                                target: "/dev/null",
+                                                            },
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "root_runner",
+                                                                value: "(unshare --user --map-root-user)",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: Some(
+                                    CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "root_runtime_available",
+                                                            value: "0",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Arithmetic(
+                                " ! root_runtime_available ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "pass",
+                                    args: [
+                                        "no unprivileged user namespace; skipping the root lock-helper lookup matrix",
+                                    ],
+                                },
+                            ),
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "poison_bin",
+                        value: "$test_tmp/poison-bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "trusted_root_bin",
+                        value: "$test_tmp/trusted-root-bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "trusted_fprintd",
+                        value: "$test_tmp/trusted-fprintd-list",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "password_pam",
+                        value: "$test_tmp/omarchy-lock-password",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fingerprint_pam",
+                        value: "$test_tmp/omarchy-lock-fingerprint",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "attack_marker",
+                        value: "$test_tmp/user-fprintd-list-ran",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "trusted_uid",
+                        value: "$test_tmp/trusted-fprintd-list.uid",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "trusted_args",
+                        value: "$test_tmp/trusted-fprintd-list.args",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "attack_args",
+                        value: "$test_tmp/user-fprintd-list.args",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "patched_helper",
+                        value: "$test_tmp/omarchy-apply-lock-patched",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "absolute_only_helper",
+                        value: "$test_tmp/omarchy-apply-lock-absolute-only",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "root_path_only_helper",
+                        value: "$test_tmp/omarchy-apply-lock-root-path-only",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "unprotected_helper",
+                        value: "$test_tmp/omarchy-apply-lock-unprotected",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "target_user",
+                        value: "omarchy-regression-user",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$poison_bin",
+                    "$trusted_root_bin",
+                ],
+            },
+        ),
+        For {
+            variable: "helper",
+            words: Some(
+                [
+                    "grep",
+                    "rm",
+                    "tee",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "ln",
+                            args: [
+                                "-s",
+                                "/usr/bin/$helper",
+                                "$trusted_root_bin/$helper",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "TEST_ATTACK_ARGS=$attack_args",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "TEST_ATTACK_MARKER=$attack_marker",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "TEST_TRUSTED_ARGS=$trusted_args",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "export",
+                args: [
+                    "TEST_TRUSTED_UID=$trusted_uid",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$trusted_fprintd",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$poison_bin/fprintd-list",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$trusted_fprintd",
+                    "$poison_bin/fprintd-list",
+                ],
+            },
+        ),
+        Function {
+            name: "prepare_helper",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "destination=$1",
+                                    "keep_root_path=$2",
+                                    "use_absolute_fprintd=$3",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "awk",
+                                    args: [
+                                        "-v",
+                                        "password_pam=$password_pam",
+                                        "-v",
+                                        "fingerprint_pam=$fingerprint_pam",
+                                        "-v",
+                                        "trusted_root_bin=$trusted_root_bin",
+                                        "-v",
+                                        "trusted_fprintd=$trusted_fprintd",
+                                        "-v",
+                                        "keep_root_path=$keep_root_path",
+                                        "-v",
+                                        "use_absolute_fprintd=$use_absolute_fprintd",
+                                        "\n    {\n      line = $0\n      gsub(\"/etc/pam\\\\.d/omarchy-lock-password\", \"\\\"\" password_pam \"\\\"\", line)\n      gsub(\"/etc/pam\\\\.d/omarchy-lock-fingerprint\", \"\\\"\" fingerprint_pam \"\\\"\", line)\n\n      if (line == \"if (( EUID == 0 )); then\" && keep_root_path == 0) {\n        print \"if (( 0 )); then\"\n        next\n      }\n      if (line == \"  export PATH=/usr/share/omarchy/bin:/usr/local/bin:/usr/bin:/bin\") {\n        print \"  export PATH=\\\"\" trusted_root_bin \"\\\"\"\n        next\n      }\n      if (line == \"if [[ -x /usr/bin/fprintd-list ]] &&\") {\n        if (use_absolute_fprintd == 1) {\n          print \"if [[ -x \\\"\" trusted_fprintd \"\\\" ]] &&\"\n        } else {\n          print \"if command -v fprintd-list >/dev/null 2>&1 &&\"\n        }\n        next\n      }\n      if (line == \"  /usr/bin/fprintd-list \\\"$target_user\\\" 2>/dev/null | grep -qi finger; then\") {\n        if (use_absolute_fprintd == 1) {\n          print \"  \\\"\" trusted_fprintd \"\\\" \\\"$target_user\\\" 2>/dev/null | grep -qi finger; then\"\n        } else {\n          print \"  fprintd-list \\\"$target_user\\\" 2>/dev/null | grep -qi finger; then\"\n        }\n        next\n      }\n      if (line == \"if omarchy-shell lock status >/dev/null 2>&1; then\") {\n        print \"if false; then\"\n        next\n      }\n\n      print line\n    }\n  ",
+                                        "$apply_lock",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$destination",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "chmod",
+                                args: [
+                                    "+x",
+                                    "$destination",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_helper",
+                args: [
+                    "$patched_helper",
+                    "1",
+                    "1",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_helper",
+                args: [
+                    "$absolute_only_helper",
+                    "0",
+                    "1",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_helper",
+                args: [
+                    "$root_path_only_helper",
+                    "1",
+                    "0",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "prepare_helper",
+                args: [
+                    "$unprotected_helper",
+                    "0",
+                    "0",
+                ],
+            },
+        ),
+        For {
+            variable: "helper",
+            words: Some(
+                [
+                    "$patched_helper",
+                    "$absolute_only_helper",
+                    "$root_path_only_helper",
+                    "$unprotected_helper",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Binary {
+                                                left: Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "grep",
+                                                            args: [
+                                                                "-F",
+                                                                "/etc/pam.d/",
+                                                                "$helper",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                    ],
+                                                },
+                                                operator: Or,
+                                                right: Redirected {
+                                                    expression: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "grep",
+                                                            args: [
+                                                                "-F",
+                                                                "/usr/bin/fprintd-list",
+                                                                "$helper",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    redirects: [
+                                                        CshAstRedirect {
+                                                            descriptor: None,
+                                                            operator: ">",
+                                                            target: "/dev/null",
+                                                        },
+                                                    ],
+                                                },
+                                            },
+                                            operator: Or,
+                                            right: Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "grep",
+                                                        args: [
+                                                            "-F",
+                                                            "omarchy-shell lock status",
+                                                            "$helper",
+                                                        ],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">",
+                                                        target: "/dev/null",
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "fail",
+                                                args: [
+                                                    "the isolated root fixture redirects every live-system lock-helper target",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        Function {
+            name: "reset_runtime_files",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$password_pam",
+                                    "$fingerprint_pam",
+                                    "$trusted_uid",
+                                    "$trusted_args",
+                                    "$attack_marker",
+                                    "$attack_args",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "run_as_root",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "helper=$1",
+                                    "description=$2",
+                                    "output",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "output",
+                                                                value: "$(PATH=\"$poison_bin:/usr/bin:/bin\" OMARCHY_INSTALL_USER=\"$target_user\" \\\n    \"${root_runner[@]}\" /bin/bash \"$helper\" 2>&1)",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "fail",
+                                                    args: [
+                                                        "$description",
+                                                        "$output",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_runtime_files",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_as_root",
+                args: [
+                    "$patched_helper",
+                    "the fully hardened lock helper runs in an isolated root context",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $attack_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the hardened root lock helper executes the user-planted fprintd-list",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "0",
+                            "$trusted_uid",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the trusted fprintd-list probe runs with EUID 0",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "$target_user",
+                            "$trusted_args",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the trusted fprintd-list probe receives the target user",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -s $password_pam && -s $fingerprint_pam ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the isolated root lock-helper run writes both scratch PAM fixtures",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the hardened root lock helper uses the trusted fingerprint probe",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_runtime_files",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_as_root",
+                args: [
+                    "$absolute_only_helper",
+                    "the absolute-path-only lock helper runs in an isolated root context",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $attack_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an absolute fprintd-list path permits the user-planted command",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "0",
+                            "$trusted_uid",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the absolute-path defense runs the trusted probe as root",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the absolute fprintd-list path independently blocks the user-planted command",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_runtime_files",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_as_root",
+                args: [
+                    "$root_path_only_helper",
+                    "the root-PATH-only lock helper runs in an isolated root context",
+                ],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $attack_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the trusted root path permits the user-planted fprintd-list",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the trusted root path independently blocks the user-planted command",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "reset_runtime_files",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "run_as_root",
+                args: [
+                    "$unprotected_helper",
+                    "the unprotected mutation runs in an isolated root context",
+                ],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "0",
+                            "$attack_marker",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the root lock-helper fixture detects a PATH-resolved fprintd-list regression",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Fx",
+                            "$target_user",
+                            "$attack_args",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the planted fprintd-list receives the target user",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -s $fingerprint_pam ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the planted fprintd-list controls the fingerprint PAM branch",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the root lock-helper matrix rejects the vulnerable PATH lookup",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf '%s\\n' \"$EUID\" >\"$TEST_TRUSTED_UID\"\nprintf '%s\\n' \"$*\" >\"$TEST_TRUSTED_ARGS\"\necho \"Fingerprints are enrolled\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf '%s\\n' \"$EUID\" >\"$TEST_ATTACK_MARKER\"\nprintf '%s\\n' \"$*\" >\"$TEST_ATTACK_ARGS\"\necho \"Fingerprints are enrolled\"\n",
+        },
+    ],
+}

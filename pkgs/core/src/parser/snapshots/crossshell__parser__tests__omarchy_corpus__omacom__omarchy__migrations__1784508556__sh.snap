@@ -1,0 +1,105 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1784508556.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Pin browser password store to gnome-libsecret (prevents cookie/login loss on Hyprland)",
+                ],
+            },
+        ),
+        For {
+            variable: "conf",
+            words: Some(
+                [
+                    "~/.config/{chromium,brave,chrome,microsoft-edge-stable}-flags.conf",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Test(
+                                                " -f $conf ",
+                                            ),
+                                            operator: And,
+                                            right: Negated(
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "grep",
+                                                        args: [
+                                                            "-q",
+                                                            "--",
+                                                            "--password-store=",
+                                                            "$conf",
+                                                        ],
+                                                    },
+                                                ),
+                                            ),
+                                        },
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Binary {
+                                            left: Test(
+                                                " -n $(tail -c1 \"$conf\") ",
+                                            ),
+                                            operator: And,
+                                            right: Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "echo",
+                                                        args: [],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: ">>",
+                                                        target: "$conf",
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "--password-store=gnome-libsecret",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">>",
+                                                    target: "$conf",
+                                                },
+                                            ],
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+    ],
+}

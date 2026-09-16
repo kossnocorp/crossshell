@@ -1,0 +1,674 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1786643346.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Repair the Copy URL shortcut for profiles that predate its pinned extension id",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "pinned_id",
+                        value: "bgpiichlckmfanooecilcjemknkcpngb",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "repair_py",
+                        value: "$(cat <<'PY'\nimport json\nimport shutil\nimport sys\nfrom pathlib import Path\n\npath = Path(sys.argv[1])\npinned_id = sys.argv[2]\nmode = sys.argv[3]\n\ntry:\n    preferences = json.loads(path.read_text())\nexcept (OSError, ValueError):\n    sys.exit(1)\n\nextensions = preferences.get(\"extensions\", {})\ncommands = extensions.get(\"commands\", {})\nsettings = extensions.get(\"settings\", {})\n\ndef ghost_id(command):\n    if command.get(\"command_name\") != \"copy-url\":\n        return None\n    extension = command.get(\"extension\")\n    if not extension or extension == pinned_id:\n        return None\n    # An installed extension records its install path in settings; only the\n    # ghosts of Copy URL itself may be rebound.\n    install_path = settings.get(extension, {}).get(\"path\", \"\")\n    if install_path and not install_path.endswith(\"/default/chromium/extensions/copy-url\"):\n        return None\n    return extension\n\nif mode == \"check\":\n    sys.exit(0 if any(ghost_id(c) for c in commands.values()) else 1)\n\n# Chromium keeps one shortcut per command, so a ghost may only be rebound\n# when the pinned extension holds no copy-url binding of its own; further\n# ghosts are dropped rather than doubled up.\npinned_bound = any(\n    c.get(\"command_name\") == \"copy-url\" and c.get(\"extension\") == pinned_id\n    for c in commands.values()\n)\n\nchanged = False\nfor accelerator in list(commands):\n    ghost = ghost_id(commands[accelerator])\n    if not ghost:\n        continue\n    if pinned_bound:\n        del commands[accelerator]\n    else:\n        commands[accelerator][\"extension\"] = pinned_id\n        pinned_bound = True\n        pinned_command = settings.get(pinned_id, {}).get(\"commands\", {}).get(\"copy-url\", {})\n        if pinned_command:\n            pinned_command[\"was_assigned\"] = True\n    settings.pop(ghost, None)\n    changed = True\n\nif changed:\n    shutil.copy2(path, path.with_name(path.name + \".omarchy-copy-url-repair.bak\"))\n    path.write_text(json.dumps(preferences, separators=(\",\", \":\")))\nPY\n)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "profile_roots",
+                        value: "(\n  \"$HOME/.config/chromium\"\n  \"$HOME/.config/google-chrome\"\n  \"$HOME/.config/google-chrome-beta\"\n  \"$HOME/.config/google-chrome-unstable\"\n  \"$HOME/.config/BraveSoftware/Brave-Browser\"\n  \"$HOME/.config/BraveSoftware/Brave-Browser-Beta\"\n  \"$HOME/.config/BraveSoftware/Brave-Browser-Nightly\"\n  \"$HOME/.config/microsoft-edge\"\n  \"$HOME/.config/microsoft-edge-beta\"\n  \"$HOME/.config/microsoft-edge-dev\"\n  \"$HOME/.config/vivaldi\"\n  \"$HOME/.config/opera\"\n  \"$HOME/.config/helium\"\n)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "find_pending",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "pending",
+                                        value: "()",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        For {
+                            variable: "profile_root",
+                            words: Some(
+                                [
+                                    "${profile_roots[@]}",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Test(
+                                            " -d $profile_root ",
+                                        ),
+                                        operator: Or,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "continue",
+                                                args: [],
+                                            },
+                                        ),
+                                    },
+                                    For {
+                                        variable: "preferences",
+                                        words: Some(
+                                            [
+                                                "$profile_root/*/Preferences",
+                                            ],
+                                        ),
+                                        body: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Test(
+                                                        " -f $preferences ",
+                                                    ),
+                                                    operator: Or,
+                                                    right: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "continue",
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                },
+                                                Binary {
+                                                    left: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "python3",
+                                                            args: [
+                                                                "-c",
+                                                                "$repair_py",
+                                                                "$preferences",
+                                                                "$pinned_id",
+                                                                "check",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    operator: Or,
+                                                    right: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "continue",
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                },
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "pending+=(\"$preferences\")",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "unverified_repairs_exist",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "profile_root",
+                                    "backup",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "profile_root",
+                            words: Some(
+                                [
+                                    "${profile_roots[@]}",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    For {
+                                        variable: "backup",
+                                        words: Some(
+                                            [
+                                                "$profile_root/*/Preferences.omarchy-copy-url-repair.bak",
+                                            ],
+                                        ),
+                                        body: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Test(
+                                                        " -f $backup ",
+                                                    ),
+                                                    operator: And,
+                                                    right: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "return",
+                                                            args: [
+                                                                "0",
+                                                            ],
+                                                        },
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "profile_open",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Test(
+                            " -L $1/SingletonLock || -e $1/SingletonLock || -S $1/SingletonSocket ",
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "affected_profile_open",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "preferences",
+                                    "backup",
+                                    "profile_root",
+                                ],
+                            },
+                        ),
+                        For {
+                            variable: "preferences",
+                            words: Some(
+                                [
+                                    "${pending[@]}",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "profile_open",
+                                                args: [
+                                                    "$(dirname \"$(dirname \"$preferences\")\")",
+                                                ],
+                                            },
+                                        ),
+                                        operator: And,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "return",
+                                                args: [
+                                                    "0",
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                        For {
+                            variable: "profile_root",
+                            words: Some(
+                                [
+                                    "${profile_roots[@]}",
+                                ],
+                            ),
+                            body: CshAst {
+                                commands: [
+                                    For {
+                                        variable: "backup",
+                                        words: Some(
+                                            [
+                                                "$profile_root/*/Preferences.omarchy-copy-url-repair.bak",
+                                            ],
+                                        ),
+                                        body: CshAst {
+                                            commands: [
+                                                Binary {
+                                                    left: Test(
+                                                        " -f $backup ",
+                                                    ),
+                                                    operator: Or,
+                                                    right: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "continue",
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                },
+                                                Binary {
+                                                    left: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "profile_open",
+                                                            args: [
+                                                                "$(dirname \"$(dirname \"$backup\")\")",
+                                                            ],
+                                                        },
+                                                    ),
+                                                    operator: And,
+                                                    right: Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "return",
+                                                            args: [
+                                                                "0",
+                                                            ],
+                                                        },
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "find_pending",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Arithmetic(
+                                    " ! ${#pending[@]} ",
+                                ),
+                                operator: And,
+                                right: Negated(
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "unverified_repairs_exist",
+                                            args: [],
+                                        },
+                                    ),
+                                ),
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Loop {
+            until: false,
+            condition: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "affected_profile_open",
+                            args: [],
+                        },
+                    ),
+                ],
+            },
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Negated(
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "gum",
+                                                    args: [
+                                                        "confirm",
+                                                        "Close the browser windows to repair the Copy URL shortcut, then continue",
+                                                    ],
+                                                },
+                                            ),
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "A running browser would undo the Copy URL shortcut repair.",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">&",
+                                                    target: "2",
+                                                },
+                                            ],
+                                        },
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "Close the browser windows, then run: omarchy-migrate",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">&",
+                                                    target: "2",
+                                                },
+                                            ],
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "exit",
+                                                args: [
+                                                    "1",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "find_pending",
+                args: [],
+            },
+        ),
+        For {
+            variable: "preferences",
+            words: Some(
+                [
+                    "${pending[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "python3",
+                            args: [
+                                "-c",
+                                "$repair_py",
+                                "$preferences",
+                                "$pinned_id",
+                                "repair",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "affected_profile_open",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "echo",
+                                        args: [
+                                            "A browser started during the Copy URL shortcut repair and may undo it on exit.",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">&",
+                                        target: "2",
+                                    },
+                                ],
+                            },
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "echo",
+                                        args: [
+                                            "Close the browser windows, then run: omarchy-migrate",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">&",
+                                        target: "2",
+                                    },
+                                ],
+                            },
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "exit",
+                                    args: [
+                                        "1",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        For {
+            variable: "preferences",
+            words: Some(
+                [
+                    "${pending[@]}",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    If {
+                        branches: [
+                            CshAstBranch {
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "python3",
+                                                args: [
+                                                    "-c",
+                                                    "$repair_py",
+                                                    "$preferences",
+                                                    "$pinned_id",
+                                                    "check",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "A browser undid the Copy URL shortcut repair on exit.",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">&",
+                                                    target: "2",
+                                                },
+                                            ],
+                                        },
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "echo",
+                                                    args: [
+                                                        "Close the browser windows, then run: omarchy-migrate",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: ">&",
+                                                    target: "2",
+                                                },
+                                            ],
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "exit",
+                                                args: [
+                                                    "1",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                        ],
+                        otherwise: None,
+                    },
+                ],
+            },
+        },
+    ],
+}

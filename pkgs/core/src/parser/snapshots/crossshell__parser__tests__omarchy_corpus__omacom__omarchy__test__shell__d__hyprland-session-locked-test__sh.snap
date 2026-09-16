@@ -1,0 +1,361 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/hyprland-session-locked-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "jq",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fake_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$fake_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fake_bin/hyprctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$fake_bin/hyprctl",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "LOCKED",
+                        value: "0",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "UNLOCKED",
+                        value: "1",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "UNDETERMINED",
+                        value: "2",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "assert_status",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "expected=$1",
+                                    "monitors=$2",
+                                    "description=$3",
+                                    "hyprctl_fails=${4:-0}",
+                                    "actual=0",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "PATH",
+                                            value: "$fake_bin:$PATH",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_MONITORS",
+                                            value: "$monitors",
+                                        },
+                                        CshAstAssignment {
+                                            name: "OMARCHY_TEST_HYPRCTL_FAILS",
+                                            value: "$hyprctl_fails",
+                                        },
+                                    ],
+                                    name: "$ROOT/bin/omarchy-hyprland-session-locked",
+                                    args: [],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "actual",
+                                            value: "$?",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Arithmetic(
+                                " actual == expected ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "$description",
+                                        "expected exit $expected, got $actual",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "pass",
+                                args: [
+                                    "$description",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$LOCKED",
+                    "[{\"name\":\"HDMI-A-1\",\"solitaryBlockedBy\":[\"WINDOWED\",\"LOCK\",\"CANDIDATE\"]}]",
+                    "a locked session is detected",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$LOCKED",
+                    "[{\"name\":\"eDP-1\",\"solitaryBlockedBy\":[\"WINDOWED\"]},{\"name\":\"DP-2\",\"solitaryBlockedBy\":[\"LOCK\"]}]",
+                    "a lock on any monitor counts as a locked session",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$UNLOCKED",
+                    "[{\"name\":\"HDMI-A-1\",\"solitaryBlockedBy\":[\"WINDOWED\",\"CANDIDATE\"]}]",
+                    "an unlocked session is reported as unlocked",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$UNLOCKED",
+                    "[{\"name\":\"HDMI-A-1\",\"solitaryBlockedBy\":null}]",
+                    "a monitor with no solitary blockers is reported as unlocked",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$UNLOCKED",
+                    "[{\"name\":\"LOCK-1\",\"description\":\"LOCK display\",\"activeWorkspace\":{\"name\":\"LOCK\"},\"solitaryBlockedBy\":[\"WINDOWED\"]}]",
+                    "LOCK elsewhere in the monitor payload is not a locked session",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$UNDETERMINED",
+                    "[]",
+                    "a session with no monitors to read cannot say",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$UNDETERMINED",
+                    "[]",
+                    "an unreachable compositor cannot say",
+                    "1",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$UNDETERMINED",
+                    "not json at all",
+                    "an unreadable monitor payload cannot say",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$UNDETERMINED",
+                    "[{\"name\":\"HDMI-A-1\",\"solitaryBlockedBy\":[\"WORKSPACE\"]}]",
+                    "a monitor with no workspace yet cannot say",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$UNLOCKED",
+                    "[{\"name\":\"HDMI-A-1\",\"solitaryBlockedBy\":[\"WORKSPACE\"]},{\"name\":\"DP-2\",\"solitaryBlockedBy\":[\"WINDOWED\"]}]",
+                    "one readable monitor is enough to answer",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "assert_status",
+                args: [
+                    "$LOCKED",
+                    "[{\"name\":\"HDMI-A-1\",\"solitaryBlockedBy\":[\"WORKSPACE\"]},{\"name\":\"DP-2\",\"solitaryBlockedBy\":[\"LOCK\"]}]",
+                    "a lock is still found alongside a monitor that cannot say",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\n[[ ${1:-} == \"-j\" && ${2:-} == \"monitors\" ]] || exit 1\n[[ ${OMARCHY_TEST_HYPRCTL_FAILS:-0} == 1 ]] && exit 4\nprintf '%s\\n' \"$OMARCHY_TEST_MONITORS\"\n",
+        },
+    ],
+}

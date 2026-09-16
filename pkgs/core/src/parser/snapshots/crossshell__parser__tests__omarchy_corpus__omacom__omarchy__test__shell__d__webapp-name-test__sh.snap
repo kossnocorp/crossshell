@@ -1,0 +1,720 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/webapp-name-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tmp_dir",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$tmp_dir\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$tmp_dir/bin",
+                    "$tmp_dir/home",
+                ],
+            },
+        ),
+        For {
+            variable: "stub",
+            words: Some(
+                [
+                    "gtk-update-icon-cache",
+                    "update-desktop-database",
+                    "omarchy-notification-send",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Redirected {
+                        expression: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "printf",
+                                args: [
+                                    "#!/bin/bash\\n:\\n",
+                                ],
+                            },
+                        ),
+                        redirects: [
+                            CshAstRedirect {
+                                descriptor: None,
+                                operator: ">",
+                                target: "$tmp_dir/bin/$stub",
+                            },
+                        ],
+                    },
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "chmod",
+                            args: [
+                                "+x",
+                                "$tmp_dir/bin/$stub",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Function {
+            name: "run_install",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "HOME",
+                                        value: "$tmp_dir/home",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$tmp_dir/bin:$PATH",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-webapp-install",
+                                args: [
+                                    "$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "run_remove",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "HOME",
+                                        value: "$tmp_dir/home",
+                                    },
+                                    CshAstAssignment {
+                                        name: "PATH",
+                                        value: "$tmp_dir/bin:$PATH",
+                                    },
+                                    CshAstAssignment {
+                                        name: "OMARCHY_REMOVE_NOTIFY",
+                                        value: "false",
+                                    },
+                                ],
+                                name: "$ROOT/bin/omarchy-webapp-remove",
+                                args: [
+                                    "$@",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "apps_dir",
+                        value: "$tmp_dir/home/.local/share/applications",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "icons_dir",
+                        value: "$tmp_dir/home/.local/share/icons/hicolor/256x256/apps",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "output",
+                            value: "$(run_install \"http://example.test/oops\" \"https://example.com\" hey 2>&1)",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install rejects a name containing a slash",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " $output == *\"App name cannot contain '/'\"* ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install says why it refused a slashed name",
+                        "$output",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -e \"$apps_dir/http:\" ",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install does not create a directory from a slashed name",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp install rejects a name that would nest the launcher",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "run_install",
+                                        args: [
+                                            "../../../../escaped",
+                                            "https://example.com",
+                                            "hey",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "webapp install rejects a name that climbs out of the applications directory",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Binary {
+            left: Test(
+                " -e \"$tmp_dir/escaped.desktop\" ",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install writes no launcher outside the applications directory",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp install refuses a name that would escape the applications directory",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$tmp_dir/ibin",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "cp",
+                args: [
+                    "$tmp_dir/bin/*",
+                    "$tmp_dir/ibin/",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/ibin/gum",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$tmp_dir/ibin/curl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "STUB",
+                    here_document: 1,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$tmp_dir/ibin/gum",
+                    "$tmp_dir/ibin/curl",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [
+                                            CshAstAssignment {
+                                                name: "HOME",
+                                                value: "$tmp_dir/home",
+                                            },
+                                            CshAstAssignment {
+                                                name: "PATH",
+                                                value: "$tmp_dir/ibin:$PATH",
+                                            },
+                                            CshAstAssignment {
+                                                name: "GUM_STUB_COUNT",
+                                                value: "$tmp_dir/gum-count",
+                                            },
+                                        ],
+                                        name: "$ROOT/bin/omarchy-webapp-install",
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                    CshAstRedirect {
+                                        descriptor: Some(
+                                            "2",
+                                        ),
+                                        operator: ">&",
+                                        target: "1",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "interactive webapp install rejects a name containing a slash",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "compgen",
+                                        args: [
+                                            "-G",
+                                            "$icons_dir/*.png",
+                                        ],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: None,
+                                        operator: ">",
+                                        target: "/dev/null",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail",
+                                    args: [
+                                        "interactive webapp install downloads no icon for a name it refuses",
+                                        "$(ls \"$icons_dir\")",
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp install refuses a slashed name before fetching its icon",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_install",
+                    args: [
+                        "Example App",
+                        "https://example.com",
+                        "hey",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -f \"$apps_dir/Example App.desktop\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp install writes the launcher for an ordinary name",
+                    ],
+                },
+            ),
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_remove",
+                    args: [
+                        "Example App",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -f \"$apps_dir/Example App.desktop\" ",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp remove deletes the launcher it installed",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp install and remove round-trip an ordinary name",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$apps_dir/http:/127.0.0.1:4000",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$apps_dir/http:/127.0.0.1:4000/.desktop",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "DESKTOP",
+                    here_document: 2,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_remove",
+                    args: [
+                        "127.0.0.1:4000",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Test(
+                " -f \"$apps_dir/http:/127.0.0.1:4000/.desktop\" ",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp remove deletes a launcher left nested by an older install",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp remove reaches a nested legacy launcher",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "noise",
+                        value: "$(HOME=\"$tmp_dir/empty\" PATH=\"$tmp_dir/bin:$PATH\" OMARCHY_REMOVE_NOTIFY=false \\\n  \"$ROOT/bin/omarchy-webapp-remove\" \"Xbox Cloud Gaming\" 2>&1 >/dev/null)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " -n $noise ",
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "webapp remove stays quiet with no applications directory",
+                        "$noise",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "webapp remove stays quiet when there is no applications directory",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\ncount_file=\"${GUM_STUB_COUNT:?}\"\ncount=$(cat \"$count_file\" 2>/dev/null || echo 0)\ncount=$((count + 1))\necho \"$count\" >\"$count_file\"\nif (( count == 1 )); then\n  echo \"http://example.test/oops\"\nelse\n  echo \"https://example.com\"\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "STUB",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n# Answer any download with a real PNG so the icon fetch reports success.\nout=\"\"\nprev=\"\"\nfor arg in \"$@\"; do\n  [[ $prev == \"-o\" ]] && out=\"$arg\"\n  prev=\"$arg\"\ndone\nif [[ -n $out ]]; then\n  printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' | base64 -d >\"$out\"\nfi\n",
+        },
+        CshAstHereDocument {
+            delimiter: "DESKTOP",
+            quoted: true,
+            strip_tabs: false,
+            body: "[Desktop Entry]\nName=http://127.0.0.1:4000\nExec=omarchy-launch-webapp https://127.0.0.1:4000\nType=Application\n",
+        },
+    ],
+}

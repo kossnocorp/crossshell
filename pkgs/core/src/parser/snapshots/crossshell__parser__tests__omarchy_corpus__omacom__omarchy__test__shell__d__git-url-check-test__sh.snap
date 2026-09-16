@@ -1,0 +1,394 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/git-url-check-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Function {
+            name: "check",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "$ROOT/bin/omarchy-git-url-check",
+                                    args: [
+                                        "$@",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: Some(
+                                        "2",
+                                    ),
+                                    operator: ">&",
+                                    target: "1",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        For {
+            variable: "url",
+            words: Some(
+                [
+                    "ext::sh -c id",
+                    "fd::0,1",
+                    "gcrypt::x",
+                    "a+b::x",
+                    "a.b::x",
+                    "a-b::x",
+                    "1::x",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "output",
+                                        value: "$(check \"$url\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        operator: And,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-git-url-check refuses the transport helper '$url'",
+                                    "$output",
+                                ],
+                            },
+                        ),
+                    },
+                    Binary {
+                        left: Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-qF",
+                                        "names a git option or transport helper",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<<",
+                                    target: "$output",
+                                },
+                            ],
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-git-url-check names the helper rejection for '$url'",
+                                    "$output",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a <helper>::<address> URL is refused",
+                ],
+            },
+        ),
+        For {
+            variable: "url",
+            words: Some(
+                [
+                    "ext://sh -c id",
+                    "fd://17",
+                    "gcrypt://example.com/x",
+                    "zzz://a",
+                    "ZZZ://a",
+                    "HTTPS://github.com/a/b",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "output",
+                                        value: "$(check \"$url\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        operator: And,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-git-url-check refuses the '$url' transport",
+                                    "$output",
+                                ],
+                            },
+                        ),
+                    },
+                    Binary {
+                        left: Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-qF",
+                                        "which Omarchy does not clone from",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<<",
+                                    target: "$output",
+                                },
+                            ],
+                        },
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-git-url-check names the transport rejection for '$url'",
+                                    "$output",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a <scheme>://<address> URL outside git's own transports is refused",
+                ],
+            },
+        ),
+        For {
+            variable: "url",
+            words: Some(
+                [
+                    "-x",
+                    "--upload-pack=touch /tmp/pwned",
+                    "-oProxyCommand=x",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "output",
+                                        value: "$(check \"$url\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        operator: And,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-git-url-check refuses the option '$url'",
+                                    "$output",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "a URL shaped like a git option is refused",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "output",
+                            value: "$(check \"\")",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-git-url-check refuses an empty URL",
+                        "$output",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "output",
+                            value: "$(check)",
+                        },
+                    ],
+                    name: "",
+                    args: [],
+                },
+            ),
+            operator: And,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "omarchy-git-url-check refuses a missing URL",
+                        "$output",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "an empty URL is refused",
+                ],
+            },
+        ),
+        For {
+            variable: "url",
+            words: Some(
+                [
+                    "https://github.com/acme/omarchy-weather.git",
+                    "http://example.com/a/b.git",
+                    "https://user:token@github.com/acme/repo.git",
+                    "ssh://git@github.com/acme/repo.git",
+                    "ssh://git@[2001:db8::1]:22/org/repo.git",
+                    "git://example.com/repo.git",
+                    "git+ssh://git@example.com/acme/repo.git",
+                    "ssh+git://git@example.com/acme/repo.git",
+                    "ftp://example.com/repo.git",
+                    "ftps://example.com/repo.git",
+                    "file:///home/me/repo",
+                    "git@github.com:acme/repo.git",
+                    "git@[2001:db8::1]:org/repo.git",
+                    "host:-s/foo.git",
+                    "/home/me/repo",
+                    "./repo",
+                    "../repo",
+                    "repo",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Binary {
+                        left: Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "output",
+                                        value: "$(check \"$url\")",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        operator: Or,
+                        right: Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "fail",
+                                args: [
+                                    "omarchy-git-url-check accepts the legitimate URL '$url'",
+                                    "$output",
+                                ],
+                            },
+                        ),
+                    },
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "the URL forms a user pastes are accepted",
+                ],
+            },
+        ),
+    ],
+}

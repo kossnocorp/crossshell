@@ -1,0 +1,132 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1786099804.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Rename the model usage widget to agents and prime its data files",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "config_file",
+                        value: "$HOME/.config/omarchy/shell.json",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -s $config_file ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "tmp",
+                                            value: "$(mktemp)",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            Binary {
+                                left: Binary {
+                                    left: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "jq",
+                                                args: [
+                                                    "\n    def rename:\n      if . == \"omarchy.model-usage\" then\n        \"omarchy.agents\"\n      elif type == \"object\" and .id == \"omarchy.model-usage\" then\n        .id = \"omarchy.agents\"\n      else\n        .\n      end;\n\n    (if (.bar.layout? | type) == \"object\" then\n      .bar.layout |= map_values(if type == \"array\" then map(rename) else . end)\n    else . end)\n    | (if (.disabledPlugins? | type) == \"array\" then\n      .disabledPlugins |= map(rename)\n    else . end)\n  ",
+                                                    "$config_file",
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: None,
+                                                operator: ">",
+                                                target: "$tmp",
+                                            },
+                                        ],
+                                    },
+                                    operator: And,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "mv",
+                                            args: [
+                                                "$tmp",
+                                                "$config_file",
+                                            ],
+                                        },
+                                    ),
+                                },
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "rm",
+                                        args: [
+                                            "-f",
+                                            "$tmp",
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-rf",
+                    "$HOME/.cache/omarchy/model-usage",
+                ],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "omarchy-agent-usage-update",
+                    args: [],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "true",
+                    args: [],
+                },
+            ),
+        },
+    ],
+}

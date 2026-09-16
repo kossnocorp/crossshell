@@ -6,6 +6,7 @@ mod debug;
 pub struct CshAst {
     pub commands: CshAstList,
     pub nodes: Vec<CshAstExpression>,
+    pub here_documents: Vec<CshAstHereDocument>,
 }
 
 /// An expression index in the owning `CshAst::nodes` arena.
@@ -25,6 +26,18 @@ impl std::ops::Index<CshAstNodeId> for CshAst {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CshAstExpression {
     Command(CshAstCommand),
+    Function {
+        name: String,
+        body: CshAstNodeId,
+    },
+    /// Bash conditional syntax, retained for evaluation (including regex text).
+    Test(String),
+    /// Arithmetic syntax is retained without evaluating it.
+    Arithmetic(String),
+    ArithmeticFor {
+        clauses: String,
+        body: CshAstList,
+    },
     Binary {
         left: CshAstNodeId,
         operator: CshAstOperator,
@@ -71,11 +84,21 @@ pub struct CshAstCaseArm {
     pub terminator: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct CshAstRedirect {
     pub descriptor: Option<String>,
     pub operator: String,
     pub target: String,
+    /// Index into the owning AST's here-document arena.
+    pub here_document: Option<usize>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstHereDocument {
+    pub delimiter: String,
+    pub quoted: bool,
+    pub strip_tabs: bool,
+    pub body: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

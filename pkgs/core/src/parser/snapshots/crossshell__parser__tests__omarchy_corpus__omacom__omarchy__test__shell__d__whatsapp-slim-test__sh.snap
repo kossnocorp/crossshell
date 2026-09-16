@@ -1,0 +1,117 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/whatsapp-slim-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"${BASH_SOURCE[0]}\")/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "jq",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "require_command",
+                args: [
+                    "node",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "EXT_DIR",
+                        value: "$ROOT/default/chromium/extensions/whatsapp-slim",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Redirected {
+                expression: Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "jq",
+                        args: [
+                            "-e",
+                            "\n  .content_scripts[0].js == [\"system-theme.js\"] and\n  .content_scripts[0].run_at == \"document_start\"\n",
+                            "$EXT_DIR/manifest.json",
+                        ],
+                    },
+                ),
+                redirects: [
+                    CshAstRedirect {
+                        descriptor: None,
+                        operator: ">",
+                        target: "/dev/null",
+                    },
+                ],
+            },
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "WhatsApp enables system theming before startup",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "mode",
+                        value: "$(node - \"$EXT_DIR/system-theme.js\" <<'JS'\nconst fs = require(\"fs\")\nconst values = new Map()\nlet reloaded = false\nglobal.localStorage = {\n  getItem: key => values.get(key),\n  setItem: (key, value) => values.set(key, value),\n}\nglobal.location = { reload: () => { reloaded = true } }\neval(fs.readFileSync(process.argv[2], \"utf8\"))\nprocess.stdout.write(`${values.get(\"system-theme-mode\")}:${reloaded}`)\nJS\n)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " $mode == \"true:true\" ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "WhatsApp selects its system theme mode",
+                        "$mode",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "WhatsApp follows the system theme through its existing slim extension",
+                ],
+            },
+        ),
+    ],
+}

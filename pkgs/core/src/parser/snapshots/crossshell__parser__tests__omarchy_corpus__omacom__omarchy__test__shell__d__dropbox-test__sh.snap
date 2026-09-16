@@ -1,0 +1,54 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/dropbox-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-e",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(dirname \"$0\")/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [
+                        "dropbox model helpers",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const dropbox = requireFromRoot('shell/plugins/panels/dropbox/Model.js')\n\nassertEqual(dropbox.fileKind('photo.JPG'), 'image', 'dropbox detects image files')\nassertEqual(dropbox.fileKind('clip.webm'), 'video', 'dropbox detects video files')\nassertEqual(dropbox.fileKind('report.pdf'), 'document', 'dropbox detects document files')\nassertEqual(dropbox.fileKind('archive.zip'), 'misc', 'dropbox falls back to misc files')\nassertEqual(dropbox.formatBytes(1530), '1.53 KB', 'dropbox formats small byte counts')\nassertEqual(dropbox.formatBytes(2_000_000_000), '2 GB', 'dropbox formats gigabytes')\nassertEqual(dropbox.formatPercent(7.25), '7.3%', 'dropbox formats small percentages')\nassertEqual(dropbox.usageText(1000, 2000, true), '1 KB of 2 KB', 'dropbox formats known quota usage')\nassertEqual(dropbox.usageText(1000, 0, false), '1 KB', 'dropbox formats unknown quota usage')\n\nconst parsed = dropbox.parseStatus(JSON.stringify({\n  installed: true,\n  running: true,\n  authenticated: true,\n  files: [{ name: 'x.txt' }]\n}))\nassert(parsed.installed && parsed.running && parsed.authenticated, 'dropbox parses status booleans')\nassertEqual(parsed.files.length, 1, 'dropbox preserves file rows')\n\nassertEqual(\n  dropbox.fileMeta({ modifiedTs: 1000, folder: 'Docs' }, 1000 * 1000 + 3600 * 1000),\n  '1h ago · Docs',\n  'dropbox file metadata includes relative time and folder'\n)\n",
+        },
+    ],
+}

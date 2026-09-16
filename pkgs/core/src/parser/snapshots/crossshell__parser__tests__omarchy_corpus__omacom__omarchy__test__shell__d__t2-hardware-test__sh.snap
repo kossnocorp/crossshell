@@ -1,0 +1,1413 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/t2-hardware-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fix_t2",
+                        value: "$ROOT/install/hardware/apple/fix-t2.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "other_packages",
+                        value: "$ROOT/install/omarchy-other.packages",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "migration",
+                        value: "$ROOT/migrations/1785944594.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "KERNEL_CMDLINE[default]+=\" intel_iommu=on iommu=pt pm_async=off mem_sleep_default=deep\"",
+                        "$fix_t2",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 setup installs the suspend kernel parameters",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "pcie_ports=compat",
+                            "$fix_t2",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 setup drops the obsolete PCIe compatibility parameter",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " $(grep -Ec '^\\[Fan[12]\\]$' \"$fix_t2\") == 2 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 setup configures both possible MacBook fans",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " $(grep -c '^speed_curve=linear$' \"$fix_t2\") == 2 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 setup preserves the tuned linear curve for both fans",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "tiny-dfr",
+                            "$fix_t2",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 setup leaves optional Touch Bar customization uninstalled",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-qx",
+                            "tiny-dfr",
+                            "$other_packages",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "the ISO no longer caches tiny-dfr",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "fresh T2 setup uses t2bce-compatible suspend, fan, and Touch Bar defaults",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "test_tmp",
+                        value: "$(mktemp -d)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "trap",
+                args: [
+                    "rm -rf \"$test_tmp\"",
+                    "EXIT",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "stub_bin",
+                        value: "$test_tmp/bin",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "calls",
+                        value: "$test_tmp/calls.log",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$stub_bin",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$calls",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/lspci",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 0,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/sudo",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 1,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/systemctl",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 2,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/omarchy-pkg-present",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 3,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/omarchy-pkg-drop",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 4,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$stub_bin/limine-mkinitcpio",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "SH",
+                    here_document: 5,
+                },
+            ],
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "chmod",
+                args: [
+                    "+x",
+                    "$stub_bin/*",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "limine_conf",
+                        value: "$test_tmp/t2-mac.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "fan_conf",
+                        value: "$test_tmp/t2fand.conf",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "running_cmdline",
+                        value: "$test_tmp/cmdline",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "repair_marker",
+                        value: "$test_tmp/t2-repair-complete",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$limine_conf",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 6,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fan_conf",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 7,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "echo",
+                    args: [
+                        "quiet splash intel_iommu=on iommu=pt pcie_ports=compat",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$running_cmdline",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$stub_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "TEST_LOG",
+                            value: "$calls",
+                        },
+                        CshAstAssignment {
+                            name: "T2_HARDWARE",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "TINY_DFR_INSTALLED",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_LIMINE_CONF",
+                            value: "$limine_conf",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_FAN_CONF",
+                            value: "$fan_conf",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_RUNNING_CMDLINE",
+                            value: "$running_cmdline",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_REPAIR_MARKER",
+                            value: "$repair_marker",
+                        },
+                    ],
+                    name: "bash",
+                    args: [
+                        "-euo",
+                        "pipefail",
+                        "$migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "KERNEL_CMDLINE[default]+=\" intel_iommu=on iommu=pt pm_async=off mem_sleep_default=deep\"",
+                        "$limine_conf",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 migration updates the Limine suspend parameters",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "pcie_ports=compat",
+                            "$limine_conf",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 migration removes the obsolete PCIe compatibility parameter",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " $(grep -Ec '^[[:space:]]*\\[Fan2\\][[:space:]]*$' \"$fan_conf\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 migration adds exactly one second-fan section",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$systemctl\\tdisable\\t--now\\ttiny-dfr.service",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 migration disables tiny-dfr",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "$omarchy-pkg-drop\\ttiny-dfr",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 migration removes tiny-dfr",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "limine-mkinitcpio",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 migration rebuilds the boot image",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $repair_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 migration records the machine-wide repair",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "T2 migration repairs existing installs",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$calls",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$stub_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "TEST_LOG",
+                            value: "$calls",
+                        },
+                        CshAstAssignment {
+                            name: "T2_HARDWARE",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "TINY_DFR_INSTALLED",
+                            value: "0",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_LIMINE_CONF",
+                            value: "$limine_conf",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_FAN_CONF",
+                            value: "$fan_conf",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_RUNNING_CMDLINE",
+                            value: "$running_cmdline",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_REPAIR_MARKER",
+                            value: "$repair_marker",
+                        },
+                    ],
+                    name: "bash",
+                    args: [
+                        "-euo",
+                        "pipefail",
+                        "$migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Arithmetic(
+                " $(grep -Ec '^[[:space:]]*\\[Fan2\\][[:space:]]*$' \"$fan_conf\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 migration remains idempotent",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "an already repaired T2 install is left unchanged",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "T2 migration is machine-idempotent before reboot",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$repair_marker",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$calls",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$stub_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "TEST_LOG",
+                            value: "$calls",
+                        },
+                        CshAstAssignment {
+                            name: "T2_HARDWARE",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "TINY_DFR_INSTALLED",
+                            value: "0",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_LIMINE_CONF",
+                            value: "$limine_conf",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_FAN_CONF",
+                            value: "$fan_conf",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_RUNNING_CMDLINE",
+                            value: "$running_cmdline",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_REPAIR_MARKER",
+                            value: "$repair_marker",
+                        },
+                    ],
+                    name: "bash",
+                    args: [
+                        "-euo",
+                        "pipefail",
+                        "$migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "limine-mkinitcpio",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 migration retries an interrupted boot image rebuild",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $repair_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "a retried T2 repair records completion",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-Eq",
+                            "$^(sudo\\t)?(sed|tee|systemctl|omarchy-pkg-drop)(\\t|$)",
+                            "$calls",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 rebuild retry leaves completed repair steps alone",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "T2 migration retries an interrupted boot image rebuild",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "cat",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$limine_conf",
+                },
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "EOF",
+                    here_document: 8,
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "printf",
+                    args: [
+                        "[Fan1]\\n",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$fan_conf",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$calls",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$stub_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "TEST_LOG",
+                            value: "$calls",
+                        },
+                        CshAstAssignment {
+                            name: "T2_HARDWARE",
+                            value: "0",
+                        },
+                        CshAstAssignment {
+                            name: "TINY_DFR_INSTALLED",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_LIMINE_CONF",
+                            value: "$limine_conf",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_FAN_CONF",
+                            value: "$fan_conf",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_RUNNING_CMDLINE",
+                            value: "$running_cmdline",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_REPAIR_MARKER",
+                            value: "$repair_marker",
+                        },
+                    ],
+                    name: "bash",
+                    args: [
+                        "-euo",
+                        "pipefail",
+                        "$migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-q",
+                        "pcie_ports=compat",
+                        "$limine_conf",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "non-T2 Limine configuration is unchanged",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Negated(
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: "grep",
+                        args: [
+                            "-q",
+                            "\\[Fan2\\]",
+                            "$fan_conf",
+                        ],
+                    },
+                ),
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "non-T2 fan configuration is unchanged",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " ! -s $calls ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "non-T2 systems skip the repair",
+                        "$(cat \"$calls\")",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "T2 migration skips unrelated hardware",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "rerun_migration",
+                        value: "$ROOT/migrations/1786137597.sh",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "rm",
+                args: [
+                    "-f",
+                    "$repair_marker",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: ":",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "$calls",
+                },
+            ],
+        },
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [
+                        CshAstAssignment {
+                            name: "PATH",
+                            value: "$stub_bin:$PATH",
+                        },
+                        CshAstAssignment {
+                            name: "TEST_LOG",
+                            value: "$calls",
+                        },
+                        CshAstAssignment {
+                            name: "T2_HARDWARE",
+                            value: "1",
+                        },
+                        CshAstAssignment {
+                            name: "TINY_DFR_INSTALLED",
+                            value: "0",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_PATH",
+                            value: "$ROOT",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_LIMINE_CONF",
+                            value: "$limine_conf",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_FAN_CONF",
+                            value: "$fan_conf",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_RUNNING_CMDLINE",
+                            value: "$running_cmdline",
+                        },
+                        CshAstAssignment {
+                            name: "OMARCHY_T2_REPAIR_MARKER",
+                            value: "$repair_marker",
+                        },
+                    ],
+                    name: "bash",
+                    args: [
+                        "-euo",
+                        "pipefail",
+                        "$rerun_migration",
+                    ],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: ">",
+                    target: "/dev/null",
+                },
+            ],
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fq",
+                        "pm_async=off mem_sleep_default=deep",
+                        "$limine_conf",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 rerun migration updates the Limine suspend parameters",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Arithmetic(
+                " $(grep -Ec '^[[:space:]]*\\[Fan2\\][[:space:]]*$' \"$fan_conf\") == 1 ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 rerun migration adds the second-fan section",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "grep",
+                    args: [
+                        "-Fxq",
+                        "limine-mkinitcpio",
+                        "$calls",
+                    ],
+                },
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 rerun migration rebuilds the boot image",
+                    ],
+                },
+            ),
+        },
+        Binary {
+            left: Test(
+                " -f $repair_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "fail",
+                    args: [
+                        "T2 rerun migration records the machine-wide repair",
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "pass",
+                args: [
+                    "T2 rerun migration repairs installs the broken hardware check skipped",
+                ],
+            },
+        ),
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\n# Chatty like real lspci: keep writing well past the pipe buffer after the T2\n# match, so a grep -q consumer would kill this stub with SIGPIPE and pipefail\n# would read that as \"no T2 hardware\" (#6608).\nif (( ${T2_HARDWARE:-0} == 1 )); then\n  echo '01:00.0 Bridge [0680]: Apple Inc. T2 Security Chip [106b:1801]'\nfi\nfor _ in {1..4096}; do\n  echo '02:00.0 Host bridge [0600]: Filler Device [ffff:0000]'\ndone\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf 'sudo' >>\"$TEST_LOG\"\nprintf '\\t%s' \"$@\" >>\"$TEST_LOG\"\nprintf '\\n' >>\"$TEST_LOG\"\n\"$@\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf 'systemctl' >>\"$TEST_LOG\"\nprintf '\\t%s' \"$@\" >>\"$TEST_LOG\"\nprintf '\\n' >>\"$TEST_LOG\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\n(( ${TINY_DFR_INSTALLED:-0} == 1 ))\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\nprintf 'omarchy-pkg-drop' >>\"$TEST_LOG\"\nprintf '\\t%s' \"$@\" >>\"$TEST_LOG\"\nprintf '\\n' >>\"$TEST_LOG\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "SH",
+            quoted: true,
+            strip_tabs: false,
+            body: "#!/bin/bash\n\necho 'limine-mkinitcpio' >>\"$TEST_LOG\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "# Generated by Omarchy installer for T2 Mac support\nKERNEL_CMDLINE[default]+=\" intel_iommu=on iommu=pt pcie_ports=compat\"\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "[Fan1]\nlow_temp=55\nhigh_temp=75\nspeed_curve=linear\nalways_full_speed=false\n",
+        },
+        CshAstHereDocument {
+            delimiter: "EOF",
+            quoted: true,
+            strip_tabs: false,
+            body: "KERNEL_CMDLINE[default]+=\" intel_iommu=on iommu=pt pcie_ports=compat\"\n",
+        },
+    ],
+}

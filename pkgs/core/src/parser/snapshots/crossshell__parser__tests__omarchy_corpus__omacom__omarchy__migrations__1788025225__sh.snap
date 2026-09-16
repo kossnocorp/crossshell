@@ -1,0 +1,2028 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1788025225.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Remove privileged files left behind by retired Omarchy installers",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "sudoers_dir",
+                        value: "${OMARCHY_SUDOERS_DIR:-/etc/sudoers.d}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "systemd_dir",
+                        value: "${OMARCHY_SYSTEMD_SYSTEM_DIR:-/etc/systemd/system}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "machine_marker",
+                        value: "${OMARCHY_RETIRED_INSTALLER_ARTIFACTS_MARKER:-/var/lib/omarchy/migrations/1788025225}",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "reload_needed_marker",
+                        value: "$machine_marker.daemon-reload",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Binary {
+            left: Test(
+                " ! -e $machine_marker ",
+            ),
+            operator: Or,
+            right: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "exit",
+                    args: [
+                        "0",
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "as_root",
+            body: Group(
+                CshAst {
+                    commands: [
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Arithmetic(
+                                                " EUID == 0 ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "$@",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: Some(
+                                CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "sudo",
+                                                args: [
+                                                    "$@",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "active_lines",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "format=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "comments=#",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "line",
+                                    "logical=",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $format == \"systemd\" ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "comments",
+                                            value: "#;",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                        },
+                        Loop {
+                            until: false,
+                            condition: CshAst {
+                                commands: [
+                                    Binary {
+                                        left: Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "IFS",
+                                                        value: "",
+                                                    },
+                                                ],
+                                                name: "read",
+                                                args: [
+                                                    "-r",
+                                                    "line",
+                                                ],
+                                            },
+                                        ),
+                                        operator: Or,
+                                        right: Test(
+                                            " -n $line ",
+                                        ),
+                                    },
+                                ],
+                            },
+                            body: CshAst {
+                                commands: [
+                                    If {
+                                        branches: [
+                                            CshAstBranch {
+                                                condition: CshAst {
+                                                    commands: [
+                                                        Binary {
+                                                            left: Test(
+                                                                " $line =~ ^[[:space:]]*[$comments] ",
+                                                            ),
+                                                            operator: And,
+                                                            right: Negated(
+                                                                Group(
+                                                                    CshAst {
+                                                                        commands: [
+                                                                            Binary {
+                                                                                left: Test(
+                                                                                    " $format == \"sudoers\" ",
+                                                                                ),
+                                                                                operator: And,
+                                                                                right: Command(
+                                                                                    CshAstCommand {
+                                                                                        assignments: [],
+                                                                                        name: "sudoers_hash_is_active",
+                                                                                        args: [
+                                                                                            "$line",
+                                                                                        ],
+                                                                                    },
+                                                                                ),
+                                                                            },
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                            ),
+                                                        },
+                                                    ],
+                                                },
+                                                body: CshAst {
+                                                    commands: [
+                                                        If {
+                                                            branches: [
+                                                                CshAstBranch {
+                                                                    condition: CshAst {
+                                                                        commands: [
+                                                                            Test(
+                                                                                " $format == \"sudoers\" ",
+                                                                            ),
+                                                                        ],
+                                                                    },
+                                                                    body: CshAst {
+                                                                        commands: [
+                                                                            Command(
+                                                                                CshAstCommand {
+                                                                                    assignments: [],
+                                                                                    name: "emit_logical",
+                                                                                    args: [
+                                                                                        "$logical",
+                                                                                    ],
+                                                                                },
+                                                                            ),
+                                                                            Command(
+                                                                                CshAstCommand {
+                                                                                    assignments: [
+                                                                                        CshAstAssignment {
+                                                                                            name: "logical",
+                                                                                            value: "",
+                                                                                        },
+                                                                                    ],
+                                                                                    name: "",
+                                                                                    args: [],
+                                                                                },
+                                                                            ),
+                                                                        ],
+                                                                    },
+                                                                },
+                                                            ],
+                                                            otherwise: None,
+                                                        },
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "continue",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        otherwise: None,
+                                    },
+                                    If {
+                                        branches: [
+                                            CshAstBranch {
+                                                condition: CshAst {
+                                                    commands: [
+                                                        Test(
+                                                            " $line == *\\\\ ",
+                                                        ),
+                                                    ],
+                                                },
+                                                body: CshAst {
+                                                    commands: [
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "logical+=${line%\\\\} ",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                        Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "continue",
+                                                                args: [],
+                                                            },
+                                                        ),
+                                                    ],
+                                                },
+                                            },
+                                        ],
+                                        otherwise: None,
+                                    },
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "emit_logical",
+                                            args: [
+                                                "$logical$line",
+                                            ],
+                                        },
+                                    ),
+                                    Command(
+                                        CshAstCommand {
+                                            assignments: [
+                                                CshAstAssignment {
+                                                    name: "logical",
+                                                    value: "",
+                                                },
+                                            ],
+                                            name: "",
+                                            args: [],
+                                        },
+                                    ),
+                                ],
+                            },
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "emit_logical",
+                                args: [
+                                    "$logical",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "emit_logical",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "-a",
+                                    "parts",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "read",
+                                    args: [
+                                        "-ra",
+                                        "parts",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<<<",
+                                    target: "$1",
+                                },
+                            ],
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Arithmetic(
+                                                " ${#parts[@]} ",
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "printf",
+                                                    args: [
+                                                        "%s\\n",
+                                                        "${parts[*]}",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "sudoers_hash_is_active",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "line=$1",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " $line =~ ^[[:space:]]*#include[[:blank:]] ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " $line =~ ^[[:space:]]*#includedir[[:blank:]] ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " $line =~ ^[[:space:]]*#-?[0-9] ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "first_run_sudoers_is_generated",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "spec_pattern=^([^[:space:]]+) ALL=\\(ALL\\) NOPASSWD: (.+)$",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "marker_pattern=^/bin/rm -f /home/([^/]+)/\\.local/state/omarchy/first-run\\.mode$",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "line",
+                                    "user",
+                                    "command",
+                                    "marker_user",
+                                    "generated_user=",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "seen_any=0",
+                                    "seen_marker=0",
+                                    "seen_spec=0",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Loop {
+                                until: false,
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "IFS",
+                                                        value: "",
+                                                    },
+                                                ],
+                                                name: "read",
+                                                args: [
+                                                    "-r",
+                                                    "line",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "seen_any",
+                                                        value: "1",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        Case {
+                                            word: "$line",
+                                            arms: [
+                                                CshAstCaseArm {
+                                                    patterns: [
+                                                        "Cmnd_Alias SYMLINK_RESOLVED = /usr/bin/ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf",
+                                                    ],
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "continue",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                    terminator: ";;",
+                                                },
+                                                CshAstCaseArm {
+                                                    patterns: [
+                                                        "Cmnd_Alias FIRST_RUN_CLEANUP = /bin/rm -f /etc/sudoers.d/first-run",
+                                                        "Cmnd_Alias FIRST_RUN_CLEANUP = /bin/rm -f /etc/sudoers.d/first-run, /bin/rm -f /etc/sudoers.d/99-omarchy-installer-reboot",
+                                                        "Cmnd_Alias FIRST_RUN_CLEANUP = /usr/bin/rm -f /etc/sudoers.d/first-run, /bin/rm -f /etc/sudoers.d/first-run",
+                                                    ],
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [
+                                                                        CshAstAssignment {
+                                                                            name: "seen_marker",
+                                                                            value: "1",
+                                                                        },
+                                                                    ],
+                                                                    name: "",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "continue",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                    terminator: ";;",
+                                                },
+                                            ],
+                                        },
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Test(
+                                                                " ! $line =~ $spec_pattern ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "return",
+                                                                    args: [
+                                                                        "1",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "user",
+                                                        value: "${BASH_REMATCH[1]}",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "command",
+                                                        value: "${BASH_REMATCH[2]}",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Test(
+                                                                " -n $generated_user && $user != \"$generated_user\" ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "return",
+                                                                    args: [
+                                                                        "1",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "generated_user",
+                                                        value: "$user",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "seen_spec",
+                                                        value: "1",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        Case {
+                                            word: "$command",
+                                            arms: [
+                                                CshAstCaseArm {
+                                                    patterns: [
+                                                        "/usr/bin/systemctl",
+                                                        "/usr/bin/ufw",
+                                                        "/usr/bin/ufw-docker",
+                                                        "/usr/bin/gtk-update-icon-cache",
+                                                        "/usr/bin/udevadm",
+                                                        "/usr/bin/tee /etc/udev/rules.d/*",
+                                                        "SYMLINK_RESOLVED",
+                                                    ],
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "continue",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                    terminator: ";;",
+                                                },
+                                                CshAstCaseArm {
+                                                    patterns: [
+                                                        "FIRST_RUN_CLEANUP",
+                                                        "/bin/rm -f /etc/sudoers.d/first-run",
+                                                    ],
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [
+                                                                        CshAstAssignment {
+                                                                            name: "seen_marker",
+                                                                            value: "1",
+                                                                        },
+                                                                    ],
+                                                                    name: "",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "continue",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                    terminator: ";;",
+                                                },
+                                            ],
+                                        },
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Test(
+                                                                " $command =~ $marker_pattern ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [
+                                                                        CshAstAssignment {
+                                                                            name: "marker_user",
+                                                                            value: "${BASH_REMATCH[1]}",
+                                                                        },
+                                                                    ],
+                                                                    name: "",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                            Binary {
+                                                                left: Test(
+                                                                    " $marker_user == \"$generated_user\" ",
+                                                                ),
+                                                                operator: Or,
+                                                                right: Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "return",
+                                                                        args: [
+                                                                            "1",
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                            },
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [
+                                                                        CshAstAssignment {
+                                                                            name: "seen_marker",
+                                                                            value: "1",
+                                                                        },
+                                                                    ],
+                                                                    name: "",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "continue",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: "return",
+                                                args: [
+                                                    "1",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(active_lines sudoers)",
+                                },
+                            ],
+                        },
+                        Arithmetic(
+                            " seen_any && seen_marker && seen_spec ",
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "tsui_sudoers_is_generated",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "spec_pattern=^[^[:space:]]+ ALL=\\(ALL\\) NOPASSWD: ([^[:space:]]+)$",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "line",
+                                    "command=",
+                                    "count=0",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Loop {
+                                until: false,
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "IFS",
+                                                        value: "",
+                                                    },
+                                                ],
+                                                name: "read",
+                                                args: [
+                                                    "-r",
+                                                    "line",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "count",
+                                                        value: "$(( count + 1 ))",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Arithmetic(
+                                                                " count > 1 ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "return",
+                                                                    args: [
+                                                                        "1",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Test(
+                                                                " ! $line =~ $spec_pattern ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "return",
+                                                                    args: [
+                                                                        "1",
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "command",
+                                                        value: "${BASH_REMATCH[1]}",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                    ],
+                                },
+                            },
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(active_lines sudoers)",
+                                },
+                            ],
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Binary {
+                                                left: Arithmetic(
+                                                    " count == 1 ",
+                                                ),
+                                                operator: And,
+                                                right: Test(
+                                                    " ${command##*/} == \"tsui\" ",
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "return",
+                                                    args: [
+                                                        "0",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "plymouth_unit_runs_from_home",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "binary=omarchy-plymouth-shutdown-sync",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "exec_stop_pattern=^ExecStop[[:space:]]*=[[:space:]]*(.*)$",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "home_pattern=^/.+/\\.local/share/omarchy/bin/$binary$",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "line",
+                                    "word",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "-a",
+                                    "words",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "matched=1",
+                                ],
+                            },
+                        ),
+                        Redirected {
+                            expression: Loop {
+                                until: false,
+                                condition: CshAst {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "IFS",
+                                                        value: "",
+                                                    },
+                                                ],
+                                                name: "read",
+                                                args: [
+                                                    "-r",
+                                                    "line",
+                                                ],
+                                            },
+                                        ),
+                                    ],
+                                },
+                                body: CshAst {
+                                    commands: [
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Test(
+                                                                " ! $line =~ $exec_stop_pattern ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "continue",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                        Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "read",
+                                                    args: [
+                                                        "-ra",
+                                                        "words",
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: None,
+                                                    operator: "<<<",
+                                                    target: "${BASH_REMATCH[1]}",
+                                                },
+                                            ],
+                                        },
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Arithmetic(
+                                                                " ! ${#words[@]} ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [
+                                                                        CshAstAssignment {
+                                                                            name: "matched",
+                                                                            value: "1",
+                                                                        },
+                                                                    ],
+                                                                    name: "",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [],
+                                                                    name: "continue",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [
+                                                    CshAstAssignment {
+                                                        name: "word",
+                                                        value: "${words[0]}",
+                                                    },
+                                                ],
+                                                name: "",
+                                                args: [],
+                                            },
+                                        ),
+                                        Loop {
+                                            until: false,
+                                            condition: CshAst {
+                                                commands: [
+                                                    Test(
+                                                        " $word == [-@+!:]* ",
+                                                    ),
+                                                ],
+                                            },
+                                            body: CshAst {
+                                                commands: [
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [
+                                                                CshAstAssignment {
+                                                                    name: "word",
+                                                                    value: "${word:1}",
+                                                                },
+                                                            ],
+                                                            name: "",
+                                                            args: [],
+                                                        },
+                                                    ),
+                                                ],
+                                            },
+                                        },
+                                        If {
+                                            branches: [
+                                                CshAstBranch {
+                                                    condition: CshAst {
+                                                        commands: [
+                                                            Test(
+                                                                " $word =~ $home_pattern ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                    body: CshAst {
+                                                        commands: [
+                                                            Command(
+                                                                CshAstCommand {
+                                                                    assignments: [
+                                                                        CshAstAssignment {
+                                                                            name: "matched",
+                                                                            value: "0",
+                                                                        },
+                                                                    ],
+                                                                    name: "",
+                                                                    args: [],
+                                                                },
+                                                            ),
+                                                        ],
+                                                    },
+                                                },
+                                            ],
+                                            otherwise: None,
+                                        },
+                                    ],
+                                },
+                            },
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: "<",
+                                    target: "<(active_lines systemd)",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "return",
+                                args: [
+                                    "$matched",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "first_run_sudoers",
+                        value: "$sudoers_dir/first-run",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "tsui_sudoers",
+                        value: "$sudoers_dir/tsui",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Function {
+            name: "fail_privileged_repair",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "echo",
+                                    args: [
+                                        "Cannot complete the privileged installer-artifact repair. An administrator must run omarchy-migrate to repair this machine.",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">&",
+                                    target: "2",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "exit",
+                                args: [
+                                    "1",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Negated(
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "as_root",
+                                            args: [
+                                                "true",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail_privileged_repair",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -e $reload_needed_marker ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "as_root",
+                                                                args: [
+                                                                    "systemctl",
+                                                                    "daemon-reload",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: None,
+                                                                operator: ">",
+                                                                target: "/dev/null",
+                                                            },
+                                                            CshAstRedirect {
+                                                                descriptor: Some(
+                                                                    "2",
+                                                                ),
+                                                                operator: ">&",
+                                                                target: "1",
+                                                            },
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail_privileged_repair",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "as_root",
+                                                            args: [
+                                                                "rm",
+                                                                "-f",
+                                                                "$reload_needed_marker",
+                                                            ],
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail_privileged_repair",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Function {
+            name: "inspect_sudoers_file",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file=$1",
+                                    "predicate=$2",
+                                    "kind",
+                                    "content",
+                                ],
+                            },
+                        ),
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "kind",
+                                                                value: "$(as_root bash -c 'if [[ -f $1 ]]; then printf file; elif [[ -e $1 ]]; then printf other; else printf missing; fi' bash \"$file\")",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "fail_privileged_repair",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        Binary {
+                            left: Test(
+                                " $kind == \"file\" ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Negated(
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [
+                                                            CshAstAssignment {
+                                                                name: "content",
+                                                                value: "$(as_root cat \"$file\")",
+                                                            },
+                                                        ],
+                                                        name: "",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "fail_privileged_repair",
+                                                    args: [],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                        If {
+                            branches: [
+                                CshAstBranch {
+                                    condition: CshAst {
+                                        commands: [
+                                            Redirected {
+                                                expression: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "$predicate",
+                                                        args: [],
+                                                    },
+                                                ),
+                                                redirects: [
+                                                    CshAstRedirect {
+                                                        descriptor: None,
+                                                        operator: "<<<",
+                                                        target: "$content",
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    },
+                                    body: CshAst {
+                                        commands: [
+                                            If {
+                                                branches: [
+                                                    CshAstBranch {
+                                                        condition: CshAst {
+                                                            commands: [
+                                                                Negated(
+                                                                    Command(
+                                                                        CshAstCommand {
+                                                                            assignments: [],
+                                                                            name: "as_root",
+                                                                            args: [
+                                                                                "rm",
+                                                                                "-f",
+                                                                                "$file",
+                                                                            ],
+                                                                        },
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                        },
+                                                        body: CshAst {
+                                                            commands: [
+                                                                Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: "fail_privileged_repair",
+                                                                        args: [],
+                                                                    },
+                                                                ),
+                                                            ],
+                                                        },
+                                                    },
+                                                ],
+                                                otherwise: None,
+                                            },
+                                        ],
+                                    },
+                                },
+                            ],
+                            otherwise: None,
+                        },
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "inspect_sudoers_file",
+                args: [
+                    "$first_run_sudoers",
+                    "first_run_sudoers_is_generated",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "inspect_sudoers_file",
+                args: [
+                    "$tsui_sudoers",
+                    "tsui_sudoers_is_generated",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "plymouth_unit",
+                        value: "$systemd_dir/omarchy-plymouth-shutdown.service",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Binary {
+                                left: Test(
+                                    " -f $plymouth_unit ",
+                                ),
+                                operator: And,
+                                right: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "plymouth_unit_runs_from_home",
+                                            args: [],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: None,
+                                            operator: "<",
+                                            target: "$plymouth_unit",
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "as_root",
+                                                            args: [
+                                                                "install",
+                                                                "-Dm644",
+                                                                "/dev/null",
+                                                                "$reload_needed_marker",
+                                                            ],
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail_privileged_repair",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "as_root",
+                                                                args: [
+                                                                    "systemctl",
+                                                                    "disable",
+                                                                    "omarchy-plymouth-shutdown.service",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: None,
+                                                                operator: ">",
+                                                                target: "/dev/null",
+                                                            },
+                                                            CshAstRedirect {
+                                                                descriptor: Some(
+                                                                    "2",
+                                                                ),
+                                                                operator: ">&",
+                                                                target: "1",
+                                                            },
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail_privileged_repair",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "as_root",
+                                                            args: [
+                                                                "rm",
+                                                                "-f",
+                                                                "$plymouth_unit",
+                                                            ],
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail_privileged_repair",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Redirected {
+                                                        expression: Command(
+                                                            CshAstCommand {
+                                                                assignments: [],
+                                                                name: "as_root",
+                                                                args: [
+                                                                    "systemctl",
+                                                                    "daemon-reload",
+                                                                ],
+                                                            },
+                                                        ),
+                                                        redirects: [
+                                                            CshAstRedirect {
+                                                                descriptor: None,
+                                                                operator: ">",
+                                                                target: "/dev/null",
+                                                            },
+                                                            CshAstRedirect {
+                                                                descriptor: Some(
+                                                                    "2",
+                                                                ),
+                                                                operator: ">&",
+                                                                target: "1",
+                                                            },
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail_privileged_repair",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Negated(
+                                                    Command(
+                                                        CshAstCommand {
+                                                            assignments: [],
+                                                            name: "as_root",
+                                                            args: [
+                                                                "rm",
+                                                                "-f",
+                                                                "$reload_needed_marker",
+                                                            ],
+                                                        },
+                                                    ),
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "fail_privileged_repair",
+                                                        args: [],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: None,
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Negated(
+                                Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "as_root",
+                                        args: [
+                                            "install",
+                                            "-Dm644",
+                                            "/dev/null",
+                                            "$machine_marker",
+                                        ],
+                                    },
+                                ),
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "fail_privileged_repair",
+                                    args: [],
+                                },
+                            ),
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

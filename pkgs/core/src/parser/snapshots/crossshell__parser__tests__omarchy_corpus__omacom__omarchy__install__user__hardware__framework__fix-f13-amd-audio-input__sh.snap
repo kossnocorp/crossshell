@@ -1,0 +1,71 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/install/user/hardware/framework/fix-f13-amd-audio-input.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "AMD_AUDIO_CARD",
+                        value: "$(pactl list cards 2>/dev/null | grep -B20 \"Family 17h/19h\" | grep \"Name: \" | awk '{print $2}' || true)",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -n $AMD_AUDIO_CARD ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            Binary {
+                                left: Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: "pactl",
+                                            args: [
+                                                "set-card-profile",
+                                                "$AMD_AUDIO_CARD",
+                                                "HiFi (Mic1, Mic2, Speaker)",
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Some(
+                                                "2",
+                                            ),
+                                            operator: ">",
+                                            target: "/dev/null",
+                                        },
+                                    ],
+                                },
+                                operator: Or,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: "true",
+                                        args: [],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+    ],
+}

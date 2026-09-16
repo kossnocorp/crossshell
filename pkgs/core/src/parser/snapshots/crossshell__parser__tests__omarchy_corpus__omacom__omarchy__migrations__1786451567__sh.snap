@@ -1,0 +1,224 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1786451567.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Repair theme symlinks the state-move migration left dangling",
+                ],
+            },
+        ),
+        Function {
+            name: "relink_if_dangling",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "link=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "expected_target=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "target",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -L $link ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "target",
+                                            value: "$(readlink \"$link\")",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " $target == \"$expected_target\" ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Test(
+                                " -e $link ",
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Case {
+                            word: "$target",
+                            arms: [
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "~/*/omarchy/current/theme/${expected_target##*/}",
+                                    ],
+                                    body: CshAst {
+                                        commands: [],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "*",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "return",
+                                                    args: [
+                                                        "0",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "ln",
+                                args: [
+                                    "-sfn",
+                                    "$expected_target",
+                                    "$link",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "current_state_dir",
+                        value: "$HOME/.local/state/omarchy/current",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "relink_if_dangling",
+                args: [
+                    "$HOME/.config/btop/themes/current.theme",
+                    "$current_state_dir/theme/btop.theme",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "relink_if_dangling",
+                args: [
+                    "$HOME/.config/helix/themes/omarchy.toml",
+                    "$current_state_dir/theme/helix.toml",
+                ],
+            },
+        ),
+        For {
+            variable: "vscode_dir",
+            words: Some(
+                [
+                    "$HOME/.vscode",
+                    "$HOME/.vscode-insiders",
+                    "$HOME/.vscode-oss",
+                    "$HOME/.cursor",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "relink_if_dangling",
+                            args: [
+                                "$vscode_dir/extensions/omarchy-theme/themes/omarchy-color-theme.json",
+                                "$current_state_dir/theme/vscode-theme.json",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+    ],
+}

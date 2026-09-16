@@ -1,0 +1,734 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/migrations/1781043107.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "echo",
+                args: [
+                    "Move current Omarchy theme state to ~/.local/state",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "legacy_current_dir",
+                        value: "$HOME/.config/omarchy/current",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [
+                    CshAstAssignment {
+                        name: "current_state_dir",
+                        value: "$HOME/.local/state/omarchy/current",
+                    },
+                ],
+                name: "",
+                args: [],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "mkdir",
+                args: [
+                    "-p",
+                    "$HOME/.local/state/omarchy",
+                ],
+            },
+        ),
+        If {
+            branches: [
+                CshAstBranch {
+                    condition: CshAst {
+                        commands: [
+                            Test(
+                                " -e $legacy_current_dir || -L $legacy_current_dir ",
+                            ),
+                        ],
+                    },
+                    body: CshAst {
+                        commands: [
+                            If {
+                                branches: [
+                                    CshAstBranch {
+                                        condition: CshAst {
+                                            commands: [
+                                                Test(
+                                                    " ! -e $current_state_dir && ! -L $current_state_dir ",
+                                                ),
+                                            ],
+                                        },
+                                        body: CshAst {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: "mv",
+                                                        args: [
+                                                            "$legacy_current_dir",
+                                                            "$current_state_dir",
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    },
+                                ],
+                                otherwise: Some(
+                                    CshAst {
+                                        commands: [
+                                            If {
+                                                branches: [
+                                                    CshAstBranch {
+                                                        condition: CshAst {
+                                                            commands: [
+                                                                Test(
+                                                                    " -d $legacy_current_dir && -d $current_state_dir ",
+                                                                ),
+                                                            ],
+                                                        },
+                                                        body: CshAst {
+                                                            commands: [
+                                                                Binary {
+                                                                    left: Redirected {
+                                                                        expression: Command(
+                                                                            CshAstCommand {
+                                                                                assignments: [],
+                                                                                name: "cp",
+                                                                                args: [
+                                                                                    "-an",
+                                                                                    "$legacy_current_dir/.",
+                                                                                    "$current_state_dir/",
+                                                                                ],
+                                                                            },
+                                                                        ),
+                                                                        redirects: [
+                                                                            CshAstRedirect {
+                                                                                descriptor: Some(
+                                                                                    "2",
+                                                                                ),
+                                                                                operator: ">",
+                                                                                target: "/dev/null",
+                                                                            },
+                                                                        ],
+                                                                    },
+                                                                    operator: Or,
+                                                                    right: Command(
+                                                                        CshAstCommand {
+                                                                            assignments: [],
+                                                                            name: "true",
+                                                                            args: [],
+                                                                        },
+                                                                    ),
+                                                                },
+                                                            ],
+                                                        },
+                                                    },
+                                                ],
+                                                otherwise: None,
+                                            },
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "rm",
+                                                    args: [
+                                                        "-rf",
+                                                        "$legacy_current_dir",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            otherwise: None,
+        },
+        Function {
+            name: "replace_literal_in_file",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "old=$2",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "new=$3",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "tmp",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-Fq",
+                                        "--",
+                                        "$old",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "tmp",
+                                        value: "$(mktemp)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "OLD",
+                                            value: "$old",
+                                        },
+                                        CshAstAssignment {
+                                            name: "NEW",
+                                            value: "$new",
+                                        },
+                                    ],
+                                    name: "awk",
+                                    args: [
+                                        "\n    BEGIN {\n      old = ENVIRON[\"OLD\"]\n      new = ENVIRON[\"NEW\"]\n    }\n    {\n      while ((pos = index($0, old)) > 0) {\n        $0 = substr($0, 1, pos - 1) new substr($0, pos + length(old))\n      }\n      print\n    }\n  ",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$tmp",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cat",
+                                    args: [
+                                        "$tmp",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$file",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$tmp",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "replace_current_path",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file=$1",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -f $file ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "replace_literal_in_file",
+                                args: [
+                                    "$file",
+                                    "$HOME/.config/omarchy/current",
+                                    "$HOME/.local/state/omarchy/current",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "replace_literal_in_file",
+                                args: [
+                                    "$file",
+                                    "~/.config/omarchy/current",
+                                    "~/.local/state/omarchy/current",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "replace_literal_in_file",
+                                args: [
+                                    "$file",
+                                    "../omarchy/current",
+                                    "../../.local/state/omarchy/current",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        Function {
+            name: "ensure_hyprland_state_path",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "file=$HOME/.config/hypr/hyprland.lua",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "tmp",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -f $file ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-Fq",
+                                        "/.local/state/?.lua;",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-Fq",
+                                        "/default/hypr/bootstrap.lua",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            operator: And,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "grep",
+                                    args: [
+                                        "-Fq",
+                                        "  .. \"/.config/?.lua;\"",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [
+                                    CshAstAssignment {
+                                        name: "tmp",
+                                        value: "$(mktemp)",
+                                    },
+                                ],
+                                name: "",
+                                args: [],
+                            },
+                        ),
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "awk",
+                                    args: [
+                                        "\n    !inserted && $0 == \"  .. \\\"/.config/?.lua;\\\"\" {\n      print \"  .. \\\"/.local/state/?.lua;\\\"\"\n      print \"  .. os.getenv(\\\"HOME\\\")\"\n      inserted = 1\n    }\n    { print }\n  ",
+                                        "$file",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$tmp",
+                                },
+                            ],
+                        },
+                        Redirected {
+                            expression: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "cat",
+                                    args: [
+                                        "$tmp",
+                                    ],
+                                },
+                            ),
+                            redirects: [
+                                CshAstRedirect {
+                                    descriptor: None,
+                                    operator: ">",
+                                    target: "$file",
+                                },
+                            ],
+                        },
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "rm",
+                                args: [
+                                    "-f",
+                                    "$tmp",
+                                ],
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+        For {
+            variable: "file",
+            words: Some(
+                [
+                    "$HOME/.config/alacritty/alacritty.toml",
+                    "$HOME/.config/foot/foot.ini",
+                    "$HOME/.config/ghostty/config",
+                    "$HOME/.config/hypr/hyprland.conf",
+                    "$HOME/.config/hypr/hyprland.lua",
+                    "$HOME/.config/hyprland-preview-share-picker/config.yaml",
+                    "$HOME/.config/kitty/kitty.conf",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "replace_current_path",
+                            args: [
+                                "$file",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "ensure_hyprland_state_path",
+                args: [],
+            },
+        ),
+        Function {
+            name: "relink_current_symlink",
+            body: Group(
+                CshAst {
+                    commands: [
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "link=$1",
+                                ],
+                            },
+                        ),
+                        Command(
+                            CshAstCommand {
+                                assignments: [],
+                                name: "local",
+                                args: [
+                                    "target",
+                                    "suffix",
+                                ],
+                            },
+                        ),
+                        Binary {
+                            left: Test(
+                                " -L $link ",
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Binary {
+                            left: Command(
+                                CshAstCommand {
+                                    assignments: [
+                                        CshAstAssignment {
+                                            name: "target",
+                                            value: "$(readlink \"$link\")",
+                                        },
+                                    ],
+                                    name: "",
+                                    args: [],
+                                },
+                            ),
+                            operator: Or,
+                            right: Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: "return",
+                                    args: [
+                                        "0",
+                                    ],
+                                },
+                            ),
+                        },
+                        Case {
+                            word: "$target",
+                            arms: [
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "$legacy_current_dir/*",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "suffix",
+                                                            value: "${target#\"$legacy_current_dir\"/}",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "ln",
+                                                    args: [
+                                                        "-sfn",
+                                                        "$current_state_dir/$suffix",
+                                                        "$link",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                                CshAstCaseArm {
+                                    patterns: [
+                                        "~/.config/omarchy/current/*",
+                                    ],
+                                    body: CshAst {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [
+                                                        CshAstAssignment {
+                                                            name: "suffix",
+                                                            value: "${target#\"~/.config/omarchy/current/\"}",
+                                                        },
+                                                    ],
+                                                    name: "",
+                                                    args: [],
+                                                },
+                                            ),
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: "ln",
+                                                    args: [
+                                                        "-sfn",
+                                                        "$current_state_dir/$suffix",
+                                                        "$link",
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                    terminator: ";;",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+        },
+        For {
+            variable: "link",
+            words: Some(
+                [
+                    "$HOME/.config/btop/themes/current.theme",
+                    "$HOME/.config/helix/themes/omarchy.toml",
+                    "$HOME/.vscode/extensions/omarchy-theme/themes/omarchy-color-theme.json",
+                    "$HOME/.vscode-insiders/extensions/omarchy-theme/themes/omarchy-color-theme.json",
+                    "$HOME/.vscode-oss/extensions/omarchy-theme/themes/omarchy-color-theme.json",
+                    "$HOME/.cursor/extensions/omarchy-theme/themes/omarchy-color-theme.json",
+                ],
+            ),
+            body: CshAst {
+                commands: [
+                    Command(
+                        CshAstCommand {
+                            assignments: [],
+                            name: "relink_current_symlink",
+                            args: [
+                                "$link",
+                            ],
+                        },
+                    ),
+                ],
+            },
+        },
+    ],
+}

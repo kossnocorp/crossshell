@@ -1,0 +1,53 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/osd-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const osd = requireFromRoot('shell/plugins/osd/OsdModel.js')\n\nassertEqual(osd.iconFor('', 0), osd.iconFor('muted', 50), 'osd falls back to muted icon at zero percent')\nassertEqual(osd.iconFor('volume-high', 1), osd.iconFor('', 100), 'osd maps high volume aliases')\nassertEqual(osd.iconFor('logout', 50), '\u{f0343}', 'osd maps logout icon')\nassertEqual(osd.iconFor('custom-symbol', 50), 'custom-symbol', 'osd preserves unknown explicit icons')\nassertEqual(osd.widestIcon, osd.iconFor('volume-high', 100), 'osd sizes the icon column to a glyph it can show')\n\nassertDeepEqual(\n  osd.stateForShow('volume', '', '75', '100', '', '800'),\n  {\n    iconKey: 'volume',\n    maxValue: 100,\n    hasProgress: true,\n    value: 75,\n    message: '75%',\n    icon: osd.iconFor('volume', 75),\n    duration: 800\n  },\n  'osd builds progress state'\n)\n\nassertDeepEqual(\n  osd.stateForShow('media-pause', 'Paused', '', '100', '', 'nope'),\n  {\n    iconKey: 'media-pause',\n    maxValue: 100,\n    hasProgress: false,\n    value: 0,\n    message: 'Paused',\n    icon: osd.iconFor('media-pause', -1),\n    duration: 1200\n  },\n  'osd builds message state'\n)\n",
+        },
+    ],
+}

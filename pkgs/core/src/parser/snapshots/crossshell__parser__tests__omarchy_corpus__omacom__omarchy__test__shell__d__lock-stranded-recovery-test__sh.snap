@@ -1,0 +1,53 @@
+---
+source: pkgs/core/src/parser/mod.rs
+description: "@omacom/omarchy/test/shell.d/lock-stranded-recovery-test.sh"
+expression: ast
+---
+CshAst {
+    commands: [
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "set",
+                args: [
+                    "-euo",
+                    "pipefail",
+                ],
+            },
+        ),
+        Command(
+            CshAstCommand {
+                assignments: [],
+                name: "source",
+                args: [
+                    "$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")\" && pwd)/base-test.sh",
+                ],
+            },
+        ),
+        Redirected {
+            expression: Command(
+                CshAstCommand {
+                    assignments: [],
+                    name: "run_node_test",
+                    args: [],
+                },
+            ),
+            redirects: [
+                CshAstRedirect {
+                    descriptor: None,
+                    operator: "<<",
+                    target: "JS",
+                    here_document: 0,
+                },
+            ],
+        },
+    ],
+    here_documents: [
+        CshAstHereDocument {
+            delimiter: "JS",
+            quoted: true,
+            strip_tabs: false,
+            body: "const fs = require('fs')\nconst serviceQml = fs.readFileSync(path.join(root, 'shell/plugins/lock/Service.qml'), 'utf8')\n\n// The compositor holds the lock past its client, so a fresh shell must retake it.\nassert(\n  /Component\\.onCompleted:[\\s\\S]*checkStrandedLock\\(\\)/.test(serviceQml),\n  'the lock service asks the compositor whether the session is locked at startup'\n)\n\nassert(\n  /id: strandedLockCheckProc[\\s\\S]*omarchy-hyprland-session-locked/.test(serviceQml),\n  'the startup check goes through the shared session lock helper'\n)\n\n// \"No output to read\" taken for \"unlocked\" leaves the failsafe up for good.\nassert(\n  /onExited: function\\(exitCode\\) \\{[\\s\\S]*if \\(exitCode === 2\\) return/.test(serviceQml),\n  'an undetermined answer never resolves the check'\n)\n\nassert(\n  /if \\(exitCode === 2\\) return\\s*\\n\\s*root\\.strandedLockResolved = true/.test(serviceQml),\n  'only a compositor that reports a lock counts as a stranded lock'\n)\n\n// omarchy-restart-shell re-locks a fresh shell, possibly mid-question.\nassert(\n  /root\\.strandedLock = exitCode === 0 && !root\\.locked && !root\\.lockRequested/.test(serviceQml),\n  'a lock this shell took while the check was in flight is not stranded'\n)\n\nassert(\n  /id: strandedLockRetryTimer[\\s\\S]*running: !root\\.strandedLockResolved && remaining > 0/.test(serviceQml),\n  'the check retries while the compositor cannot answer, and stops once it has'\n)\n\n// A display asleep for hours outlasts any retry budget.\nassert(\n  /function onScreensChanged\\(\\) \\{[\\s\\S]*root\\.checkStrandedLock\\(\\)/.test(serviceQml),\n  'a screen coming back re-asks whether a lock is stranded'\n)\n\n// One probe is not enough: a monitor still coming up cannot answer.\nassert(\n  /function onScreensChanged\\(\\) \\{[\\s\\S]*strandedLockRetryTimer\\.rearm\\(\\)[\\s\\S]*root\\.checkStrandedLock\\(\\)/.test(serviceQml),\n  'a screen coming back gives the check its settling time again'\n)\n\nassert(\n  /function rearm\\(\\) \\{\\s*if \\(!root\\.strandedLockResolved\\) remaining = budget/.test(serviceQml),\n  're-arming never restarts a check that already has its answer'\n)\n\n// A lock this shell owns ends the search.\nassert(\n  /function checkStrandedLock\\(\\) \\{\\s*if \\(strandedLockResolved \\|\\| strandedLockCheckProc\\.running\\) return[\\s\\S]*if \\(locked \\|\\| lockRequested\\) \\{\\s*strandedLockResolved = true/.test(serviceQml),\n  'a lock this shell took is not treated as stranded'\n)\n\nassert(\n  /function recoverStrandedLock\\(\\) \\{\\s*if \\(!strandedLock \\|\\| locked \\|\\| !passwordPamConfigured\\) return/.test(serviceQml),\n  'recovery is skipped unless a stranded lock is waiting and PAM can authenticate it'\n)\n\n// The compositor answer and the PAM config land asynchronously, in either\n// order, so whichever arrives last has to drive the recovery.\nassert(\n  /onPasswordPamConfiguredChanged: \\{[\\s\\S]*checkStrandedLock\\(\\)/.test(serviceQml),\n  'recovery retries once the PAM config has loaded'\n)\n\n// The failsafe can be cleared from a TTY while PAM is still loading.\nassert(\n  /onPasswordPamConfiguredChanged: \\{\\s*if \\(!passwordPamConfigured\\) return\\s*\\n\\s*strandedLock = false\\s*\\n\\s*strandedLockResolved = false/.test(serviceQml),\n  'a late PAM config re-asks the compositor instead of trusting a stale answer'\n)\n\nassert(\n  /strandedLock = false\\s*\\n\\s*logEvent\\(\"lock-stranded: recovering\"\\)\\s*\\n\\s*beginLock\\(\\)/.test(serviceQml),\n  'recovery takes the lock once and records it in the journal'\n)\n",
+        },
+    ],
+}
