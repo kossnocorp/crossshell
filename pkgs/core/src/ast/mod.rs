@@ -1,5 +1,3 @@
-mod parse;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CshAst {
     pub commands: Vec<CshAstCommand>,
