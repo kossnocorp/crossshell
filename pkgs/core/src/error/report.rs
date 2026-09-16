@@ -82,38 +82,22 @@ impl<'a> CshError<'a> {
                     )
             }
 
-            CshError::Unexpected(error) => {
-                // Never send raw control characters from Chumsky's token display
-                // to the terminal (notably carriage returns, tabs, and newlines).
-                let escaped = error.clone().map_token(|c| c.escape_debug().to_string());
-
-                let found = error.found().map_or_else(
-                    || "end of file".to_owned(),
-                    |c| format!("`{}`", c.escape_debug()),
-                );
-
-                let mut message = format!("Unexpected {found}");
-                if let Some((context, _)) = escaped.contexts().next() {
-                    message.push_str(&format!(" while parsing {context}"));
-                }
-
-                let expected = escaped
-                    .expected()
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>();
-
-                let label = if expected.is_empty() {
-                    "Not valid here".to_owned()
+            CshError::Unexpected {
+                found,
+                span,
+                expected,
+            } => {
+                let found = if found.is_empty() {
+                    "end of file".to_owned()
                 } else {
-                    format!("Expected {}", expected.join(", "))
+                    format!("`{}`", found.escape_debug())
                 };
-
-                Report::build(ReportKind::Error, (filename, error.span().into_range()))
+                Report::build(ReportKind::Error, (filename, span.clone()))
                     .with_config(*config)
-                    .with_message(message)
+                    .with_message(format!("Unexpected {found}"))
                     .with_label(
-                        Label::new((filename, error.span().into_range()))
-                            .with_message(label)
+                        Label::new((filename, span.clone()))
+                            .with_message(format!("Expected {expected}"))
                             .with_color(Color::Red),
                     )
             }
@@ -175,7 +159,7 @@ mod tests {
            │
          1 │ echo "héllo 🌍" ||| cat
            │                   ┬
-           │                   ╰── Expected ' ', '\t', '\r', '\n', whitespace, '!', command
+           │                   ╰── Expected a command
         ───╯
         "#);
     }
@@ -199,12 +183,12 @@ mod tests {
     #[test]
     fn escapes_control_characters_in_diagnostics() {
         assert_snapshot!(render("echo \u{b}"), @r"
-        Error: Unexpected `\u{b}` while parsing command
+        Error: Unexpected `\u{b}`
            ╭─[ example.sh:1:6 ]
            │
          1 │ echo
            │      ┬
-           │      ╰── Expected ' ', '\t', '\r', '\\', whitespace, redirection, word, pipe operator, logical operator, comment, command separator, end of input
+           │      ╰── Expected a command separator
         ───╯
         ");
     }

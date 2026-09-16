@@ -2,469 +2,22 @@ use crate::prelude::internal::*;
 
 mod error;
 pub use error::*;
+mod cursor;
 
 pub struct CshParser;
 
 impl CshParser {
-    /// Parses Cross Shell source code into AST.
+    /// Parses Cross Shell source into an owned, arena-backed AST.
+    ///
+    /// Expression IDs index `CshAst::nodes`; the AST does not borrow the source.
+    /// Diagnostics borrow the source and use UTF-8 byte offsets. Recursive
+    /// command-list nesting is limited to 128 levels; operator chains are iterative.
     pub fn parse<'source_code>(
         source_code: &'source_code str,
     ) -> Result<CshAst, CshParserError<'source_code>> {
-        let parser = recursive(|script| {
-            let nonempty = script
-                .clone()
-                .filter(|ast: &CshAst| !ast.commands.is_empty());
-            let space = one_of::<_, _, extra::Err<CshError<'_>>>(" \t\r")
-                .ignored()
-                .or(just("\\\n").ignored())
-                .repeated()
-                .labelled("whitespace");
-            let continuation = one_of(" \t\r\n").repeated();
-            let keyword = |name: &'static str| {
-                just(name).then_ignore(
-                    any()
-                        .filter(|c: &char| !c.is_whitespace() && !";|&()<>".contains(*c))
-                        .not(),
-                )
-            };
-            let escape_char =
-                just('\\')
-                    .ignore_then(any().or_not())
-                    .validate(|c, extra, emitter| {
-                        c.unwrap_or_else(|| {
-                            let span: SimpleSpan = extra.span();
-                            emitter.emit(CshError::IncompleteEscape {
-                                span: span.into_range(),
-                            });
-                            '\0'
-                        })
-                    });
-            let escaped = escape_char.map(|c: char| {
-                if c == '\n' {
-                    String::new()
-                } else {
-                    c.to_string()
-                }
-            });
-            let single = just('\'')
-                .map_with(|_, e| -> SimpleSpan { e.span() })
-                .then(none_of('\'').repeated().collect::<String>())
-                .then(just('\'').or_not())
-                .try_map(|((opening, text), closing), span: SimpleSpan| {
-                    closing.map(|_| text).ok_or(CshError::UnclosedQuote {
-                        quote: '\'',
-                        opening_span: opening.into_range(),
-                        end_span: span.end..span.end,
-                    })
-                });
-            // Balanced expansion text is retained verbatim; expansion happens at execution time.
-            let balanced = recursive(|inner| {
-                choice((
-                    just('\\').then(any()).ignored(),
-                    single.ignored(),
-                    inner
-                        .clone()
-                        .repeated()
-                        .delimited_by(just('('), just(')'))
-                        .ignored(),
-                    inner
-                        .clone()
-                        .repeated()
-                        .delimited_by(just('{'), just('}'))
-                        .ignored(),
-                    just('"')
-                        .ignore_then(
-                            choice((just('\\').then(any()).ignored(), none_of("\"\\").ignored()))
-                                .repeated(),
-                        )
-                        .then_ignore(just('"'))
-                        .ignored(),
-                    none_of("\\'\"(){}").ignored(),
-                ))
-            });
-            let arithmetic = just("$((")
-                .ignore_then(balanced.clone().repeated())
-                .then_ignore(just("))"))
-                .to_slice();
-            let substitution = just("$(")
-                .ignore_then(script.clone())
-                .then_ignore(just(')'))
-                .to_slice();
-            let process_substitution = one_of("<>")
-                .then(just('('))
-                .ignore_then(script.clone())
-                .then_ignore(just(')'))
-                .to_slice();
-            let parameter = just("${")
-                .ignore_then(balanced.clone().repeated())
-                .then_ignore(just('}'))
-                .to_slice();
-            let backtick = just('`')
-                .ignore_then(
-                    choice((just('\\').then(any()).ignored(), none_of('`').ignored())).repeated(),
-                )
-                .then_ignore(just('`'))
-                .to_slice();
-            let expansion = choice((arithmetic, substitution, parameter, backtick))
-                .map(str::to_owned)
-                .boxed();
-            let dollar = just('$').then_ignore(one_of("({").not()).to("$".to_owned());
-            let double_escape = escape_char.map(|c| match c {
-                '\n' => String::new(),
-                '$' | '`' | '"' | '\\' => c.to_string(),
-                _ => format!("\\{c}"),
-            });
-            let double = just('"')
-                .map_with(|_, e| -> SimpleSpan { e.span() })
-                .then(
-                    choice((
-                        expansion.clone(),
-                        double_escape,
-                        dollar.clone(),
-                        none_of("\"\\$`").map(|c: char| c.to_string()),
-                    ))
-                    .repeated()
-                    .collect::<Vec<_>>(),
-                )
-                .then(just('"').or_not())
-                .try_map(|((opening, parts), closing), span: SimpleSpan| {
-                    closing
-                        .map(|_| parts.concat())
-                        .ok_or(CshError::UnclosedQuote {
-                            quote: '"',
-                            opening_span: opening.into_range(),
-                            end_span: span.end..span.end,
-                        })
-                });
-            let glob = one_of("?*+@!")
-                .then(just('('))
-                .ignore_then(balanced.repeated())
-                .then_ignore(just(')'))
-                .to_slice()
-                .map(str::to_owned);
-            let bare = one_of("?*+@!")
-                .then(just('('))
-                .not()
-                .ignore_then(
-                    any().filter(|c: &char| !c.is_whitespace() && !"\"';|&<>()$`\\".contains(*c)),
-                )
-                .repeated()
-                .at_least(1)
-                .collect::<String>();
-            let word = just('#')
-                .not()
-                .ignore_then(
-                    choice((
-                        single,
-                        double,
-                        expansion,
-                        process_substitution.map(str::to_owned),
-                        escaped,
-                        glob,
-                        bare,
-                        dollar,
-                    ))
-                    .repeated()
-                    .at_least(1)
-                    .collect::<Vec<_>>(),
-                )
-                .map(|parts| parts.concat())
-                .labelled("word")
-                .as_context()
-                .boxed();
-            let redirect = one_of("0123456789")
-                .repeated()
-                .at_least(1)
-                .collect::<String>()
-                .or_not()
-                .then(choice((
-                    just("&>>"),
-                    just("<<<"),
-                    just(">>"),
-                    just("<<-"),
-                    just("<<"),
-                    just("<&"),
-                    just(">&"),
-                    just("&>"),
-                    just(">|"),
-                    just("<>"),
-                    just(">"),
-                    just("<"),
-                )))
-                .then_ignore(space)
-                .then(word.clone())
-                .map(|((descriptor, operator), target)| CshAstRedirect {
-                    descriptor,
-                    operator: operator.to_owned(),
-                    target,
-                })
-                .labelled("redirection");
-            let item = redirect
-                .clone()
-                .map(Err)
-                .or(word
-                    .clone()
-                    .map_with(|word, extra| Ok((word, extra.slice()))))
-                .padded_by(space);
-            let reserved = choice((
-                keyword("if"),
-                keyword("then"),
-                keyword("elif"),
-                keyword("else"),
-                keyword("fi"),
-                keyword("for"),
-                keyword("do"),
-                keyword("done"),
-                keyword("while"),
-                keyword("until"),
-                keyword("case"),
-                keyword("esac"),
-                keyword("{"),
-                keyword("}"),
-            ));
-            let simple = reserved
-                .not()
-                .ignore_then(item.repeated().at_least(1).collect::<Vec<_>>())
-                .map(|items| {
-                    let mut words = Vec::new();
-                    let mut assignments = Vec::new();
-                    let mut redirects = Vec::new();
-                    for item in items {
-                        match item {
-                            Ok((word, raw)) => {
-                                let assignment = raw.split_once('=').filter(|(name, _)| {
-                                    !name.is_empty()
-                                        && name.chars().enumerate().all(|(i, c)| {
-                                            c == '_'
-                                                || c.is_ascii_alphabetic()
-                                                || (i > 0 && c.is_ascii_digit())
-                                        })
-                                });
-                                if words.is_empty()
-                                    && let Some((name, _)) = assignment
-                                {
-                                    assignments.push(CshAstAssignment {
-                                        name: name.to_owned(),
-                                        value: word[name.len() + 1..].to_owned(),
-                                    });
-                                } else {
-                                    words.push(word);
-                                }
-                            }
-                            Err(redirect) => redirects.push(redirect),
-                        }
-                    }
-                    let mut words = words.into_iter();
-                    let expression = CshAstExpression::Command(CshAstCommand {
-                        assignments,
-                        name: words.next().unwrap_or_default(),
-                        args: words.collect(),
-                    });
-                    if redirects.is_empty() {
-                        expression
-                    } else {
-                        CshAstExpression::Redirected {
-                            expression: Box::new(expression),
-                            redirects,
-                        }
-                    }
-                });
-            let branch = nonempty
-                .clone()
-                .then_ignore(keyword("then").padded_by(continuation))
-                .then(nonempty.clone())
-                .map(|(condition, body)| CshAstBranch { condition, body });
-            let conditional = keyword("if")
-                .then_ignore(space)
-                .ignore_then(branch.clone())
-                .then(
-                    keyword("elif")
-                        .then_ignore(space)
-                        .ignore_then(branch)
-                        .repeated()
-                        .collect::<Vec<_>>(),
-                )
-                .then(
-                    keyword("else")
-                        .padded_by(continuation)
-                        .ignore_then(nonempty.clone())
-                        .or_not(),
-                )
-                .then_ignore(keyword("fi"))
-                .map(|((first, rest), otherwise)| CshAstExpression::If {
-                    branches: std::iter::once(first).chain(rest).collect(),
-                    otherwise,
-                });
-            let for_loop = keyword("for")
-                .then_ignore(space)
-                .ignore_then(word.clone())
-                .then(
-                    keyword("in")
-                        .padded_by(space)
-                        .ignore_then(word.clone().padded_by(space).repeated().collect::<Vec<_>>())
-                        .or_not(),
-                )
-                .then_ignore(space)
-                .then_ignore(one_of(";\n"))
-                .then_ignore(continuation)
-                .then_ignore(keyword("do"))
-                .then_ignore(continuation)
-                .then(nonempty.clone())
-                .then_ignore(keyword("done"))
-                .map(|((variable, words), body)| CshAstExpression::For {
-                    variable,
-                    words,
-                    body,
-                });
-            let condition_loop = choice((keyword("while").to(false), keyword("until").to(true)))
-                .then_ignore(space)
-                .then(nonempty.clone())
-                .then_ignore(keyword("do").padded_by(continuation))
-                .then(nonempty.clone())
-                .then_ignore(keyword("done"))
-                .map(|((until, condition), body)| CshAstExpression::Loop {
-                    until,
-                    condition,
-                    body,
-                });
-            let case_arm = keyword("esac")
-                .not()
-                .ignore_then(just('(').or_not())
-                .ignore_then(
-                    word.clone()
-                        .padded_by(space)
-                        .separated_by(just('|'))
-                        .at_least(1)
-                        .collect::<Vec<_>>(),
-                )
-                .then_ignore(just(')'))
-                .then(script.clone())
-                .then(choice((just(";;&"), just(";;"), just(";&"))).or_not())
-                .then_ignore(continuation)
-                .map(|((patterns, body), terminator)| CshAstCaseArm {
-                    patterns,
-                    body,
-                    terminator: terminator.unwrap_or("").to_owned(),
-                });
-            let case = keyword("case")
-                .then_ignore(space)
-                .ignore_then(word.clone())
-                .then_ignore(space)
-                .then_ignore(keyword("in"))
-                .then_ignore(continuation)
-                .then(case_arm.repeated().collect::<Vec<_>>())
-                .then_ignore(keyword("esac"))
-                .map(|(word, arms)| CshAstExpression::Case { word, arms });
-            let compound = choice((
-                nonempty
-                    .clone()
-                    .delimited_by(just('('), just(')'))
-                    .map(CshAstExpression::Subshell),
-                nonempty
-                    .clone()
-                    .delimited_by(keyword("{"), keyword("}"))
-                    .map(CshAstExpression::Group),
-                conditional,
-                for_loop,
-                condition_loop,
-                case,
-            ))
-            .then(redirect.padded_by(space).repeated().collect::<Vec<_>>())
-            .map(|(expression, redirects)| {
-                if redirects.is_empty() {
-                    expression
-                } else {
-                    CshAstExpression::Redirected {
-                        expression: Box::new(expression),
-                        redirects,
-                    }
-                }
-            });
-            let command = compound
-                .or(simple)
-                .padded_by(space)
-                .labelled("command")
-                .as_context();
-            let binary = |left, (operator, right)| CshAstExpression::Binary {
-                left: Box::new(left),
-                operator,
-                right: Box::new(right),
-            };
-            let pipeline = command.clone().foldl(
-                choice((
-                    just("|&").to(CshAstOperator::PipeWithStderr),
-                    just('|')
-                        .then_ignore(just('|').not())
-                        .to(CshAstOperator::Pipe),
-                ))
-                .labelled("pipe operator")
-                .then_ignore(continuation)
-                .then(command)
-                .repeated(),
-                binary,
-            );
-            let pipeline = keyword("!").padded_by(space).or_not().then(pipeline).map(
-                |(negated, expression)| {
-                    if negated.is_some() {
-                        CshAstExpression::Negated(Box::new(expression))
-                    } else {
-                        expression
-                    }
-                },
-            );
-            let expression = pipeline.clone().foldl(
-                choice((
-                    just("&&").to(CshAstOperator::And),
-                    just("||").to(CshAstOperator::Or),
-                ))
-                .labelled("logical operator")
-                .then_ignore(continuation)
-                .then(pipeline)
-                .repeated(),
-                binary,
-            );
-            let comment = just('#')
-                .then(none_of('\n').repeated())
-                .ignored()
-                .labelled("comment");
-            let separator = just(';')
-                .then_ignore(one_of(";&").not())
-                .or(just('\n'))
-                .to(false)
-                .or(just('&').then_ignore(just('&').not()).to(true))
-                .labelled("command separator");
-            let line = expression
-                .or_not()
-                .then_ignore(space)
-                .then_ignore(comment.or_not());
-            // Parse each line once. Repeating (line, separator) before a final
-            // line reparses the last command whenever the separator is absent.
-            space
-                .ignore_then(line.clone())
-                .then(separator.then(line).repeated().collect::<Vec<_>>())
-                .map(|(mut current, following)| {
-                    let mut commands = Vec::new();
-                    for (background, next) in following {
-                        if let Some(expression) = current {
-                            commands.push(if background {
-                                CshAstExpression::Background(Box::new(expression))
-                            } else {
-                                expression
-                            });
-                        }
-                        current = next;
-                    }
-                    commands.extend(current);
-                    CshAst { commands }
-                })
-        });
-
-        parser
-            .parse(source_code)
-            .into_result()
-            .map_err(|diagnostics| CshParserError {
-                errors: diagnostics,
-            })
+        cursor::Cursor::parse(source_code).map_err(|error| CshParserError {
+            errors: vec![error],
+        })
     }
 }
 
@@ -924,6 +477,99 @@ b # comment"#).unwrap();
     }
 
     #[test]
+    fn arena_links_survive_growth_and_source_drop() {
+        let ast = {
+            let source = (0..256)
+                .map(|i| format!("echo {i}"))
+                .collect::<Vec<_>>()
+                .join(" | ");
+            CshParser::parse(&source).unwrap()
+        };
+        assert_eq!(ast.nodes.len(), 511);
+        let mut id = ast.commands[0];
+        for expected in (1..256).rev() {
+            let CshAstExpression::Binary {
+                left,
+                operator,
+                right,
+            } = &ast[id]
+            else {
+                panic!("expected a pipeline node");
+            };
+            assert_eq!(*operator, CshAstOperator::Pipe);
+            let CshAstExpression::Command(command) = &ast[*right] else {
+                panic!("expected a command");
+            };
+            assert_eq!(command.args, [expected.to_string()]);
+            id = *left;
+        }
+        let CshAstExpression::Command(command) = &ast[id] else {
+            panic!("expected the first command");
+        };
+        assert_eq!(command.args, ["0"]);
+    }
+
+    #[test]
+    fn validates_substitutions_and_reclaims_temporary_nodes() {
+        let ast = CshParser::parse("echo $(printf '%s' $(pwd)) <(cat file) && done_cmd").unwrap();
+        assert_eq!(ast.nodes.len(), 3);
+        assert_eq!(ast.commands, [CshAstNodeId(2)]);
+        let CshAstExpression::Command(command) = &ast[CshAstNodeId(0)] else {
+            panic!("expected echo");
+        };
+        assert_eq!(command.args, ["$(printf '%s' $(pwd))", "<(cat file)"]);
+        for source in [
+            "echo $(echo |)",
+            "echo <(if true; then fi)",
+            "echo ${x)}",
+            "echo $((1 + (2))",
+            "echo @(a|b",
+        ] {
+            assert!(CshParser::parse(source).is_err(), "accepted {source:?}");
+        }
+    }
+
+    #[test]
+    fn bounds_recursive_nesting_but_handles_long_operator_chains() {
+        let nested = format!("{}echo{}", "(".repeat(128), ")".repeat(128));
+        let error = CshParser::parse(&nested).unwrap_err();
+        assert!(matches!(
+            error.errors[0],
+            CshError::Unexpected {
+                expected: "at most 128 nested command lists",
+                ..
+            }
+        ));
+
+        let source = std::iter::repeat_n("true", 10_000)
+            .collect::<Vec<_>>()
+            .join(" && ");
+        let ast = CshParser::parse(&source).unwrap();
+        assert_eq!(ast.nodes.len(), 19_999);
+        drop(ast); // Arena destruction must not recurse through the operator chain.
+    }
+
+    #[test]
+    fn keeps_keywords_descriptors_and_word_fragments_distinct() {
+        let ast =
+            CshParser::parse("ifconfig 'if' a#b 2file 2>out <(pwd) pre\"héllo\"'🌍'").unwrap();
+        let CshAstExpression::Redirected {
+            expression,
+            redirects,
+        } = &ast[ast.commands[0]]
+        else {
+            panic!("expected redirect");
+        };
+        assert_eq!(redirects[0].descriptor.as_deref(), Some("2"));
+        assert_eq!(redirects[0].target, "out");
+        let CshAstExpression::Command(command) = &ast[*expression] else {
+            panic!("expected command");
+        };
+        assert_eq!(command.name, "ifconfig");
+        assert_eq!(command.args, ["if", "a#b", "2file", "<(pwd)", "prehéllo🌍"]);
+    }
+
+    #[test]
     fn parses_basic_example() {
         let ast = CshParser::parse(include_str!("../../../../examples/00-basic.sh")).unwrap();
         assert_debug_snapshot!(ast, @r#"
@@ -1103,15 +749,17 @@ b # comment"#).unwrap();
     #[test]
     fn labels_unexpected_operator() {
         let error = CshParser::parse("echo hello ||| cat").unwrap_err();
-        assert_debug_snapshot!(error, @r"
+        assert_debug_snapshot!(error, @r#"
         CshParserError {
             errors: [
-                Unexpected(
-                    found ''|'' at 13..14 expected '' '', ''\t'', ''\r'', ''\n'', whitespace, ''!'', or command,
-                ),
+                Unexpected {
+                    found: "|",
+                    span: 13..14,
+                    expected: "a command",
+                },
             ],
         }
-        ");
+        "#);
     }
 
     #[test]
