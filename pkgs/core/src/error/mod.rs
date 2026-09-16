@@ -13,7 +13,7 @@ pub enum CshError<'source_code> {
         end_span: Range<usize>,
     },
 
-    UnsupportedEscape {
+    IncompleteEscape {
         span: Range<usize>,
     },
 }
@@ -46,6 +46,44 @@ where
         span: SimpleSpan,
     ) -> Self {
         Self::Unexpected(Rich::expected_found(expected, found, span))
+    }
+
+    // Forward Rich's allocation-reusing fast paths. The default implementations
+    // construct a fresh Rich error for every failed alternative, even on success.
+    fn merge_expected_found<E: IntoIterator<Item = L>>(
+        self,
+        expected: E,
+        found: Option<MaybeRef<'source_code, char>>,
+        span: SimpleSpan,
+    ) -> Self {
+        match self {
+            Self::Unexpected(error) => Self::Unexpected(<Rich<'source_code, char> as LabelError<
+                'source_code,
+                &'source_code str,
+                L,
+            >>::merge_expected_found(
+                error, expected, found, span
+            )),
+            diagnostic => diagnostic,
+        }
+    }
+
+    fn replace_expected_found<E: IntoIterator<Item = L>>(
+        self,
+        expected: E,
+        found: Option<MaybeRef<'source_code, char>>,
+        span: SimpleSpan,
+    ) -> Self {
+        match self {
+            Self::Unexpected(error) => Self::Unexpected(<Rich<'source_code, char> as LabelError<
+                'source_code,
+                &'source_code str,
+                L,
+            >>::replace_expected_found(
+                error, expected, found, span
+            )),
+            _ => Self::expected_found(expected, found, span),
+        }
     }
 
     fn label_with(&mut self, label: L) {

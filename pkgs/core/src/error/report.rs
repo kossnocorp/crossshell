@@ -71,13 +71,13 @@ impl<'a> CshError<'a> {
                     )
             }
 
-            CshError::UnsupportedEscape { span } => {
+            CshError::IncompleteEscape { span } => {
                 Report::build(ReportKind::Error, (filename, span.clone()))
                     .with_config(*config)
-                    .with_message("Escape sequences are not supported yet")
+                    .with_message("Incomplete escape sequence")
                     .with_label(
                         Label::new((filename, span.clone()))
-                            .with_message("This backslash cannot be used in an unquoted word")
+                            .with_message("Expected a character after this backslash")
                             .with_color(Color::Red),
                     )
             }
@@ -155,27 +155,27 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_escape() {
-        assert_snapshot!(render("echo \\\"unterminated"), @r#"
-        Error: Escape sequences are not supported yet
+    fn incomplete_escape() {
+        assert_snapshot!(render("echo \\"), @r"
+        Error: Incomplete escape sequence
            ╭─[ example.sh:1:6 ]
            │
-         1 │ echo \"unterminated
+         1 │ echo \
            │      ┬
-           │      ╰── This backslash cannot be used in an unquoted word
+           │      ╰── Expected a character after this backslash
         ───╯
-        "#);
+        ");
     }
 
     #[test]
     fn unexpected_token_after_unicode() {
-        assert_snapshot!(render("echo \"héllo 🌍\" | cat\n"), @r#"
-        Error: Unexpected `|` while parsing command
-           ╭─[ example.sh:1:16 ]
+        assert_snapshot!(render("echo \"héllo 🌍\" ||| cat\n"), @r#"
+        Error: Unexpected `|`
+           ╭─[ example.sh:1:18 ]
            │
-         1 │ echo "héllo 🌍" | cat
-           │                 ┬
-           │                 ╰── Expected whitespace, argument, comment, command separator, end of input
+         1 │ echo "héllo 🌍" ||| cat
+           │                   ┬
+           │                   ╰── Expected ' ', '\t', '\r', '\n', whitespace, '!', command
         ───╯
         "#);
     }
@@ -198,14 +198,14 @@ mod tests {
 
     #[test]
     fn escapes_control_characters_in_diagnostics() {
-        assert_snapshot!(render("echo \u{b}"), @r#"
+        assert_snapshot!(render("echo \u{b}"), @r"
         Error: Unexpected `\u{b}` while parsing command
            ╭─[ example.sh:1:6 ]
            │
          1 │ echo
            │      ┬
-           │      ╰── Expected whitespace, argument, comment, command separator, end of input
+           │      ╰── Expected ' ', '\t', '\r', '\\', whitespace, redirection, word, pipe operator, logical operator, comment, command separator, end of input
         ───╯
-        "#);
+        ");
     }
 }
