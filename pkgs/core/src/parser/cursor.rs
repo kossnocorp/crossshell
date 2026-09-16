@@ -1,4 +1,5 @@
 use crate::prelude::internal::*;
+mod glob;
 mod word;
 
 type Parsed<'a, T> = Result<T, CshError<'a>>;
@@ -554,7 +555,19 @@ impl<'a> Cursor<'a> {
         let mut start = self.pos;
         let mut parts = Vec::new();
         let mut boundary = true;
+        let mut regex = false;
         loop {
+            if boundary && self.byte() == Some(b'=') && self.peek(1) == Some(b'~') {
+                regex = true;
+            }
+            if boundary
+                && matches!(
+                    (self.byte(), self.peek(1)),
+                    (Some(b'&'), Some(b'&')) | (Some(b'|'), Some(b'|'))
+                )
+            {
+                regex = false;
+            }
             match self.byte() {
                 None => return Err(self.expected("a closing ]]")),
                 Some(b']') if boundary && self.peek(1) == Some(b']') => {
@@ -565,6 +578,22 @@ impl<'a> Cursor<'a> {
                     return Ok(CshAstWord::concat(parts));
                 }
                 Some(b'\'' | b'"' | b'$' | b'`' | b'\\') => {
+                    if start < self.pos {
+                        parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
+                    }
+                    parts.push(self.word_part(false, self.source.len())?);
+                    start = self.pos;
+                    boundary = false;
+                }
+                Some(b'*' | b'?' | b'[') if !regex => {
+                    if start < self.pos {
+                        parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
+                    }
+                    parts.push(self.word_part(false, self.source.len())?);
+                    start = self.pos;
+                    boundary = false;
+                }
+                Some(b'+' | b'@' | b'!') if !regex && self.peek(1) == Some(b'(') => {
                     if start < self.pos {
                         parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
                     }
@@ -701,27 +730,17 @@ impl<'a> Cursor<'a> {
                 has_item = true;
                 continue;
             }
-            let assignment =
-                if !has_name && matches!(self.byte(), Some(b'a'..=b'z' | b'A'..=b'Z' | b'_')) {
-                    let len = self
-                        .rest()
-                        .bytes()
-                        .take_while(|b| b.is_ascii_alphanumeric() || *b == b'_')
-                        .count();
-                    (self.peek(len) == Some(b'='))
-                        .then(|| self.source[self.pos..self.pos + len].to_owned())
+            let declaration = matches!(&command.name, Some(CshAstWord::Literal(name)) if matches!(name.as_str(), "declare" | "typeset" | "local" | "export" | "readonly"));
+            if (!has_name || declaration)
+                && let Some(assignment) = self.assignment()?
+            {
+                if has_name {
+                    command
+                        .args
+                        .push(CshAstWord::Assignment(Box::new(assignment)));
                 } else {
-                    None
-                };
-            if let Some(name) = assignment {
-                self.pos += name.len() + 1;
-                let value = if self.byte() == Some(b'(') {
-                    self.array_word()?
-                } else {
-                    self.assignment_word()?
-                        .unwrap_or_else(|| CshAstWord::Literal(String::new()))
-                };
-                command.assignments.push(CshAstAssignment { name, value });
+                    command.assignments.push(assignment);
+                }
                 has_item = true;
                 continue;
             }
@@ -759,15 +778,34 @@ impl<'a> Cursor<'a> {
     }
 
     fn redirect(&mut self) -> Parsed<'a, Option<CshAstRedirect>> {
-        if !matches!(self.byte(), Some(b'0'..=b'9' | b'<' | b'>' | b'&')) {
+        if !matches!(self.byte(), Some(b'0'..=b'9' | b'<' | b'>' | b'&' | b'{')) {
             return Ok(None);
         }
         let start = self.pos;
-        let mut digits = 0;
-        while matches!(self.peek(digits), Some(b'0'..=b'9')) {
-            digits += 1;
+        let mut prefix = 0;
+        if self.byte() == Some(b'{') {
+            if !matches!(self.peek(1), Some(b'a'..=b'z' | b'A'..=b'Z' | b'_')) {
+                return Ok(None);
+            }
+            prefix = 2;
+            while matches!(
+                self.peek(prefix),
+                Some(b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_')
+            ) {
+                prefix += 1;
+            }
+            if self.peek(prefix) != Some(b'}')
+                || !matches!(self.peek(prefix + 1), Some(b'<' | b'>'))
+            {
+                return Ok(None);
+            }
+            prefix += 1;
+        } else {
+            while matches!(self.peek(prefix), Some(b'0'..=b'9')) {
+                prefix += 1;
+            }
         }
-        let operator = match &self.source.as_bytes()[start + digits..] {
+        let operator = match &self.source.as_bytes()[start + prefix..] {
             // These are word fragments, not redirection operators.
             [b'<' | b'>', b'(', ..] => return Ok(None),
             [b'&', b'>', b'>', ..] => "&>>",
@@ -784,8 +822,8 @@ impl<'a> Cursor<'a> {
             [b'>', ..] => ">",
             _ => return Ok(None),
         };
-        self.pos += digits + operator.len();
-        let descriptor = (digits > 0).then(|| self.source[start..start + digits].to_owned());
+        self.pos += prefix + operator.len();
+        let descriptor = (prefix > 0).then(|| self.source[start..start + prefix].to_owned());
         self.space();
         let delimiter_start = self.pos;
         let delimiter = if matches!(operator, "<<" | "<<-") {

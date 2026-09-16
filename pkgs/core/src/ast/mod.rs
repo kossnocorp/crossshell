@@ -87,6 +87,9 @@ pub struct CshAstCaseArm {
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct CshAstRedirect {
+    /// An explicit descriptor number, or `{name}` for Bash descriptor allocation
+    /// (and variable-selected closing with `<&-`/`>&-`). Braces are retained to
+    /// distinguish the variable form; `None` selects the operator's default.
     pub descriptor: Option<String>,
     pub operator: String,
     pub target: CshAstWord,
@@ -120,7 +123,14 @@ pub struct CshAstCommand {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CshAstAssignment {
     pub name: String,
+    pub operator: CshAstAssignmentOperator,
     pub value: CshAstWord,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CshAstAssignmentOperator {
+    Set,
+    Append,
 }
 
 /// One shell word. Concatenated fragments remain a single argument; quoting and
@@ -153,12 +163,44 @@ pub enum CshAstWord {
     ArithmeticExpansion(Box<CshAstWord>),
     Concat(Vec<CshAstWord>),
     Array(Vec<CshAstWord>),
+    /// An assignment argument of a declaration builtin, retaining argument order.
+    Assignment(Box<CshAstAssignment>),
+    /// A keyed entry inside a compound array assignment, not a glob pattern.
+    KeyedElement {
+        key: Box<CshAstWord>,
+        operator: CshAstAssignmentOperator,
+        value: Box<CshAstWord>,
+    },
     /// Unquoted glob syntax (quoted wildcard characters remain literals).
-    Pattern(String),
+    Glob(CshAstGlob),
     ExtendedGlob {
         operator: char,
-        pattern: Box<CshAstWord>,
+        alternatives: Vec<CshAstWord>,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CshAstGlob {
+    /// `*`: zero or more characters; pathname matching does not cross `/`.
+    Star,
+    /// `**`: double-star syntax. Recursive pathname matching depends on the
+    /// evaluator's globstar option and the token's position in the pattern.
+    GlobStar,
+    /// `?`: one character; pathname matching excludes `/`.
+    QuestionMark,
+    CharacterClass {
+        negated: bool,
+        items: Vec<CshAstGlobClassItem>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CshAstGlobClassItem {
+    Character(char),
+    Range { start: char, end: char },
+    NamedClass(String),
+    CollatingSymbol(String),
+    EquivalenceClass(String),
 }
 
 impl CshAstWord {

@@ -26,6 +26,527 @@ mod tests {
     use super::*;
 
     #[test]
+    fn structures_associative_arrays_and_append_assignments() {
+        let ast = CshParser::parse(
+            r#"declare -A VULKAN_DRIVERS=(
+  [Intel]=vulkan-intel
+  [AMD]=vulkan-radeon
+  [Apple]=vulkan-asahi
+)
+PACKAGES=()
+PACKAGES+=("${VULKAN_DRIVERS[$vendor]}")"#,
+        )
+        .unwrap();
+        assert_debug_snapshot!(ast, @r#"
+        CshAst {
+            commands: [
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: Some(
+                            Literal(
+                                "declare",
+                            ),
+                        ),
+                        args: [
+                            Literal(
+                                "-A",
+                            ),
+                            Assignment(
+                                CshAstAssignment {
+                                    name: "VULKAN_DRIVERS",
+                                    operator: Set,
+                                    value: Array(
+                                        [
+                                            KeyedElement {
+                                                key: Literal(
+                                                    "Intel",
+                                                ),
+                                                operator: Set,
+                                                value: Literal(
+                                                    "vulkan-intel",
+                                                ),
+                                            },
+                                            KeyedElement {
+                                                key: Literal(
+                                                    "AMD",
+                                                ),
+                                                operator: Set,
+                                                value: Literal(
+                                                    "vulkan-radeon",
+                                                ),
+                                            },
+                                            KeyedElement {
+                                                key: Literal(
+                                                    "Apple",
+                                                ),
+                                                operator: Set,
+                                                value: Literal(
+                                                    "vulkan-asahi",
+                                                ),
+                                            },
+                                        ],
+                                    ),
+                                },
+                            ),
+                        ],
+                    },
+                ),
+                Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "PACKAGES",
+                                operator: Set,
+                                value: Array(
+                                    [],
+                                ),
+                            },
+                        ],
+                        name: None,
+                        args: [],
+                    },
+                ),
+                Command(
+                    CshAstCommand {
+                        assignments: [
+                            CshAstAssignment {
+                                name: "PACKAGES",
+                                operator: Append,
+                                value: Array(
+                                    [
+                                        DoubleQuoted(
+                                            Parameter {
+                                                prefix: "",
+                                                name: "VULKAN_DRIVERS",
+                                                suffix: Concat(
+                                                    [
+                                                        Literal(
+                                                            "[",
+                                                        ),
+                                                        Variable(
+                                                            "vendor",
+                                                        ),
+                                                        Literal(
+                                                            "]",
+                                                        ),
+                                                    ],
+                                                ),
+                                            },
+                                        ),
+                                    ],
+                                ),
+                            },
+                        ],
+                        name: None,
+                        args: [],
+                    },
+                ),
+            ],
+        }
+        "#);
+    }
+
+    #[test]
+    fn distinguishes_array_keys_from_globs_and_ordinary_arguments() {
+        let ast = CshParser::parse(
+            r#"a=(["a*b"]=one [$key]+=two [$(printf ']')]=three [0]= [abc] *.sh)
+echo [Intel]=vulkan-intel PACKAGES+=x
+local scalar+=value"#,
+        )
+        .unwrap();
+        let CshAstExpression::Command(command) = &ast[ast.commands[0]] else {
+            panic!("expected assignment");
+        };
+        let CshAstWord::Array(elements) = &command.assignments[0].value else {
+            panic!("expected array");
+        };
+        assert!(
+            matches!(&elements[0], CshAstWord::KeyedElement { key, .. } if matches!(&**key, CshAstWord::DoubleQuoted(_)))
+        );
+        assert!(
+            matches!(&elements[1], CshAstWord::KeyedElement { key, operator: CshAstAssignmentOperator::Append, .. } if **key == CshAstWord::Variable("key".into()))
+        );
+        assert!(
+            matches!(&elements[2], CshAstWord::KeyedElement { key, .. } if matches!(&**key, CshAstWord::CommandSubstitution { .. }))
+        );
+        assert!(
+            matches!(&elements[3], CshAstWord::KeyedElement { value, .. } if **value == CshAstWord::Literal(String::new()))
+        );
+        assert!(matches!(
+            &elements[4],
+            CshAstWord::Glob(CshAstGlob::CharacterClass { .. })
+        ));
+        let CshAstExpression::Command(echo) = &ast[ast.commands[1]] else {
+            panic!("expected echo");
+        };
+        assert!(
+            matches!(&echo.args[0], CshAstWord::Concat(parts) if matches!(&parts[0], CshAstWord::Glob(_)))
+        );
+        assert_eq!(echo.args[1], CshAstWord::Literal("PACKAGES+=x".into()));
+        let CshAstExpression::Command(local) = &ast[ast.commands[2]] else {
+            panic!("expected local");
+        };
+        assert!(
+            matches!(&local.args[0], CshAstWord::Assignment(a) if a.operator == CshAstAssignmentOperator::Append)
+        );
+    }
+
+    #[test]
+    fn distinguishes_globstar_from_star_and_quoted_stars() {
+        let ast = CshParser::parse(
+            r#"TESTENV=prod tape ./test/**/*.test.js '**' "**" \*\* *""* **(foo)"#,
+        )
+        .unwrap();
+        let CshAstExpression::Command(command) = &ast[ast.commands[0]] else {
+            panic!("expected command");
+        };
+        assert_eq!(
+            command.args[0],
+            CshAstWord::Concat(vec![
+                CshAstWord::Literal("./test/".into()),
+                CshAstWord::Glob(CshAstGlob::GlobStar),
+                CshAstWord::Literal("/".into()),
+                CshAstWord::Glob(CshAstGlob::Star),
+                CshAstWord::Literal(".test.js".into()),
+            ])
+        );
+        assert_debug_snapshot!(command.args, @r#"
+        [
+            Concat(
+                [
+                    Literal(
+                        "./test/",
+                    ),
+                    Glob(
+                        GlobStar,
+                    ),
+                    Literal(
+                        "/",
+                    ),
+                    Glob(
+                        Star,
+                    ),
+                    Literal(
+                        ".test.js",
+                    ),
+                ],
+            ),
+            SingleQuoted(
+                "**",
+            ),
+            DoubleQuoted(
+                Literal(
+                    "**",
+                ),
+            ),
+            Concat(
+                [
+                    Escaped(
+                        "*",
+                    ),
+                    Escaped(
+                        "*",
+                    ),
+                ],
+            ),
+            Concat(
+                [
+                    Glob(
+                        Star,
+                    ),
+                    DoubleQuoted(
+                        Literal(
+                            "",
+                        ),
+                    ),
+                    Glob(
+                        Star,
+                    ),
+                ],
+            ),
+            Concat(
+                [
+                    Glob(
+                        Star,
+                    ),
+                    ExtendedGlob {
+                        operator: '*',
+                        alternatives: [
+                            Literal(
+                                "foo",
+                            ),
+                        ],
+                    },
+                ],
+            ),
+        ]
+        "#);
+    }
+
+    #[test]
+    fn structures_glob_tokens_and_classes() {
+        let ast = CshParser::parse(
+            r"echo src/*.? [!a-z0-9] [[:alpha:][:digit:]_] []-] [é-ü] [a\-z] [unfinished",
+        )
+        .unwrap();
+        let CshAstExpression::Command(command) = &ast[ast.commands[0]] else {
+            panic!("expected command");
+        };
+        assert_debug_snapshot!(command.args, @r#"
+        [
+            Concat(
+                [
+                    Literal(
+                        "src/",
+                    ),
+                    Glob(
+                        Star,
+                    ),
+                    Literal(
+                        ".",
+                    ),
+                    Glob(
+                        QuestionMark,
+                    ),
+                ],
+            ),
+            Glob(
+                CharacterClass {
+                    negated: true,
+                    items: [
+                        Range {
+                            start: 'a',
+                            end: 'z',
+                        },
+                        Range {
+                            start: '0',
+                            end: '9',
+                        },
+                    ],
+                },
+            ),
+            Glob(
+                CharacterClass {
+                    negated: false,
+                    items: [
+                        NamedClass(
+                            "alpha",
+                        ),
+                        NamedClass(
+                            "digit",
+                        ),
+                        Character(
+                            '_',
+                        ),
+                    ],
+                },
+            ),
+            Glob(
+                CharacterClass {
+                    negated: false,
+                    items: [
+                        Character(
+                            ']',
+                        ),
+                        Character(
+                            '-',
+                        ),
+                    ],
+                },
+            ),
+            Glob(
+                CharacterClass {
+                    negated: false,
+                    items: [
+                        Range {
+                            start: 'é',
+                            end: 'ü',
+                        },
+                    ],
+                },
+            ),
+            Glob(
+                CharacterClass {
+                    negated: false,
+                    items: [
+                        Character(
+                            'a',
+                        ),
+                        Character(
+                            '-',
+                        ),
+                        Character(
+                            'z',
+                        ),
+                    ],
+                },
+            ),
+            Concat(
+                [
+                    Literal(
+                        "[",
+                    ),
+                    Literal(
+                        "unfinished",
+                    ),
+                ],
+            ),
+        ]
+        "#);
+    }
+
+    #[test]
+    fn structures_nested_extended_glob_alternatives() {
+        let ast =
+            CshParser::parse(r#"echo @(foo*|+(bar|baz?)|"literal*"|$(printf x)) !(a|) ?(b) *(c)"#)
+                .unwrap();
+        assert_debug_snapshot!(ast, @r#"
+        CshAst {
+            commands: [
+                Command(
+                    CshAstCommand {
+                        assignments: [],
+                        name: Some(
+                            Literal(
+                                "echo",
+                            ),
+                        ),
+                        args: [
+                            ExtendedGlob {
+                                operator: '@',
+                                alternatives: [
+                                    Concat(
+                                        [
+                                            Literal(
+                                                "foo",
+                                            ),
+                                            Glob(
+                                                Star,
+                                            ),
+                                        ],
+                                    ),
+                                    ExtendedGlob {
+                                        operator: '+',
+                                        alternatives: [
+                                            Literal(
+                                                "bar",
+                                            ),
+                                            Concat(
+                                                [
+                                                    Literal(
+                                                        "baz",
+                                                    ),
+                                                    Glob(
+                                                        QuestionMark,
+                                                    ),
+                                                ],
+                                            ),
+                                        ],
+                                    },
+                                    DoubleQuoted(
+                                        Literal(
+                                            "literal*",
+                                        ),
+                                    ),
+                                    CommandSubstitution {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: Some(
+                                                        Literal(
+                                                            "printf",
+                                                        ),
+                                                    ),
+                                                    args: [
+                                                        Literal(
+                                                            "x",
+                                                        ),
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                        backticks: false,
+                                    },
+                                ],
+                            },
+                            ExtendedGlob {
+                                operator: '!',
+                                alternatives: [
+                                    Literal(
+                                        "a",
+                                    ),
+                                    Literal(
+                                        "",
+                                    ),
+                                ],
+                            },
+                            ExtendedGlob {
+                                operator: '?',
+                                alternatives: [
+                                    Literal(
+                                        "b",
+                                    ),
+                                ],
+                            },
+                            ExtendedGlob {
+                                operator: '*',
+                                alternatives: [
+                                    Literal(
+                                        "c",
+                                    ),
+                                ],
+                            },
+                        ],
+                    },
+                ),
+            ],
+        }
+        "#);
+        let nested = format!("echo {}x{}", "@(".repeat(200), ")".repeat(200));
+        assert!(CshParser::parse(&nested).is_err());
+    }
+
+    #[test]
+    fn distinguishes_globs_from_quoted_text_and_regex() {
+        let ast = CshParser::parse(
+            r#"echo '*.?' "[a-z]*" \* \? \[ "$ROOT"/*.sh
+[[ $x =~ ^[a-z]*$ && $y == *-t2? && $z == "*" ]]"#,
+        )
+        .unwrap();
+        let CshAstExpression::Command(command) = &ast[ast.commands[0]] else {
+            panic!("expected command");
+        };
+        assert_eq!(
+            &command.args[..5],
+            &[
+                CshAstWord::SingleQuoted("*.?".into()),
+                CshAstWord::DoubleQuoted(Box::new(CshAstWord::Literal("[a-z]*".into()))),
+                CshAstWord::Escaped("*".into()),
+                CshAstWord::Escaped("?".into()),
+                CshAstWord::Escaped("[".into()),
+            ]
+        );
+        let CshAstExpression::Test(CshAstWord::Concat(parts)) = &ast[ast.commands[1]] else {
+            panic!("expected test");
+        };
+        assert_eq!(
+            parts
+                .iter()
+                .filter(|w| matches!(w, CshAstWord::Glob(_)))
+                .count(),
+            2
+        );
+        assert!(parts.contains(&CshAstWord::Literal(" =~ ^[a-z]*".into())));
+        assert!(
+            parts.contains(&CshAstWord::DoubleQuoted(Box::new(CshAstWord::Literal(
+                "*".into()
+            ))))
+        );
+    }
+
+    #[test]
     fn structures_parameter_expansions_in_tests() {
         let ast = CshParser::parse("[[ ${running_kernel,,} == *-t2* ]]").unwrap();
         assert_debug_snapshot!(ast, @r#"
@@ -45,7 +566,19 @@ mod tests {
                                 ),
                             },
                             Literal(
-                                " == *-t2* ",
+                                " == ",
+                            ),
+                            Glob(
+                                Star,
+                            ),
+                            Literal(
+                                "-t2",
+                            ),
+                            Glob(
+                                Star,
+                            ),
+                            Literal(
+                                " ",
                             ),
                         ],
                     ),
@@ -120,7 +653,9 @@ mod tests {
             grep.args[2],
             CshAstWord::Concat(vec![
                 CshAstWord::DoubleQuoted(Box::new(CshAstWord::Variable("ROOT".into()))),
-                CshAstWord::Pattern("/migrations/*.sh".into()),
+                CshAstWord::Literal("/migrations/".into()),
+                CshAstWord::Glob(CshAstGlob::Star),
+                CshAstWord::Literal(".sh".into()),
             ])
         );
         let CshAstExpression::Command(head) = &ast[*right] else {
@@ -135,6 +670,7 @@ mod tests {
                         assignments: [
                             CshAstAssignment {
                                 name: "migration",
+                                operator: Set,
                                 value: CommandSubstitution {
                                     commands: [
                                         Binary {
@@ -162,8 +698,14 @@ mod tests {
                                                                         "ROOT",
                                                                     ),
                                                                 ),
-                                                                Pattern(
-                                                                    "/migrations/*.sh",
+                                                                Literal(
+                                                                    "/migrations/",
+                                                                ),
+                                                                Glob(
+                                                                    Star,
+                                                                ),
+                                                                Literal(
+                                                                    ".sh",
                                                                 ),
                                                             ],
                                                         ),
@@ -484,6 +1026,62 @@ mod tests {
     }
 
     #[test]
+    fn keeps_variable_descriptors_out_of_command_arguments() {
+        let ast = CshParser::parse(
+            "exec {fd_1}>out {input}<&0 {fd_1}>&-; {input}<&-; echo {fd} '{fd}' \\{fd\\} {fd} >out; { echo ok; } {log}>>out",
+        ).unwrap();
+        let CshAstExpression::Redirected {
+            expression,
+            redirects,
+        } = &ast[ast.commands[0]]
+        else {
+            panic!("expected redirected exec");
+        };
+        let CshAstExpression::Command(command) = &ast[*expression] else {
+            panic!("expected exec command");
+        };
+        assert!(command.args.is_empty());
+        assert_eq!(
+            redirects
+                .iter()
+                .map(|r| (r.descriptor.as_deref(), r.operator.as_str()))
+                .collect::<Vec<_>>(),
+            vec![
+                (Some("{fd_1}"), ">"),
+                (Some("{input}"), "<&"),
+                (Some("{fd_1}"), ">&")
+            ]
+        );
+        let CshAstExpression::Redirected {
+            expression,
+            redirects,
+        } = &ast[ast.commands[1]]
+        else {
+            panic!("expected redirect-only command");
+        };
+        assert_eq!(redirects[0].descriptor.as_deref(), Some("{input}"));
+        assert!(matches!(&ast[*expression], CshAstExpression::Command(c) if c.name.is_none()));
+        let CshAstExpression::Redirected {
+            expression,
+            redirects,
+        } = &ast[ast.commands[2]]
+        else {
+            panic!("expected redirected echo");
+        };
+        assert_eq!(redirects[0].descriptor, None);
+        assert!(matches!(&ast[*expression], CshAstExpression::Command(c) if c.args.len() == 4));
+        let CshAstExpression::Redirected {
+            expression,
+            redirects,
+        } = &ast[ast.commands[3]]
+        else {
+            panic!("expected redirected group");
+        };
+        assert!(matches!(&ast[*expression], CshAstExpression::Group(_)));
+        assert_eq!(redirects[0].descriptor.as_deref(), Some("{log}"));
+    }
+
+    #[test]
     fn parses_assignments_redirects_and_subshells() {
         let ast = CshParser::parse("MODE=test COUNT=2 (echo hi)");
         assert!(ast.is_err(), "Assignments cannot prefix a subshell");
@@ -498,6 +1096,7 @@ mod tests {
                             assignments: [
                                 CshAstAssignment {
                                     name: "MODE",
+                                    operator: Set,
                                     value: Literal(
                                         "test",
                                     ),
@@ -751,9 +1350,11 @@ b # comment"#).unwrap();
                                     ),
                                     ExtendedGlob {
                                         operator: '!',
-                                        pattern: Literal(
-                                            "package.json",
-                                        ),
+                                        alternatives: [
+                                            Literal(
+                                                "package.json",
+                                            ),
+                                        ],
                                     },
                                 ],
                             ),
@@ -812,8 +1413,15 @@ b # comment"#).unwrap();
                     variable: "f",
                     words: Some(
                         [
-                            Pattern(
-                                "*.js",
+                            Concat(
+                                [
+                                    Glob(
+                                        Star,
+                                    ),
+                                    Literal(
+                                        ".js",
+                                    ),
+                                ],
                             ),
                         ],
                     ),
@@ -1064,8 +1672,8 @@ b # comment"#).unwrap();
                         },
                         CshAstCaseArm {
                             patterns: [
-                                Pattern(
-                                    "*",
+                                Glob(
+                                    Star,
                                 ),
                             ],
                             body: CshAst {

@@ -1,6 +1,40 @@
 use super::*;
 
 impl<'a> Cursor<'a> {
+    pub(super) fn assignment(&mut self) -> Parsed<'a, Option<CshAstAssignment>> {
+        if !matches!(self.byte(), Some(b'a'..=b'z' | b'A'..=b'Z' | b'_')) {
+            return Ok(None);
+        }
+        let len = self
+            .rest()
+            .bytes()
+            .take_while(|b| b.is_ascii_alphanumeric() || *b == b'_')
+            .count();
+        let (operator, width) = match (self.peek(len), self.peek(len + 1)) {
+            (Some(b'='), _) => (CshAstAssignmentOperator::Set, 1),
+            (Some(b'+'), Some(b'=')) => (CshAstAssignmentOperator::Append, 2),
+            _ => return Ok(None),
+        };
+        let name = self.source[self.pos..self.pos + len].to_owned();
+        self.pos += len + width;
+        let value = self.assignment_value()?;
+        Ok(Some(CshAstAssignment {
+            name,
+            operator,
+            value,
+        }))
+    }
+
+    fn assignment_value(&mut self) -> Parsed<'a, CshAstWord> {
+        if self.byte() == Some(b'(') {
+            self.array_word()
+        } else {
+            Ok(self
+                .assignment_word()?
+                .unwrap_or_else(|| CshAstWord::Literal(String::new())))
+        }
+    }
+
     pub(super) fn word(&mut self) -> Parsed<'a, Option<CshAstWord>> {
         if self.byte() == Some(b'#') {
             return Ok(None);
@@ -49,10 +83,69 @@ impl<'a> Cursor<'a> {
             if self.eat(b')') {
                 break;
             }
-            elements.push(self.required_word()?);
+            if let Some((end, operator, width)) = self.array_key_end() {
+                self.pos += 1;
+                let key = self.expansion_operand(end)?;
+                self.pos = end + width;
+                let value = self.assignment_value()?;
+                elements.push(CshAstWord::KeyedElement {
+                    key: Box::new(key),
+                    operator,
+                    value: Box::new(value),
+                });
+            } else {
+                elements.push(self.required_word()?);
+            }
         }
         self.depth -= 1;
         Ok(CshAstWord::Array(elements))
+    }
+
+    /// Look ahead without allocating expression nodes. Brackets in quotes or
+    /// nested expansions cannot terminate the key. Only `]=`/`]+=` syntax
+    /// introduces a keyed element; an ordinary `[abc]` array word is a glob.
+    fn array_key_end(&self) -> Option<(usize, CshAstAssignmentOperator, usize)> {
+        if self.byte() != Some(b'[') {
+            return None;
+        }
+        let bytes = self.source.as_bytes();
+        let mut pos = self.pos + 1;
+        let mut closings = vec![b']'];
+        let mut quote = None;
+        while let Some(&b) = bytes.get(pos) {
+            if b == b'\\' && quote != Some(b'\'') {
+                pos += 2;
+                continue;
+            }
+            if let Some(q) = quote {
+                if b == q {
+                    quote = None;
+                }
+            } else {
+                match b {
+                    b'\'' | b'"' | b'`' => quote = Some(b),
+                    b'[' => closings.push(b']'),
+                    b'(' => closings.push(b')'),
+                    b'{' => closings.push(b'}'),
+                    b']' | b')' | b'}' if closings.last() == Some(&b) => {
+                        closings.pop();
+                        if closings.is_empty() {
+                            return match (bytes.get(pos + 1), bytes.get(pos + 2)) {
+                                (Some(b'='), _) => Some((pos, CshAstAssignmentOperator::Set, 2)),
+                                (Some(b'+'), Some(b'=')) => {
+                                    Some((pos, CshAstAssignmentOperator::Append, 3))
+                                }
+                                _ => None,
+                            };
+                        }
+                    }
+                    b'\n' | b';' if closings.len() == 1 => return None,
+                    _ => {}
+                }
+            }
+            pos += 1;
+        }
+        None
     }
 
     pub(super) fn word_part(&mut self, quoted: bool, end: usize) -> Parsed<'a, CshAstWord> {
@@ -120,19 +213,22 @@ impl<'a> Cursor<'a> {
                 self.command_word(false, Some(self.byte().unwrap()))
             }
             Some(b'?' | b'*' | b'+' | b'@' | b'!') if !quoted && self.peek(1) == Some(b'(') => {
-                let operator = self.byte().unwrap() as char;
-                self.pos += 2;
-                let start = self.pos;
-                self.balanced(b')')?;
-                let end = self.pos - 1;
-                self.pos = start;
-                let pattern = self.expansion_operand(end)?;
-                self.pos = end + 1;
-                Ok(W::ExtendedGlob {
-                    operator,
-                    pattern: Box::new(pattern),
-                })
+                self.extended_glob()
             }
+            Some(b'*') if !quoted => {
+                self.pos += 1;
+                let glob = if self.pos < end && self.peek(1) != Some(b'(') && self.eat(b'*') {
+                    CshAstGlob::GlobStar
+                } else {
+                    CshAstGlob::Star
+                };
+                Ok(W::Glob(glob))
+            }
+            Some(b'?') if !quoted => {
+                self.pos += 1;
+                Ok(W::Glob(CshAstGlob::QuestionMark))
+            }
+            Some(b'[') if !quoted => self.glob_class(end),
             _ => {
                 let start = self.pos;
                 while self.pos < end {
@@ -143,6 +239,9 @@ impl<'a> Cursor<'a> {
                         }
                         self.pos += 1;
                     } else {
+                        if matches!(b, b'*' | b'?' | b'[') {
+                            break;
+                        }
                         match WORD_CLASS[b as usize] {
                             BARE => self.pos += 1,
                             GLOB if self.peek(1) != Some(b'(') => self.pos += 1,
@@ -158,11 +257,7 @@ impl<'a> Cursor<'a> {
                     }
                 }
                 let text = self.source[start..self.pos].to_owned();
-                Ok(if !quoted && text.contains(['*', '?', '[']) {
-                    W::Pattern(text)
-                } else {
-                    W::Literal(text)
-                })
+                Ok(W::Literal(text))
             }
         }
     }

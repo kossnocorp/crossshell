@@ -32,6 +32,16 @@ Debug formatting resolves node IDs to show the syntax tree. This keeps AST
 snapshots readable and independent of arena allocation order, including commands
 nested inside words.
 
+Inspect a script without executing it with the hidden CLI command:
+
+```sh
+cargo run -p cssh -- ast path/to/script.sh
+```
+
+The pretty-printed AST goes to stdout; read/parse errors go to stderr with a
+nonzero exit status. See [the corpus AST audit](AST_AUDIT.md) for concrete
+accuracy findings and the next structures needed by the interpreter.
+
 ## Structured words
 
 Command names, arguments, assignment values, redirect targets, `for` words, and
@@ -49,9 +59,26 @@ For example, `"$ROOT"/migrations/*.sh` becomes:
 ```text
 Concat([
     DoubleQuoted(Variable("ROOT")),
-    Pattern("/migrations/*.sh"),
+    Literal("/migrations/"),
+    Glob(Star),
+    Literal(".sh"),
 ])
 ```
+
+Unquoted globs have explicit `Star` (`*`), `GlobStar` (`**`), `QuestionMark` (`?`), and
+`CharacterClass` nodes. Classes preserve negation, characters, ranges, POSIX named
+classes, collating symbols, and equivalence classes. Extended globs (`@(...)`,
+`?(...)`, `*(...)`, `+(...)`, `!(...)`) contain structured alternatives and may
+nest. Quoted/escaped wildcard characters remain literal. `[[ ... ]]` uses these
+glob nodes as well; the regex operand of `=~` preserves regex syntax as text.
+
+These nodes preserve syntax rather than implying unrestricted string matching.
+In pathname matching, `*` and `?` do not match `/`; leading-dot matching follows
+the evaluator's rules/options. `**` enables recursive directory matching where
+the chosen glob dialect, options, and pattern position allow it (Bash requires
+`globstar`). String patterns in `case` and `[[ ... == ... ]]` have different
+matching rules. For example, `./test/**/*.test.js` contains `Literal("./test/")`,
+`Glob(GlobStar)`, `Literal("/")`, `Glob(Star)`, and `Literal(".test.js")`.
 
 `CommandSubstitution { commands, backticks }` and
 `ProcessSubstitution { operator, commands }` retain command-list IDs in the same
@@ -69,8 +96,14 @@ word fragments, exposing variables, parameter expansions, quotes, and substituti
 commands. Conditional operators and regex text are literal fragments. For example,
 `${running_kernel,,}` exposes the parameter name `running_kernel` and suffix `,,`
 (Bash's lowercase-all operation). Arithmetic commands retain their source text
-for evaluation. Array literals contain word
-elements in assignment values and declaration arguments. Here-document redirects
+for evaluation. Array literals contain word elements and explicit `KeyedElement`
+nodes for `[key]=value` or `[key]+=value`; keys retain expansions and quotes and
+are not parsed as glob classes. Assignments record `Set` (`=`) or `Append` (`+=`).
+Declaration builtins (`declare`, `typeset`, `local`, `export`, `readonly`) retain
+assignment arguments as `Assignment` nodes in argument order. For example,
+`declare -A MAP=([Intel]=driver)` has a `MAP` assignment containing an array with
+`KeyedElement { key: Literal("Intel"), operator: Set, value: Literal("driver") }`.
+Here-document redirects
 reference `CshAst::here_documents`, which records the delimiter, quoting and
 tab-stripping flags, and body. Bodies are read in declaration order at the next
 newline, and command substitutions have independent pending here-documents.

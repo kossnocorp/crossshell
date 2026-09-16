@@ -176,7 +176,7 @@ impl Debug for Word<'_> {
             AnsiCQuoted(s) => f.debug_tuple("AnsiCQuoted").field(s).finish(),
             Escaped(s) => f.debug_tuple("Escaped").field(s).finish(),
             Variable(s) => f.debug_tuple("Variable").field(s).finish(),
-            Pattern(s) => f.debug_tuple("Pattern").field(s).finish(),
+            Glob(glob) => f.debug_tuple("Glob").field(glob).finish(),
             DoubleQuoted(w) => f
                 .debug_tuple("DoubleQuoted")
                 .field(&Word(self.0, w))
@@ -191,6 +191,20 @@ impl Debug for Word<'_> {
                 .finish(),
             Concat(w) => f.debug_tuple("Concat").field(&Words(self.0, w)).finish(),
             Array(w) => f.debug_tuple("Array").field(&Words(self.0, w)).finish(),
+            Assignment(assignment) => f
+                .debug_tuple("Assignment")
+                .field(&self::Assignment(self.0, assignment))
+                .finish(),
+            KeyedElement {
+                key,
+                operator,
+                value,
+            } => f
+                .debug_struct("KeyedElement")
+                .field("key", &Word(self.0, key))
+                .field("operator", operator)
+                .field("value", &Word(self.0, value))
+                .finish(),
             Parameter {
                 prefix,
                 name,
@@ -201,10 +215,13 @@ impl Debug for Word<'_> {
                 .field("name", name)
                 .field("suffix", &Word(self.0, suffix))
                 .finish(),
-            ExtendedGlob { operator, pattern } => f
+            ExtendedGlob {
+                operator,
+                alternatives,
+            } => f
                 .debug_struct("ExtendedGlob")
                 .field("operator", operator)
-                .field("pattern", &Word(self.0, pattern))
+                .field("alternatives", &Words(self.0, alternatives))
                 .finish(),
             CommandSubstitution {
                 commands,
@@ -250,6 +267,7 @@ impl Debug for Assignment<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("CshAstAssignment")
             .field("name", &self.1.name)
+            .field("operator", &self.1.operator)
             .field("value", &Word(self.0, &self.1.value))
             .finish()
     }
