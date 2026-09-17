@@ -22,19 +22,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "regdom_file",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Variable(
+                        "regdom_file",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -129,9 +122,12 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Literal(
-                                    " -e /etc/localtime ",
-                                ),
+                                Unary {
+                                    operator: Exists,
+                                    operand: Literal(
+                                        "/etc/localtime",
+                                    ),
+                                },
                             ),
                         ],
                     },
@@ -193,11 +189,16 @@ CshAst {
                                             name: "timezone",
                                             operator: Set,
                                             value: Parameter {
-                                                prefix: "",
                                                 name: "timezone",
-                                                suffix: Literal(
-                                                    "#/usr/share/zoneinfo/",
-                                                ),
+                                                subscript: None,
+                                                mode: Value,
+                                                operation: Trim {
+                                                    suffix: false,
+                                                    longest: false,
+                                                    pattern: Literal(
+                                                        "/usr/share/zoneinfo/",
+                                                    ),
+                                                },
                                             },
                                         },
                                     ],
@@ -219,11 +220,23 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "timezone",
-                                suffix: Literal(
-                                    "%%/*",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Trim {
+                                    suffix: true,
+                                    longest: true,
+                                    pattern: Concat(
+                                        [
+                                            Literal(
+                                                "/",
+                                            ),
+                                            Glob(
+                                                Star,
+                                            ),
+                                        ],
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -253,36 +266,32 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " ! ",
+                                And(
+                                    And(
+                                        Not(
+                                            Binary {
+                                                left: Variable(
+                                                    "country",
+                                                ),
+                                                operator: Regex,
+                                                right: Literal(
+                                                    "^[A-Z]{2}$",
+                                                ),
+                                            },
                                         ),
-                                        Variable(
-                                            "country",
-                                        ),
-                                        Literal(
-                                            " =~ ^[A-Z]{2}",
-                                        ),
-                                        Literal(
-                                            "$",
-                                        ),
-                                        Literal(
-                                            " && -n ",
-                                        ),
-                                        Variable(
-                                            "timezone",
-                                        ),
-                                        Literal(
-                                            " && -f ",
-                                        ),
-                                        Variable(
+                                        Unary {
+                                            operator: NonemptyString,
+                                            operand: Variable(
+                                                "timezone",
+                                            ),
+                                        },
+                                    ),
+                                    Unary {
+                                        operator: Regular,
+                                        operand: Variable(
                                             "zone_tab",
                                         ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
+                                    },
                                 ),
                             ),
                         ],
@@ -353,25 +362,15 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " ",
-                                        ),
-                                        Variable(
-                                            "country",
-                                        ),
-                                        Literal(
-                                            " =~ ^[A-Z]{2}",
-                                        ),
-                                        Literal(
-                                            "$",
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
-                                ),
+                                Binary {
+                                    left: Variable(
+                                        "country",
+                                    ),
+                                    operator: Regex,
+                                    right: Literal(
+                                        "^[A-Z]{2}$",
+                                    ),
+                                },
                             ),
                         ],
                     },
@@ -435,8 +434,8 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: None,
-                                            operator: ">",
+                                            descriptor: Default,
+                                            operator: Output,
                                             target: Literal(
                                                 "/dev/null",
                                             ),

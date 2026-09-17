@@ -25,8 +25,8 @@ if let CshAstExpression::Binary { left, right, .. } = root {
 Nodes and word strings are owned, so the input can be dropped after parsing.
 Operator chains are parsed iteratively and destroying an AST does not recurse
 through its expression links. Recursive command-list and word-expansion nesting
-is limited to 128 levels. Balanced parameter, arithmetic, and extended-glob delimiters are scanned
-with an explicit stack.
+is limited to 128 levels. Arithmetic and conditional trees also have bounded
+height, including left-associated operator chains.
 
 Debug formatting resolves node IDs to show the syntax tree. This keeps AST
 snapshots readable and independent of arena allocation order, including commands
@@ -86,27 +86,70 @@ expression arena as the outer command. Follow them with `&ast[id]`, just like
 top-level expressions. Nested substitutions and their here-documents remain owned
 by the AST after the original source is dropped.
 
-Braced parameters retain their prefix and name separately from their suffix;
-the suffix contains subscript/operator text and structured expansion operands.
-Arithmetic expansions likewise retain expression text with structured nested
-expansions. These are syntax representations, not evaluated values.
+Braced parameters have explicit selection modes (value, length, indirection,
+names, indices) and typed operations: defaults, assignment/error/alternate values,
+arithmetic slices, prefix/suffix removal, pattern replacement, case conversion,
+and transformations. Operands retain quotes, escapes and nested substitutions.
+For example, `${running_kernel,,}` has a lowercase-all `Case` operation.
+Subscript words retain `@` versus `*`; whether an ordinary subscript is an
+arithmetic index or an associative key depends on the variable's runtime type.
 
-Functions have arena-linked bodies. Bash `[[ ... ]]` conditions contain structured
-word fragments, exposing variables, parameter expansions, quotes, and substitution
-commands. Conditional operators and regex text are literal fragments. For example,
-`${running_kernel,,}` exposes the parameter name `running_kernel` and suffix `,,`
-(Bash's lowercase-all operation). Arithmetic commands retain their source text
-for evaluation. Array literals contain word elements and explicit `KeyedElement`
+Arithmetic commands, expansions and for-loop clauses use precedence-aware trees
+with radix-tagged integer literals, variables, subscripts, unary/binary operators,
+assignments and ternaries. Explicit grouping is retained. Nested shell expansions
+are structured words with arena-linked commands. Expansion results may inject
+arithmetic tokens; an evaluator must expand those before arithmetic evaluation,
+rather than treating every substitution as an atomic number.
+
+Functions have arena-linked bodies. `[[ ... ]]` has its own tree for unary/binary
+tests, negation, `&&` and `||`. Operands retain quote boundaries and distinguish
+glob patterns from regex text. These operators are separate from command-list
+operators and preserve the short-circuit evaluation structure.
+
+Brace alternatives and numeric/alphabetic sequences are explicit nodes. Sequences
+retain endpoints, step and zero-padding without eagerly generating words. Tilde
+prefixes distinguish home/user directories, current/previous directories and
+directory-stack entries. Check their eligibility on each resulting word after
+brace expansion (for example, `{,prefix}~`), before parameter expansion.
+
+Array literals contain word elements and explicit `KeyedElement`
 nodes for `[key]=value` or `[key]+=value`; keys retain expansions and quotes and
 are not parsed as glob classes. Assignments record `Set` (`=`) or `Append` (`+=`).
 Declaration builtins (`declare`, `typeset`, `local`, `export`, `readonly`) retain
 assignment arguments as `Assignment` nodes in argument order. For example,
 `declare -A MAP=([Intel]=driver)` has a `MAP` assignment containing an array with
 `KeyedElement { key: Literal("Intel"), operator: Set, value: Literal("driver") }`.
-Here-document redirects
-reference `CshAst::here_documents`, which records the delimiter, quoting and
-tab-stripping flags, and body. Bodies are read in declaration order at the next
-newline, and command substitutions have independent pending here-documents.
+Here-document redirects reference `CshAst::here_documents`, which records the
+delimiter, quoting and tab-stripping flags, original/tab-stripped body, and
+structured `content`. Quoted bodies are literal. Unquoted bodies have their own
+expansion grammar: ordinary quote characters are text, escaped dollars remain
+literal, and command/arithmetic substitutions are parsed. Continuations are
+handled before delimiter matching. Bodies are read in declaration order at the
+next newline, and command substitutions have independent pending here-documents.
+
+Redirects use typed default/number/variable descriptors and operation enums,
+including explicit descriptor closing. Dynamic duplication targets still require
+classification after expansion. Redirect order is retained. `ast.spans[id.0]`
+gives an expression's UTF-8 byte range in the original source; redirects,
+here-document bodies, arithmetic and conditional nodes have their own spans.
+Debug output resolves arena IDs and omits spans for readability.
+
+## Interpreter contract
+
+The AST targets the Bash-style syntax used by the corpus, with one language
+contract across operating systems. Evaluation should perform brace expansion,
+tilde expansion, parameter/command/arithmetic expansion, field splitting,
+pathname expansion, then quote removal, respecting each word's context.
+Here-documents and `[[ ... ]]` do not use ordinary argument splitting/globbing.
+Logical operators, ternaries and parameter defaults must remain lazy.
+
+Use signed 64-bit, two's-complement arithmetic on every platform; arithmetic
+overflow wraps, division truncates toward zero, and division by zero is an error.
+Literal radices are parsed independently of host integer types. Shell options
+(including globstar) and locale must be explicit runtime state, not host-shell
+defaults. Descriptors should use a logical table backed by OS handles. Bash's
+`$(<file)` remains recognizable as a substitution containing one input-only,
+redirect-only command and needs its file-read semantics at evaluation time.
 
 ## Tests and performance
 

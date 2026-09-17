@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -115,7 +118,16 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Arithmetic(
-                                "EUID != 0",
+                                Binary {
+                                    left: Variable(
+                                        "EUID",
+                                    ),
+                                    operator: NotEqual,
+                                    right: Number {
+                                        radix: 10,
+                                        digits: "0",
+                                    },
+                                },
                             ),
                         ],
                     },
@@ -156,10 +168,10 @@ CshAst {
                                                     ),
                                                     redirects: [
                                                         CshAstRedirect {
-                                                            descriptor: Some(
+                                                            descriptor: Number(
                                                                 "2",
                                                             ),
-                                                            operator: ">",
+                                                            operator: Output,
                                                             target: Literal(
                                                                 "/dev/null",
                                                             ),
@@ -593,17 +605,17 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: Literal(
                         "/dev/null",
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: Some(
+                    descriptor: Number(
                         "2",
                     ),
-                    operator: ">&",
+                    operator: DuplicateOutput,
                     target: Literal(
                         "1",
                     ),
@@ -621,42 +633,40 @@ CshAst {
                                     condition: CshAst {
                                         commands: [
                                             Test(
-                                                Concat(
-                                                    [
-                                                        Literal(
-                                                            " ",
-                                                        ),
-                                                        Parameter {
-                                                            prefix: "!",
+                                                And(
+                                                    Binary {
+                                                        left: Parameter {
                                                             name: "#",
-                                                            suffix: Literal(
-                                                                "",
-                                                            ),
+                                                            subscript: None,
+                                                            mode: Indirect,
+                                                            operation: None,
                                                         },
-                                                        Literal(
-                                                            " == / && ",
+                                                        operator: PatternEqual,
+                                                        right: Literal(
+                                                            "/",
                                                         ),
-                                                        Variable(
+                                                    },
+                                                    Binary {
+                                                        left: Variable(
                                                             "*",
                                                         ),
-                                                        Literal(
-                                                            " == ",
+                                                        operator: PatternEqual,
+                                                        right: Concat(
+                                                            [
+                                                                Glob(
+                                                                    Star,
+                                                                ),
+                                                                DoubleQuoted(
+                                                                    Literal(
+                                                                        "%u",
+                                                                    ),
+                                                                ),
+                                                                Glob(
+                                                                    Star,
+                                                                ),
+                                                            ],
                                                         ),
-                                                        Glob(
-                                                            Star,
-                                                        ),
-                                                        DoubleQuoted(
-                                                            Literal(
-                                                                "%u",
-                                                            ),
-                                                        ),
-                                                        Glob(
-                                                            Star,
-                                                        ),
-                                                        Literal(
-                                                            " ",
-                                                        ),
-                                                    ],
+                                                    },
                                                 ),
                                             ),
                                         ],
@@ -745,28 +755,34 @@ CshAst {
                                     condition: CshAst {
                                         commands: [
                                             Test(
-                                                Concat(
-                                                    [
-                                                        Literal(
-                                                            " ",
-                                                        ),
-                                                        Variable(
+                                                And(
+                                                    Binary {
+                                                        left: Variable(
                                                             "1",
                                                         ),
-                                                        Literal(
-                                                            " == passwd && ",
+                                                        operator: PatternEqual,
+                                                        right: Literal(
+                                                            "passwd",
                                                         ),
-                                                        Parameter {
-                                                            prefix: "",
+                                                    },
+                                                    Binary {
+                                                        left: Parameter {
                                                             name: "2",
-                                                            suffix: Literal(
-                                                                ":-",
-                                                            ),
+                                                            subscript: None,
+                                                            mode: Value,
+                                                            operation: Default {
+                                                                operator: Use,
+                                                                test_empty: true,
+                                                                word: Literal(
+                                                                    "",
+                                                                ),
+                                                            },
                                                         },
-                                                        Literal(
-                                                            " == 1000 ",
+                                                        operator: PatternEqual,
+                                                        right: Literal(
+                                                            "1000",
                                                         ),
-                                                    ],
+                                                    },
                                                 ),
                                             ),
                                         ],
@@ -840,8 +856,23 @@ CshAst {
                     commands: [
                         Binary {
                             left: Test(
-                                Literal(
-                                    " ! -e /var/lib/omarchy/windows && ! -L /var/lib/omarchy/windows ",
+                                And(
+                                    Not(
+                                        Unary {
+                                            operator: Exists,
+                                            operand: Literal(
+                                                "/var/lib/omarchy/windows",
+                                            ),
+                                        },
+                                    ),
+                                    Not(
+                                        Unary {
+                                            operator: Symlink,
+                                            operand: Literal(
+                                                "/var/lib/omarchy/windows",
+                                            ),
+                                        },
+                                    ),
                                 ),
                             ),
                             operator: Or,
@@ -904,10 +935,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -980,10 +1011,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1056,10 +1087,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1132,10 +1163,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1208,10 +1239,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1305,10 +1336,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1453,10 +1484,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1724,8 +1755,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: Literal(
                         "/home/storage-target/disk.img",
                     ),
@@ -1750,8 +1781,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: Literal(
                         "/home/shared-target/shared.txt",
                     ),
@@ -1884,27 +1915,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
+                Binary {
+                    left: Variable(
+                        "home_dev",
+                    ),
+                    operator: PatternNotEqual,
+                    right: DoubleQuoted(
                         Variable(
-                            "home_dev",
+                            "storage_dev",
                         ),
-                        Literal(
-                            " != ",
-                        ),
-                        DoubleQuoted(
-                            Variable(
-                                "storage_dev",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1973,12 +1994,9 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
+                And(
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -1998,10 +2016,13 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == /home/storage-target &&\n  ",
+                        operator: PatternEqual,
+                        right: Literal(
+                            "/home/storage-target",
                         ),
-                        CommandSubstitution {
+                    },
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -2021,10 +2042,11 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == /home/shared-target ",
+                        operator: PatternEqual,
+                        right: Literal(
+                            "/home/shared-target",
                         ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -2048,79 +2070,69 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "command",
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "command",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "stat",
+                                        ),
+                                        Literal(
+                                            "-Lc",
+                                        ),
+                                        SingleQuoted(
+                                            "%d:%i",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "EXPECTED_STORAGE",
                                             ),
                                         ),
-                                        args: [
-                                            Literal(
-                                                "stat",
-                                            ),
-                                            Literal(
-                                                "-Lc",
-                                            ),
-                                            SingleQuoted(
-                                                "%d:%i",
-                                            ),
-                                            DoubleQuoted(
-                                                Variable(
-                                                    "EXPECTED_STORAGE",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "command",
-                                            ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "command",
                                         ),
-                                        args: [
-                                            Literal(
-                                                "stat",
-                                            ),
-                                            Literal(
-                                                "-Lc",
-                                            ),
-                                            SingleQuoted(
-                                                "%d:%i",
-                                            ),
-                                            Literal(
-                                                "/home/storage-target",
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "stat",
+                                        ),
+                                        Literal(
+                                            "-Lc",
+                                        ),
+                                        SingleQuoted(
+                                            "%d:%i",
+                                        ),
+                                        Literal(
+                                            "/home/storage-target",
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -2143,79 +2155,69 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "command",
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "command",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "stat",
+                                        ),
+                                        Literal(
+                                            "-Lc",
+                                        ),
+                                        SingleQuoted(
+                                            "%d:%i",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "EXPECTED_SHARED",
                                             ),
                                         ),
-                                        args: [
-                                            Literal(
-                                                "stat",
-                                            ),
-                                            Literal(
-                                                "-Lc",
-                                            ),
-                                            SingleQuoted(
-                                                "%d:%i",
-                                            ),
-                                            DoubleQuoted(
-                                                Variable(
-                                                    "EXPECTED_SHARED",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "command",
-                                            ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "command",
                                         ),
-                                        args: [
-                                            Literal(
-                                                "stat",
-                                            ),
-                                            Literal(
-                                                "-Lc",
-                                            ),
-                                            SingleQuoted(
-                                                "%d:%i",
-                                            ),
-                                            Literal(
-                                                "/home/shared-target",
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "stat",
+                                        ),
+                                        Literal(
+                                            "-Lc",
+                                        ),
+                                        SingleQuoted(
+                                            "%d:%i",
+                                        ),
+                                        Literal(
+                                            "/home/shared-target",
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -2238,55 +2240,45 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "command",
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "command",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "stat",
+                                        ),
+                                        Literal(
+                                            "-Lc",
+                                        ),
+                                        SingleQuoted(
+                                            "%d",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "CALLER_DATA_ROOT",
                                             ),
                                         ),
-                                        args: [
-                                            Literal(
-                                                "stat",
-                                            ),
-                                            Literal(
-                                                "-Lc",
-                                            ),
-                                            SingleQuoted(
-                                                "%d",
-                                            ),
-                                            DoubleQuoted(
-                                                Variable(
-                                                    "CALLER_DATA_ROOT",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " != ",
-                        ),
-                        DoubleQuoted(
-                            Variable(
-                                "storage_dev",
+                                    ],
+                                },
                             ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternNotEqual,
+                    right: DoubleQuoted(
+                        Variable(
+                            "storage_dev",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2309,12 +2301,9 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
+                And(
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -2345,10 +2334,13 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == 0:711 &&\n  ",
+                        operator: PatternEqual,
+                        right: Literal(
+                            "0:711",
                         ),
-                        CommandSubstitution {
+                    },
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -2379,10 +2371,11 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == 0:711 ",
+                        operator: PatternEqual,
+                        right: Literal(
+                            "0:711",
                         ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -2406,12 +2399,9 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
+                And(
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -2442,10 +2432,13 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == 1000:700 &&\n  ",
+                        operator: PatternEqual,
+                        right: Literal(
+                            "1000:700",
                         ),
-                        CommandSubstitution {
+                    },
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -2476,10 +2469,11 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == 1000:700 ",
+                        operator: PatternEqual,
+                        right: Literal(
+                            "1000:700",
                         ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -2545,17 +2539,17 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">",
+                                        descriptor: Default,
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
                                     },
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">&",
+                                        operator: DuplicateOutput,
                                         target: Literal(
                                             "1",
                                         ),
@@ -2633,17 +2627,17 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">",
+                                        descriptor: Default,
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
                                     },
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">&",
+                                        operator: DuplicateOutput,
                                         target: Literal(
                                             "1",
                                         ),
@@ -2733,10 +2727,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -2777,10 +2771,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -2808,47 +2802,43 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "command",
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "command",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "stat",
+                                        ),
+                                        Literal(
+                                            "-Lc",
+                                        ),
+                                        SingleQuoted(
+                                            "%a",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "MOUNT_ROOT",
                                             ),
                                         ),
-                                        args: [
-                                            Literal(
-                                                "stat",
-                                            ),
-                                            Literal(
-                                                "-Lc",
-                                            ),
-                                            SingleQuoted(
-                                                "%a",
-                                            ),
-                                            DoubleQuoted(
-                                                Variable(
-                                                    "MOUNT_ROOT",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == 731 ",
-                        ),
-                    ],
-                ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: Literal(
+                        "731",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2928,10 +2918,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -2972,10 +2962,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -3003,47 +2993,43 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "command",
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "command",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "stat",
+                                        ),
+                                        Literal(
+                                            "-Lc",
+                                        ),
+                                        SingleQuoted(
+                                            "%u",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "USERS_DIR",
                                             ),
                                         ),
-                                        args: [
-                                            Literal(
-                                                "stat",
-                                            ),
-                                            Literal(
-                                                "-Lc",
-                                            ),
-                                            SingleQuoted(
-                                                "%u",
-                                            ),
-                                            DoubleQuoted(
-                                                Variable(
-                                                    "USERS_DIR",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == 1000 ",
-                        ),
-                    ],
-                ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: Literal(
+                        "1000",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -3086,12 +3072,9 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
+                And(
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -3113,10 +3096,13 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == 1 &&\n  ",
+                        operator: PatternEqual,
+                        right: Literal(
+                            "1",
                         ),
-                        CommandSubstitution {
+                    },
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -3138,10 +3124,11 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == 1 ",
+                        operator: PatternEqual,
+                        right: Literal(
+                            "1",
                         ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -3300,27 +3287,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
+                Binary {
+                    left: Variable(
+                        "actual_space",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Variable(
-                            "actual_space",
+                            "expected_space",
                         ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Variable(
-                                "expected_space",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -3343,71 +3320,61 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Binary {
-                                    left: Command(
-                                        CshAstCommand {
-                                            assignments: [],
-                                            name: Some(
-                                                Literal(
-                                                    "command",
-                                                ),
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: Some(
+                                            Literal(
+                                                "command",
                                             ),
-                                            args: [
-                                                Literal(
-                                                    "df",
-                                                ),
-                                                Literal(
-                                                    "-P",
-                                                ),
-                                                Literal(
-                                                    "--",
-                                                ),
-                                                Literal(
-                                                    "/home/alice",
-                                                ),
-                                            ],
-                                        },
-                                    ),
-                                    operator: Pipe,
-                                    right: Command(
-                                        CshAstCommand {
-                                            assignments: [],
-                                            name: Some(
-                                                Literal(
-                                                    "awk",
-                                                ),
+                                        ),
+                                        args: [
+                                            Literal(
+                                                "df",
                                             ),
-                                            args: [
-                                                SingleQuoted(
-                                                    "NR==2 {print int($4/1024/1024)}",
-                                                ),
-                                            ],
-                                        },
-                                    ),
-                                },
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " != ",
+                                            Literal(
+                                                "-P",
+                                            ),
+                                            Literal(
+                                                "--",
+                                            ),
+                                            Literal(
+                                                "/home/alice",
+                                            ),
+                                        ],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: Some(
+                                            Literal(
+                                                "awk",
+                                            ),
+                                        ),
+                                        args: [
+                                            SingleQuoted(
+                                                "NR==2 {print int($4/1024/1024)}",
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternNotEqual,
+                    right: DoubleQuoted(
+                        Variable(
+                            "actual_space",
                         ),
-                        DoubleQuoted(
-                            Variable(
-                                "actual_space",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -3480,47 +3447,43 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "command",
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "command",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "stat",
+                                        ),
+                                        Literal(
+                                            "-Lc",
+                                        ),
+                                        SingleQuoted(
+                                            "%u:%a",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "COMPOSE_FILE",
                                             ),
                                         ),
-                                        args: [
-                                            Literal(
-                                                "stat",
-                                            ),
-                                            Literal(
-                                                "-Lc",
-                                            ),
-                                            SingleQuoted(
-                                                "%u:%a",
-                                            ),
-                                            DoubleQuoted(
-                                                Variable(
-                                                    "COMPOSE_FILE",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == 0:640 ",
-                        ),
-                    ],
-                ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: Literal(
+                        "0:640",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -3925,36 +3888,32 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "readlink",
-                                            ),
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "readlink",
                                         ),
-                                        args: [
-                                            Literal(
-                                                "/home/alice/.windows",
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == /home/storage-target ",
-                        ),
-                    ],
-                ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "/home/alice/.windows",
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: Literal(
+                        "/home/storage-target",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -4251,10 +4210,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -4282,12 +4241,9 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
+                And(
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -4309,10 +4265,13 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == 0 && ",
+                        operator: PatternEqual,
+                        right: Literal(
+                            "0",
                         ),
-                        CommandSubstitution {
+                    },
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -4334,10 +4293,11 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == 0 ",
+                        operator: PatternEqual,
+                        right: Literal(
+                            "0",
                         ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -4361,36 +4321,32 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "readlink",
-                                            ),
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "readlink",
                                         ),
-                                        args: [
-                                            Literal(
-                                                "/home/alice/Windows",
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == / ",
-                        ),
-                    ],
-                ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "/home/alice/Windows",
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: Literal(
+                        "/",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -4627,10 +4583,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -4658,19 +4614,12 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -L ",
-                        ),
-                        Variable(
-                            "EXPECTED_STORAGE",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Symlink,
+                    operand: Variable(
+                        "EXPECTED_STORAGE",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(

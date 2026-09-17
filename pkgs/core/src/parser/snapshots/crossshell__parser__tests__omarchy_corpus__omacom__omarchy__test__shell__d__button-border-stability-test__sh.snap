@@ -62,8 +62,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "JS",
                     ),
@@ -115,17 +115,17 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: None,
-                                            operator: ">",
+                                            descriptor: Default,
+                                            operator: Output,
                                             target: Literal(
                                                 "/dev/null",
                                             ),
                                         },
                                         CshAstRedirect {
-                                            descriptor: Some(
+                                            descriptor: Number(
                                                 "2",
                                             ),
-                                            operator: ">&",
+                                            operator: DuplicateOutput,
                                             target: Literal(
                                                 "1",
                                             ),
@@ -218,19 +218,12 @@ CshAst {
                                     condition: CshAst {
                                         commands: [
                                             Test(
-                                                Concat(
-                                                    [
-                                                        Literal(
-                                                            " -d ",
-                                                        ),
-                                                        Variable(
-                                                            "TMPDIR",
-                                                        ),
-                                                        Literal(
-                                                            " ",
-                                                        ),
-                                                    ],
-                                                ),
+                                                Unary {
+                                                    operator: Directory,
+                                                    operand: Variable(
+                                                        "TMPDIR",
+                                                    ),
+                                                },
                                             ),
                                         ],
                                     },
@@ -376,8 +369,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -392,8 +385,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "QML",
                     ),
@@ -442,10 +435,10 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: Some(
+                                                descriptor: Number(
                                                     "2",
                                                 ),
-                                                operator: ">&",
+                                                operator: DuplicateOutput,
                                                 target: Literal(
                                                     "1",
                                                 ),
@@ -488,8 +481,8 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">&",
+                                    descriptor: Default,
+                                    operator: DuplicateOutput,
                                     target: Literal(
                                         "2",
                                     ),
@@ -546,8 +539,8 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: None,
-                                            operator: "<<<",
+                                            descriptor: Default,
+                                            operator: HereString,
                                             target: DoubleQuoted(
                                                 Variable(
                                                     "output",
@@ -584,8 +577,8 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">&",
+                                        descriptor: Default,
+                                        operator: DuplicateOutput,
                                         target: Literal(
                                             "2",
                                         ),
@@ -638,13 +631,17 @@ CshAst {
             delimiter: "JS",
             quoted: true,
             strip_tabs: false,
-            body: "const fs = require('fs')\n\nconst buttonQml = fs.readFileSync(path.join(root, 'shell/Ui/Button.qml'), 'utf8')\n\nassert(\n  /anchors\\.leftMargin:\\s*root\\.leftAlign \\? root\\._reservedContentLeftInset : 0/.test(buttonQml),\n  'Button left-aligned content uses reserved border inset'\n)\n\nassert(\n  !/implicitWidth:[^\\n]*\\bborderLeft\\b/.test(buttonQml) && !/implicitHeight:[^\\n]*\\bborderTop\\b/.test(buttonQml),\n  'Button implicit size does not depend on current hover/focus border'\n)\n",
+            content: Literal(
+                "const fs = require('fs')\n\nconst buttonQml = fs.readFileSync(path.join(root, 'shell/Ui/Button.qml'), 'utf8')\n\nassert(\n  /anchors\\.leftMargin:\\s*root\\.leftAlign \\? root\\._reservedContentLeftInset : 0/.test(buttonQml),\n  'Button left-aligned content uses reserved border inset'\n)\n\nassert(\n  !/implicitWidth:[^\\n]*\\bborderLeft\\b/.test(buttonQml) && !/implicitHeight:[^\\n]*\\bborderTop\\b/.test(buttonQml),\n  'Button implicit size does not depend on current hover/focus border'\n)\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "QML",
             quoted: true,
             strip_tabs: false,
-            body: "import QtQuick\nimport Quickshell\nimport qs.Commons\nimport qs.Ui\n\nShellRoot {\n  id: root\n\n  function fail(message) {\n    console.log(\"RESULT fail \" + message)\n    Qt.quit()\n  }\n\n  function checkStable(button, width, height, label, next) {\n    Qt.callLater(function() {\n      if (button.implicitWidth !== width || button.implicitHeight !== height) {\n        root.fail(label + \" changed from \" + width + \"x\" + height + \" to \" + button.implicitWidth + \"x\" + button.implicitHeight)\n        return\n      }\n      next()\n    })\n  }\n\n  function runChecks() {\n    var plainWidth = plainButton.implicitWidth\n    var plainHeight = plainButton.implicitHeight\n    plainButton.hasCursor = true\n    checkStable(plainButton, plainWidth, plainHeight, \"hover-cursor\", function() {\n      plainButton.hasCursor = false\n      plainButton.selected = true\n      checkStable(plainButton, plainWidth, plainHeight, \"selected\", function() {\n        var focusWidth = focusableButton.implicitWidth\n        var focusHeight = focusableButton.implicitHeight\n        focusableButton.hasCursor = true\n        checkStable(focusableButton, focusWidth, focusHeight, \"focusable hover-cursor\", function() {\n          console.log(\"RESULT pass\")\n          Qt.quit()\n        })\n      })\n    })\n  }\n\n  Component.onCompleted: {\n    Style.styleOverrides = ({\n      \"hover-cursor-border-width\": 3,\n      \"selected-border-width\": 5,\n      \"focus-border-width\": 7\n    })\n    Qt.callLater(runChecks)\n  }\n\n  Item {\n    Button {\n      id: plainButton\n      text: \"Refresh\"\n    }\n\n    Button {\n      id: focusableButton\n      text: \"Save\"\n      focusable: true\n    }\n  }\n}\n",
+            content: Literal(
+                "import QtQuick\nimport Quickshell\nimport qs.Commons\nimport qs.Ui\n\nShellRoot {\n  id: root\n\n  function fail(message) {\n    console.log(\"RESULT fail \" + message)\n    Qt.quit()\n  }\n\n  function checkStable(button, width, height, label, next) {\n    Qt.callLater(function() {\n      if (button.implicitWidth !== width || button.implicitHeight !== height) {\n        root.fail(label + \" changed from \" + width + \"x\" + height + \" to \" + button.implicitWidth + \"x\" + button.implicitHeight)\n        return\n      }\n      next()\n    })\n  }\n\n  function runChecks() {\n    var plainWidth = plainButton.implicitWidth\n    var plainHeight = plainButton.implicitHeight\n    plainButton.hasCursor = true\n    checkStable(plainButton, plainWidth, plainHeight, \"hover-cursor\", function() {\n      plainButton.hasCursor = false\n      plainButton.selected = true\n      checkStable(plainButton, plainWidth, plainHeight, \"selected\", function() {\n        var focusWidth = focusableButton.implicitWidth\n        var focusHeight = focusableButton.implicitHeight\n        focusableButton.hasCursor = true\n        checkStable(focusableButton, focusWidth, focusHeight, \"focusable hover-cursor\", function() {\n          console.log(\"RESULT pass\")\n          Qt.quit()\n        })\n      })\n    })\n  }\n\n  Component.onCompleted: {\n    Style.styleOverrides = ({\n      \"hover-cursor-border-width\": 3,\n      \"selected-border-width\": 5,\n      \"focus-border-width\": 7\n    })\n    Qt.callLater(runChecks)\n  }\n\n  Item {\n    Button {\n      id: plainButton\n      text: \"Refresh\"\n    }\n\n    Button {\n      id: focusableButton\n      text: \"Save\"\n      focusable: true\n    }\n  }\n}\n",
+            ),
         },
     ],
 }

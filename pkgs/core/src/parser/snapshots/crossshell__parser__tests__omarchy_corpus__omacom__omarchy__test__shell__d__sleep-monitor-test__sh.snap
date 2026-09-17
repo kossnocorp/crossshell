@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -325,8 +328,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -341,8 +344,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -364,8 +367,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -380,8 +383,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -403,8 +406,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -419,8 +422,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -518,11 +521,26 @@ CshAst {
                         name: "start_us",
                         operator: Set,
                         value: Parameter {
-                            prefix: "",
                             name: "EPOCHREALTIME",
-                            suffix: Literal(
-                                "//[!0-9]/",
-                            ),
+                            subscript: None,
+                            mode: Value,
+                            operation: Replace {
+                                anchor: All,
+                                pattern: Glob(
+                                    CharacterClass {
+                                        negated: true,
+                                        items: [
+                                            Range {
+                                                start: '0',
+                                                end: '9',
+                                            },
+                                        ],
+                                    },
+                                ),
+                                replacement: Literal(
+                                    "",
+                                ),
+                            },
                         },
                     },
                 ],
@@ -597,26 +615,52 @@ CshAst {
                         name: "elapsed_us",
                         operator: Set,
                         value: ArithmeticExpansion(
-                            Concat(
-                                [
-                                    Literal(
-                                        "10#",
+                            Binary {
+                                left: Expansion(
+                                    Concat(
+                                        [
+                                            Literal(
+                                                "10#",
+                                            ),
+                                            Parameter {
+                                                name: "EPOCHREALTIME",
+                                                subscript: None,
+                                                mode: Value,
+                                                operation: Replace {
+                                                    anchor: All,
+                                                    pattern: Glob(
+                                                        CharacterClass {
+                                                            negated: true,
+                                                            items: [
+                                                                Range {
+                                                                    start: '0',
+                                                                    end: '9',
+                                                                },
+                                                            ],
+                                                        },
+                                                    ),
+                                                    replacement: Literal(
+                                                        "",
+                                                    ),
+                                                },
+                                            },
+                                        ],
                                     ),
-                                    Parameter {
-                                        prefix: "",
-                                        name: "EPOCHREALTIME",
-                                        suffix: Literal(
-                                            "//[!0-9]/",
-                                        ),
-                                    },
-                                    Literal(
-                                        " - 10#",
+                                ),
+                                operator: Subtract,
+                                right: Expansion(
+                                    Concat(
+                                        [
+                                            Literal(
+                                                "10#",
+                                            ),
+                                            Variable(
+                                                "start_us",
+                                            ),
+                                        ],
                                     ),
-                                    Variable(
-                                        "start_us",
-                                    ),
-                                ],
-                            ),
+                                ),
+                            },
                         ),
                     },
                 ],
@@ -626,49 +670,39 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Redirected {
-                                    expression: Command(
-                                        CshAstCommand {
-                                            assignments: [],
-                                            name: None,
-                                            args: [],
-                                        },
-                                    ),
-                                    redirects: [
-                                        CshAstRedirect {
-                                            descriptor: None,
-                                            operator: "<",
-                                            target: DoubleQuoted(
-                                                Variable(
-                                                    "lock_log",
-                                                ),
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: None,
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Default,
+                                        operator: Input,
+                                        target: DoubleQuoted(
+                                            Variable(
+                                                "lock_log",
                                             ),
-                                        },
-                                    ],
-                                },
-                            ],
-                            backticks: false,
-                        },
+                                        ),
+                                    },
+                                ],
+                            },
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " == ",
+                            "locked",
                         ),
-                        DoubleQuoted(
-                            Literal(
-                                "locked",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -708,7 +742,16 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " elapsed_us < 2000000 ",
+                Binary {
+                    left: Variable(
+                        "elapsed_us",
+                    ),
+                    operator: Less,
+                    right: Number {
+                        radix: 10,
+                        digits: "2000000",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -732,11 +775,10 @@ CshAst {
                                         "elapsed: ",
                                     ),
                                     Parameter {
-                                        prefix: "",
                                         name: "elapsed_us",
-                                        suffix: Literal(
-                                            "",
-                                        ),
+                                        subscript: None,
+                                        mode: Value,
+                                        operation: None,
                                     },
                                     Literal(
                                         "us",
@@ -783,8 +825,8 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: None,
-                                            operator: "<",
+                                            descriptor: Default,
+                                            operator: Input,
                                             target: DoubleQuoted(
                                                 Variable(
                                                     "producer_pid_file",
@@ -830,10 +872,10 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">",
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -910,8 +952,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -926,8 +968,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -1063,8 +1105,14 @@ CshAst {
             variable: "_",
             words: Some(
                 [
-                    Literal(
-                        "{1..100}",
+                    BraceSequence(
+                        CshAstBraceSequence {
+                            start: "1",
+                            end: "100",
+                            step: None,
+                            alphabetic: false,
+                            padding: 0,
+                        },
                     ),
                 ],
             ),
@@ -1072,19 +1120,12 @@ CshAst {
                 commands: [
                     Binary {
                         left: Test(
-                            Concat(
-                                [
-                                    Literal(
-                                        " -s ",
-                                    ),
-                                    Variable(
-                                        "producer_pid_file",
-                                    ),
-                                    Literal(
-                                        " ",
-                                    ),
-                                ],
-                            ),
+                            Unary {
+                                operator: NonemptyFile,
+                                operand: Variable(
+                                    "producer_pid_file",
+                                ),
+                            },
                         ),
                         operator: And,
                         right: Command(
@@ -1123,18 +1164,13 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " ! -s ",
-                                        ),
-                                        Variable(
+                                Not(
+                                    Unary {
+                                        operator: NonemptyFile,
+                                        operand: Variable(
                                             "producer_pid_file",
                                         ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
+                                    },
                                 ),
                             ),
                         ],
@@ -1162,10 +1198,10 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: Some(
+                                            descriptor: Number(
                                                 "2",
                                             ),
-                                            operator: ">",
+                                            operator: Output,
                                             target: Literal(
                                                 "/dev/null",
                                             ),
@@ -1206,10 +1242,10 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: Some(
+                                            descriptor: Number(
                                                 "2",
                                             ),
-                                            operator: ">",
+                                            operator: Output,
                                             target: Literal(
                                                 "/dev/null",
                                             ),
@@ -1270,8 +1306,8 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: None,
-                                            operator: "<",
+                                            descriptor: Default,
+                                            operator: Input,
                                             target: DoubleQuoted(
                                                 Variable(
                                                     "producer_pid_file",
@@ -1327,10 +1363,10 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1378,10 +1414,10 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">",
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -1413,10 +1449,10 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: Some(
+                                            descriptor: Number(
                                                 "2",
                                             ),
-                                            operator: ">",
+                                            operator: Output,
                                             target: Literal(
                                                 "/dev/null",
                                             ),
@@ -1494,25 +1530,33 @@ CshAst {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n\nwhile [[ $1 == --* ]]; do\n  shift\ndone\n\nexec \"$@\"\n",
+            content: Literal(
+                "#!/bin/bash\n\nwhile [[ $1 == --* ]]; do\n  shift\ndone\n\nexec \"$@\"\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n\necho \"$$\" >\"$PRODUCER_PID_FILE\"\nprintf '   boolean true\\n'\nexec sleep 30\n",
+            content: Literal(
+                "#!/bin/bash\n\necho \"$$\" >\"$PRODUCER_PID_FILE\"\nprintf '   boolean true\\n'\nexec sleep 30\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n\necho locked >>\"$LOCK_LOG\"\n",
+            content: Literal(
+                "#!/bin/bash\n\necho locked >>\"$LOCK_LOG\"\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n\nsleep 0.1\necho \"$$\" >\"$PRODUCER_PID_FILE\"\nexec sleep 30\n",
+            content: Literal(
+                "#!/bin/bash\n\nsleep 0.1\necho \"$$\" >\"$PRODUCER_PID_FILE\"\nexec sleep 30\n",
+            ),
         },
     ],
 }

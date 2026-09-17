@@ -3,6 +3,8 @@ use crate::prelude::internal::*;
 mod error;
 pub use error::*;
 mod cursor;
+#[cfg(test)]
+mod semantic_tests;
 
 pub struct CshParser;
 
@@ -117,21 +119,14 @@ PACKAGES+=("${VULKAN_DRIVERS[$vendor]}")"#,
                                     [
                                         DoubleQuoted(
                                             Parameter {
-                                                prefix: "",
                                                 name: "VULKAN_DRIVERS",
-                                                suffix: Concat(
-                                                    [
-                                                        Literal(
-                                                            "[",
-                                                        ),
-                                                        Variable(
-                                                            "vendor",
-                                                        ),
-                                                        Literal(
-                                                            "]",
-                                                        ),
-                                                    ],
+                                                subscript: Some(
+                                                    Variable(
+                                                        "vendor",
+                                                    ),
                                                 ),
+                                                mode: Value,
+                                                operation: None,
                                             },
                                         ),
                                     ],
@@ -382,15 +377,8 @@ local scalar+=value"#,
                     ],
                 },
             ),
-            Concat(
-                [
-                    Literal(
-                        "[",
-                    ),
-                    Literal(
-                        "unfinished",
-                    ),
-                ],
+            Literal(
+                "[unfinished",
             ),
         ]
         "#);
@@ -528,22 +516,28 @@ local scalar+=value"#,
                 CshAstWord::Escaped("[".into()),
             ]
         );
-        let CshAstExpression::Test(CshAstWord::Concat(parts)) = &ast[ast.commands[1]] else {
+        let CshAstExpression::Test(condition) = &ast[ast.commands[1]] else {
             panic!("expected test");
         };
-        assert_eq!(
-            parts
-                .iter()
-                .filter(|w| matches!(w, CshAstWord::Glob(_)))
-                .count(),
-            2
-        );
-        assert!(parts.contains(&CshAstWord::Literal(" =~ ^[a-z]*".into())));
+        let CshAstConditionKind::And(left, quoted) = &condition.kind else {
+            panic!("expected and");
+        };
+        let CshAstConditionKind::And(regex, glob) = &left.kind else {
+            panic!("expected and");
+        };
         assert!(
-            parts.contains(&CshAstWord::DoubleQuoted(Box::new(CshAstWord::Literal(
-                "*".into()
-            ))))
+            matches!(&regex.kind, CshAstConditionKind::Binary { operator: CshAstTestBinary::Regex, right: CshAstWord::Literal(s), .. } if s == "^[a-z]*$")
         );
+        assert!(
+            matches!(&glob.kind, CshAstConditionKind::Binary { right: CshAstWord::Concat(parts), .. } if parts.iter().filter(|w| matches!(w, CshAstWord::Glob(_))).count() == 2)
+        );
+        assert!(matches!(
+            &quoted.kind,
+            CshAstConditionKind::Binary {
+                right: CshAstWord::DoubleQuoted(_),
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -553,35 +547,34 @@ local scalar+=value"#,
         CshAst {
             commands: [
                 Test(
-                    Concat(
-                        [
-                            Literal(
-                                " ",
-                            ),
-                            Parameter {
-                                prefix: "",
-                                name: "running_kernel",
-                                suffix: Literal(
-                                    ",,",
+                    Binary {
+                        left: Parameter {
+                            name: "running_kernel",
+                            subscript: None,
+                            mode: Value,
+                            operation: Case {
+                                upper: false,
+                                all: true,
+                                pattern: Literal(
+                                    "",
                                 ),
                             },
-                            Literal(
-                                " == ",
-                            ),
-                            Glob(
-                                Star,
-                            ),
-                            Literal(
-                                "-t2",
-                            ),
-                            Glob(
-                                Star,
-                            ),
-                            Literal(
-                                " ",
-                            ),
-                        ],
-                    ),
+                        },
+                        operator: PatternEqual,
+                        right: Concat(
+                            [
+                                Glob(
+                                    Star,
+                                ),
+                                Literal(
+                                    "-t2",
+                                ),
+                                Glob(
+                                    Star,
+                                ),
+                            ],
+                        ),
+                    },
                 ),
             ],
         }
@@ -594,10 +587,18 @@ local scalar+=value"#,
             r#"[[ "$(printf '%s' "$ROOT")" == '${literal}' && $name =~ ^(a|b)$ ]]"#,
         )
         .unwrap();
-        let CshAstExpression::Test(CshAstWord::Concat(parts)) = &ast[ast.commands[0]] else {
+        let CshAstExpression::Test(condition) = &ast[ast.commands[0]] else {
             panic!("expected test");
         };
-        let CshAstWord::DoubleQuoted(word) = &parts[1] else {
+        let CshAstConditionKind::And(left, right) = &condition.kind else {
+            panic!("expected and");
+        };
+        let CshAstConditionKind::Binary {
+            left: CshAstWord::DoubleQuoted(word),
+            right: literal,
+            ..
+        } = &left.kind
+        else {
             panic!("expected quoted operand");
         };
         let CshAstWord::CommandSubstitution { commands, .. } = &**word else {
@@ -610,8 +611,10 @@ local scalar+=value"#,
             command.args[1],
             CshAstWord::DoubleQuoted(Box::new(CshAstWord::Variable("ROOT".into())))
         );
-        assert!(parts.contains(&CshAstWord::SingleQuoted("${literal}".into())));
-        assert!(parts.contains(&CshAstWord::Variable("name".into())));
+        assert_eq!(literal, &CshAstWord::SingleQuoted("${literal}".into()));
+        assert!(
+            matches!(&right.kind, CshAstConditionKind::Binary { left: CshAstWord::Variable(name), .. } if name == "name")
+        );
         for source in [
             "[[ $(echo |) == x ]]",
             "[[ ${kernel,,} == x",
@@ -807,52 +810,52 @@ local scalar+=value"#,
                                     "$",
                                 ),
                                 Parameter {
-                                    prefix: "",
                                     name: "x",
-                                    suffix: Concat(
-                                        [
-                                            Literal(
-                                                ":-",
-                                            ),
-                                            CommandSubstitution {
-                                                commands: [
-                                                    Command(
-                                                        CshAstCommand {
-                                                            assignments: [],
-                                                            name: Some(
-                                                                Literal(
-                                                                    "printf",
+                                    subscript: None,
+                                    mode: Value,
+                                    operation: Default {
+                                        operator: Use,
+                                        test_empty: true,
+                                        word: CommandSubstitution {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: Some(
+                                                            Literal(
+                                                                "printf",
+                                                            ),
+                                                        ),
+                                                        args: [
+                                                            SingleQuoted(
+                                                                "%s",
+                                                            ),
+                                                            DoubleQuoted(
+                                                                Variable(
+                                                                    "HOME",
                                                                 ),
                                                             ),
-                                                            args: [
-                                                                SingleQuoted(
-                                                                    "%s",
-                                                                ),
-                                                                DoubleQuoted(
-                                                                    Variable(
-                                                                        "HOME",
-                                                                    ),
-                                                                ),
-                                                            ],
-                                                        },
-                                                    ),
-                                                ],
-                                                backticks: false,
-                                            },
-                                        ],
-                                    ),
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                            backticks: false,
+                                        },
+                                    },
                                 },
                                 ArithmeticExpansion(
-                                    Concat(
-                                        [
-                                            Literal(
-                                                "1 + ",
-                                            ),
+                                    Binary {
+                                        left: Number {
+                                            radix: 10,
+                                            digits: "1",
+                                        },
+                                        operator: Add,
+                                        right: Expansion(
                                             Variable(
                                                 "N",
                                             ),
-                                        ],
-                                    ),
+                                        ),
+                                    },
                                 ),
                                 AnsiCQuoted(
                                     "a\\'b\\n",
@@ -874,8 +877,8 @@ local scalar+=value"#,
                     ),
                     redirects: [
                         CshAstRedirect {
-                            descriptor: None,
-                            operator: ">",
+                            descriptor: Default,
+                            operator: Output,
                             target: Concat(
                                 [
                                     DoubleQuoted(
@@ -1044,12 +1047,21 @@ local scalar+=value"#,
         assert_eq!(
             redirects
                 .iter()
-                .map(|r| (r.descriptor.as_deref(), r.operator.as_str()))
+                .map(|r| (r.descriptor.clone(), r.operator))
                 .collect::<Vec<_>>(),
             vec![
-                (Some("{fd_1}"), ">"),
-                (Some("{input}"), "<&"),
-                (Some("{fd_1}"), ">&")
+                (
+                    CshAstDescriptor::Variable("fd_1".into()),
+                    CshAstRedirectOperator::Output
+                ),
+                (
+                    CshAstDescriptor::Variable("input".into()),
+                    CshAstRedirectOperator::DuplicateInput
+                ),
+                (
+                    CshAstDescriptor::Variable("fd_1".into()),
+                    CshAstRedirectOperator::CloseOutput
+                )
             ]
         );
         let CshAstExpression::Redirected {
@@ -1059,7 +1071,10 @@ local scalar+=value"#,
         else {
             panic!("expected redirect-only command");
         };
-        assert_eq!(redirects[0].descriptor.as_deref(), Some("{input}"));
+        assert_eq!(
+            redirects[0].descriptor,
+            CshAstDescriptor::Variable("input".into())
+        );
         assert!(matches!(&ast[*expression], CshAstExpression::Command(c) if c.name.is_none()));
         let CshAstExpression::Redirected {
             expression,
@@ -1068,7 +1083,7 @@ local scalar+=value"#,
         else {
             panic!("expected redirected echo");
         };
-        assert_eq!(redirects[0].descriptor, None);
+        assert_eq!(redirects[0].descriptor, CshAstDescriptor::Default);
         assert!(matches!(&ast[*expression], CshAstExpression::Command(c) if c.args.len() == 4));
         let CshAstExpression::Redirected {
             expression,
@@ -1078,7 +1093,10 @@ local scalar+=value"#,
             panic!("expected redirected group");
         };
         assert!(matches!(&ast[*expression], CshAstExpression::Group(_)));
-        assert_eq!(redirects[0].descriptor.as_deref(), Some("{log}"));
+        assert_eq!(
+            redirects[0].descriptor,
+            CshAstDescriptor::Variable("log".into())
+        );
     }
 
     #[test]
@@ -1116,17 +1134,17 @@ local scalar+=value"#,
                     ),
                     redirects: [
                         CshAstRedirect {
-                            descriptor: None,
-                            operator: ">",
+                            descriptor: Default,
+                            operator: Output,
                             target: Literal(
                                 "out",
                             ),
                         },
                         CshAstRedirect {
-                            descriptor: Some(
+                            descriptor: Number(
                                 "2",
                             ),
-                            operator: ">&",
+                            operator: DuplicateOutput,
                             target: Literal(
                                 "1",
                             ),
@@ -1166,8 +1184,8 @@ local scalar+=value"#,
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: None,
-                                            operator: "<",
+                                            descriptor: Default,
+                                            operator: Input,
                                             target: Literal(
                                                 "out",
                                             ),
@@ -1179,8 +1197,8 @@ local scalar+=value"#,
                     ),
                     redirects: [
                         CshAstRedirect {
-                            descriptor: None,
-                            operator: ">>",
+                            descriptor: Default,
+                            operator: Append,
                             target: Literal(
                                 "log",
                             ),
@@ -1263,20 +1281,18 @@ b # comment"#).unwrap();
                                 ),
                             ),
                             Parameter {
-                                prefix: "",
                                 name: "v",
-                                suffix: Concat(
-                                    [
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: DoubleQuoted(
                                         Literal(
-                                            ":-",
+                                            "a)b",
                                         ),
-                                        DoubleQuoted(
-                                            Literal(
-                                                "a)b",
-                                            ),
-                                        ),
-                                    ],
-                                ),
+                                    ),
+                                },
                             },
                             DoubleQuoted(
                                 CommandSubstitution {
@@ -1303,9 +1319,19 @@ b # comment"#).unwrap();
                                 },
                             ),
                             ArithmeticExpansion(
-                                Literal(
-                                    "1 + (2)",
-                                ),
+                                Binary {
+                                    left: Number {
+                                        radix: 10,
+                                        digits: "1",
+                                    },
+                                    operator: Add,
+                                    right: Group(
+                                        Number {
+                                            radix: 10,
+                                            digits: "2",
+                                        },
+                                    ),
+                                },
                             ),
                             CommandSubstitution {
                                 commands: [
@@ -1346,7 +1372,20 @@ b # comment"#).unwrap();
                             Concat(
                                 [
                                     Literal(
-                                        "./{cjs,esm}/",
+                                        "./",
+                                    ),
+                                    BraceAlternatives(
+                                        [
+                                            Literal(
+                                                "cjs",
+                                            ),
+                                            Literal(
+                                                "esm",
+                                            ),
+                                        ],
+                                    ),
+                                    Literal(
+                                        "/",
                                     ),
                                     ExtendedGlob {
                                         operator: '!',
@@ -1363,11 +1402,10 @@ b # comment"#).unwrap();
                             ),
                             DoubleQuoted(
                                 Parameter {
-                                    prefix: "",
                                     name: "x",
-                                    suffix: Literal(
-                                        "",
-                                    ),
+                                    subscript: None,
+                                    mode: Value,
+                                    operation: None,
                                 },
                             ),
                         ],
@@ -1838,7 +1876,10 @@ b # comment"#).unwrap();
         else {
             panic!("expected redirect");
         };
-        assert_eq!(redirects[0].descriptor.as_deref(), Some("2"));
+        assert_eq!(
+            redirects[0].descriptor,
+            CshAstDescriptor::Number("2".into())
+        );
         assert_eq!(redirects[0].target, CshAstWord::Literal("out".into()));
         let CshAstExpression::Command(command) = &ast[*expression] else {
             panic!("expected command");
@@ -1909,14 +1950,54 @@ b # comment"#).unwrap();
                         CshAst {
                             commands: [
                                 Arithmetic(
-                                    " count += 1 ",
+                                    Binary {
+                                        left: Variable(
+                                            "count",
+                                        ),
+                                        operator: AddAssign,
+                                        right: Number {
+                                            radix: 10,
+                                            digits: "1",
+                                        },
+                                    },
                                 ),
                             ],
                         },
                     ),
                 },
                 ArithmeticFor {
-                    clauses: "i=0; i<2; i++",
+                    init: Some(
+                        Binary {
+                            left: Variable(
+                                "i",
+                            ),
+                            operator: Assign,
+                            right: Number {
+                                radix: 10,
+                                digits: "0",
+                            },
+                        },
+                    ),
+                    condition: Some(
+                        Binary {
+                            left: Variable(
+                                "i",
+                            ),
+                            operator: Less,
+                            right: Number {
+                                radix: 10,
+                                digits: "2",
+                            },
+                        },
+                    ),
+                    update: Some(
+                        Unary {
+                            operator: PostIncrement,
+                            operand: Variable(
+                                "i",
+                            ),
+                        },
+                    ),
                     body: CshAst {
                         commands: [
                             Command(
@@ -1961,18 +2042,18 @@ b # comment"#).unwrap();
                     ),
                     redirects: [
                         CshAstRedirect {
-                            descriptor: None,
-                            operator: "<<",
+                            descriptor: Default,
+                            operator: HereDocument,
                             target: Literal(
                                 "EOF",
                             ),
                             here_document: 0,
                         },
                         CshAstRedirect {
-                            descriptor: Some(
+                            descriptor: Number(
                                 "3",
                             ),
-                            operator: "<<-",
+                            operator: HereDocumentStripTabs,
                             target: Literal(
                                 "END",
                             ),
@@ -2001,13 +2082,17 @@ b # comment"#).unwrap();
                     delimiter: "EOF",
                     quoted: true,
                     strip_tabs: false,
-                    body: "$(not shell |) ' \"\n",
+                    content: Literal(
+                        "$(not shell |) ' \"\n",
+                    ),
                 },
                 CshAstHereDocument {
                     delimiter: "END",
                     quoted: false,
                     strip_tabs: true,
-                    body: "value\n",
+                    content: Literal(
+                        "value\n",
+                    ),
                 },
             ],
         }
@@ -2041,15 +2126,22 @@ b # comment"#).unwrap();
             CshAstWord::CommandSubstitution { .. }
         ));
         assert_eq!(elements[2], CshAstWord::Literal("three".into()));
-        let CshAstExpression::Test(CshAstWord::Concat(parts)) = &ast[ast.commands[1]] else {
+        let CshAstExpression::Test(condition) = &ast[ast.commands[1]] else {
             panic!("expected structured test");
         };
-        assert!(matches!(&parts[1], CshAstWord::Parameter { name, .. } if name == "items"));
+        let CshAstConditionKind::And(left, right) = &condition.kind else {
+            panic!("expected and");
+        };
         assert!(
-            parts.contains(&CshAstWord::DoubleQuoted(Box::new(CshAstWord::Variable(
-                "HOME".into()
-            ))))
+            matches!(&left.kind, CshAstConditionKind::Binary { left: CshAstWord::Parameter(p), .. } if p.name == "items")
         );
+        assert!(matches!(
+            &right.kind,
+            CshAstConditionKind::Unary {
+                operand: CshAstWord::DoubleQuoted(_),
+                ..
+            }
+        ));
         for source in [
             "f()",
             "function",

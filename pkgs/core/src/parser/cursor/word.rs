@@ -39,12 +39,16 @@ impl<'a> Cursor<'a> {
         if self.byte() == Some(b'#') {
             return Ok(None);
         }
-        self.assignment_word()
+        self.shell_word(false)
     }
 
     // The value starts inside an existing assignment word: a leading `#` is
     // literal here, whereas it starts a comment at a command-word boundary.
     pub(super) fn assignment_word(&mut self) -> Parsed<'a, Option<CshAstWord>> {
+        self.shell_word(true)
+    }
+
+    fn shell_word(&mut self, assignment: bool) -> Parsed<'a, Option<CshAstWord>> {
         let start = self.pos;
         let mut parts = Vec::new();
         loop {
@@ -61,6 +65,27 @@ impl<'a> Cursor<'a> {
                 Some(b) if b >= 128 && self.rest().chars().next().unwrap().is_whitespace() => break,
                 _ => {
                     let before = self.pos;
+                    if (parts.is_empty()
+                        || matches!(
+                            parts.last(),
+                            Some(
+                                CshAstWord::BraceAlternatives(_)
+                                    | CshAstWord::BraceSequence(_)
+                                    | CshAstWord::Concat(_)
+                            )
+                        )
+                        || assignment
+                            && matches!(parts.last(), Some(CshAstWord::Literal(text)) if text.ends_with(':')))
+                        && let Some(tilde) = self.tilde(None)
+                    {
+                        parts.push(tilde);
+                        continue;
+                    }
+                    if assignment && self.byte() == Some(b':') {
+                        self.pos += 1;
+                        parts.push(CshAstWord::Literal(":".into()));
+                        continue;
+                    }
                     parts.push(self.word_part(false, self.source.len())?);
                     if before == self.pos {
                         break;
@@ -207,7 +232,13 @@ impl<'a> Cursor<'a> {
                 };
                 Ok(W::LocaleQuoted(word))
             }
-            Some(b'$') => self.word_expansion(),
+            Some(b'$') => self.word_expansion(quoted),
+            Some(b'{') if !quoted => self.brace_word(),
+            Some(b',' | b'}' | b':') if !quoted => {
+                let c = self.byte().unwrap() as char;
+                self.pos += 1;
+                Ok(W::Literal(c.to_string()))
+            }
             Some(b'`') => self.command_word(true, None),
             Some(b'<' | b'>') if !quoted && self.peek(1) == Some(b'(') => {
                 self.command_word(false, Some(self.byte().unwrap()))
@@ -239,7 +270,7 @@ impl<'a> Cursor<'a> {
                         }
                         self.pos += 1;
                     } else {
-                        if matches!(b, b'*' | b'?' | b'[') {
+                        if matches!(b, b'*' | b'?' | b'[' | b'{' | b'}' | b',' | b':') {
                             break;
                         }
                         match WORD_CLASS[b as usize] {
@@ -281,59 +312,16 @@ impl<'a> Cursor<'a> {
         Ok(CshAstWord::concat(parts))
     }
 
-    fn word_expansion(&mut self) -> Parsed<'a, CshAstWord> {
+    fn word_expansion(&mut self, quoted: bool) -> Parsed<'a, CshAstWord> {
         use CshAstWord as W;
         match self.peek(1) {
             Some(b'(') if self.peek(2) != Some(b'(') => self.command_word(false, None),
             Some(b'(') => {
-                self.pos += 3;
-                let start = self.pos;
-                self.balanced(b')')?;
-                let end = self.pos - 1;
-                self.require_close_paren()?;
-                let after = self.pos;
-                self.pos = start;
-                let expression = self.expansion_operand(end)?;
-                self.pos = after;
+                self.pos += 1;
+                let expression = self.arithmetic_command()?;
                 Ok(W::ArithmeticExpansion(Box::new(expression)))
             }
-            Some(b'{') => {
-                self.pos += 2;
-                let start = self.pos;
-                self.balanced(b'}')?;
-                let end = self.pos - 1;
-                self.pos = start;
-                let prefix = if matches!(self.byte(), Some(b'#' | b'!')) && self.pos + 1 < end {
-                    self.pos += 1;
-                    self.source[start..self.pos].to_owned()
-                } else {
-                    String::new()
-                };
-                let name_start = self.pos;
-                if matches!(
-                    self.byte(),
-                    Some(b'@' | b'*' | b'#' | b'?' | b'-' | b'$' | b'!')
-                ) {
-                    self.pos += 1;
-                } else {
-                    while self.pos < end
-                        && matches!(
-                            self.byte(),
-                            Some(b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_')
-                        )
-                    {
-                        self.pos += 1;
-                    }
-                }
-                let name = self.source[name_start..self.pos].to_owned();
-                let suffix = self.expansion_operand(end)?;
-                self.pos = end + 1;
-                Ok(W::Parameter {
-                    prefix,
-                    name,
-                    suffix: Box::new(suffix),
-                })
-            }
+            Some(b'{') => self.parameter(quoted),
             Some(b'a'..=b'z' | b'A'..=b'Z' | b'_') => {
                 self.pos += 1;
                 let start = self.pos;

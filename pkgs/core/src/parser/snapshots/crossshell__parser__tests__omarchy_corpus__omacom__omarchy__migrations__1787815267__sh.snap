@@ -30,11 +30,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_CUPS_MIGRATION_MARKER",
-                                suffix: Literal(
-                                    ":-/var/lib/omarchy/migrations/1787815267",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/var/lib/omarchy/migrations/1787815267",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -45,18 +50,13 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
-                        ),
-                        Variable(
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Variable(
                             "machine_marker",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -204,24 +204,19 @@ CshAst {
                                         condition: CshAst {
                                             commands: [
                                                 Test(
-                                                    Concat(
-                                                        [
-                                                            Literal(
-                                                                " -n ",
-                                                            ),
-                                                            Variable(
+                                                    Or(
+                                                        Unary {
+                                                            operator: NonemptyString,
+                                                            operand: Variable(
                                                                 "cups_browsed_account",
                                                             ),
-                                                            Literal(
-                                                                " || -n ",
-                                                            ),
-                                                            Variable(
+                                                        },
+                                                        Unary {
+                                                            operator: NonemptyString,
+                                                            operand: Variable(
                                                                 "cups_browsed_group",
                                                             ),
-                                                            Literal(
-                                                                " ",
-                                                            ),
-                                                        ],
+                                                        },
                                                     ),
                                                 ),
                                             ],
@@ -275,8 +270,8 @@ CshAst {
                                                     ),
                                                     redirects: [
                                                         CshAstRedirect {
-                                                            descriptor: None,
-                                                            operator: "<<<",
+                                                            descriptor: Default,
+                                                            operator: HereString,
                                                             target: DoubleQuoted(
                                                                 Variable(
                                                                     "cups_browsed_account",
@@ -323,8 +318,8 @@ CshAst {
                                                     ),
                                                     redirects: [
                                                         CshAstRedirect {
-                                                            descriptor: None,
-                                                            operator: "<<<",
+                                                            descriptor: Default,
+                                                            operator: HereString,
                                                             target: DoubleQuoted(
                                                                 Variable(
                                                                     "cups_browsed_group",
@@ -411,139 +406,127 @@ CshAst {
                                                                             left: Binary {
                                                                                 left: Binary {
                                                                                     left: Test(
-                                                                                        Concat(
-                                                                                            [
-                                                                                                Literal(
-                                                                                                    " ! ",
-                                                                                                ),
-                                                                                                Variable(
-                                                                                                    "cups_browsed_uid",
-                                                                                                ),
-                                                                                                Literal(
-                                                                                                    " =~ ^[0-9]+",
-                                                                                                ),
-                                                                                                Literal(
-                                                                                                    "$",
-                                                                                                ),
-                                                                                                Literal(
-                                                                                                    " || ! ",
-                                                                                                ),
-                                                                                                Variable(
-                                                                                                    "cups_browsed_group_gid",
-                                                                                                ),
-                                                                                                Literal(
-                                                                                                    " =~ ^[0-9]+",
-                                                                                                ),
-                                                                                                Literal(
-                                                                                                    "$",
-                                                                                                ),
-                                                                                                Literal(
-                                                                                                    " ",
-                                                                                                ),
-                                                                                            ],
+                                                                                        Or(
+                                                                                            Not(
+                                                                                                Binary {
+                                                                                                    left: Variable(
+                                                                                                        "cups_browsed_uid",
+                                                                                                    ),
+                                                                                                    operator: Regex,
+                                                                                                    right: Literal(
+                                                                                                        "^[0-9]+$",
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
+                                                                                            Not(
+                                                                                                Binary {
+                                                                                                    left: Variable(
+                                                                                                        "cups_browsed_group_gid",
+                                                                                                    ),
+                                                                                                    operator: Regex,
+                                                                                                    right: Literal(
+                                                                                                        "^[0-9]+$",
+                                                                                                    ),
+                                                                                                },
+                                                                                            ),
                                                                                         ),
                                                                                     ),
                                                                                     operator: Or,
                                                                                     right: Arithmetic(
-                                                                                        "cups_browsed_uid <= 0 || cups_browsed_uid >= 1000",
+                                                                                        Binary {
+                                                                                            left: Binary {
+                                                                                                left: Variable(
+                                                                                                    "cups_browsed_uid",
+                                                                                                ),
+                                                                                                operator: LessEqual,
+                                                                                                right: Number {
+                                                                                                    radix: 10,
+                                                                                                    digits: "0",
+                                                                                                },
+                                                                                            },
+                                                                                            operator: Or,
+                                                                                            right: Binary {
+                                                                                                left: Variable(
+                                                                                                    "cups_browsed_uid",
+                                                                                                ),
+                                                                                                operator: GreaterEqual,
+                                                                                                right: Number {
+                                                                                                    radix: 10,
+                                                                                                    digits: "1000",
+                                                                                                },
+                                                                                            },
+                                                                                        },
                                                                                     ),
                                                                                 },
                                                                                 operator: Or,
                                                                                 right: Test(
-                                                                                    Concat(
-                                                                                        [
-                                                                                            Literal(
-                                                                                                " ",
-                                                                                            ),
-                                                                                            Variable(
-                                                                                                "cups_browsed_gid",
-                                                                                            ),
-                                                                                            Literal(
-                                                                                                " != ",
-                                                                                            ),
-                                                                                            Variable(
-                                                                                                "cups_browsed_group_gid",
-                                                                                            ),
-                                                                                            Literal(
-                                                                                                " ",
-                                                                                            ),
-                                                                                        ],
-                                                                                    ),
+                                                                                    Binary {
+                                                                                        left: Variable(
+                                                                                            "cups_browsed_gid",
+                                                                                        ),
+                                                                                        operator: PatternNotEqual,
+                                                                                        right: Variable(
+                                                                                            "cups_browsed_group_gid",
+                                                                                        ),
+                                                                                    },
                                                                                 ),
                                                                             },
                                                                             operator: Or,
                                                                             right: Test(
-                                                                                Concat(
-                                                                                    [
-                                                                                        Literal(
-                                                                                            " ",
-                                                                                        ),
-                                                                                        Variable(
-                                                                                            "cups_browsed_description",
-                                                                                        ),
-                                                                                        Literal(
-                                                                                            " != ",
-                                                                                        ),
-                                                                                        DoubleQuoted(
-                                                                                            Literal(
-                                                                                                "CUPS printer discovery",
+                                                                                Or(
+                                                                                    Or(
+                                                                                        Binary {
+                                                                                            left: Variable(
+                                                                                                "cups_browsed_description",
                                                                                             ),
-                                                                                        ),
-                                                                                        Literal(
-                                                                                            " || ",
-                                                                                        ),
-                                                                                        Variable(
-                                                                                            "cups_browsed_home",
-                                                                                        ),
-                                                                                        Literal(
-                                                                                            " != ",
-                                                                                        ),
-                                                                                        DoubleQuoted(
-                                                                                            Literal(
-                                                                                                "/",
+                                                                                            operator: PatternNotEqual,
+                                                                                            right: DoubleQuoted(
+                                                                                                Literal(
+                                                                                                    "CUPS printer discovery",
+                                                                                                ),
                                                                                             ),
-                                                                                        ),
-                                                                                        Literal(
-                                                                                            " || ",
-                                                                                        ),
-                                                                                        Variable(
+                                                                                        },
+                                                                                        Binary {
+                                                                                            left: Variable(
+                                                                                                "cups_browsed_home",
+                                                                                            ),
+                                                                                            operator: PatternNotEqual,
+                                                                                            right: DoubleQuoted(
+                                                                                                Literal(
+                                                                                                    "/",
+                                                                                                ),
+                                                                                            ),
+                                                                                        },
+                                                                                    ),
+                                                                                    Binary {
+                                                                                        left: Variable(
                                                                                             "cups_browsed_shell",
                                                                                         ),
-                                                                                        Literal(
-                                                                                            " != ",
-                                                                                        ),
-                                                                                        DoubleQuoted(
+                                                                                        operator: PatternNotEqual,
+                                                                                        right: DoubleQuoted(
                                                                                             Literal(
                                                                                                 "/usr/bin/nologin",
                                                                                             ),
                                                                                         ),
-                                                                                        Literal(
-                                                                                            " ",
-                                                                                        ),
-                                                                                    ],
+                                                                                    },
                                                                                 ),
                                                                             ),
                                                                         },
                                                                         operator: Or,
                                                                         right: Test(
-                                                                            Concat(
-                                                                                [
-                                                                                    Literal(
-                                                                                        " -n ",
-                                                                                    ),
-                                                                                    Variable(
+                                                                            Or(
+                                                                                Unary {
+                                                                                    operator: NonemptyString,
+                                                                                    operand: Variable(
                                                                                         "cups_browsed_group_members",
                                                                                     ),
-                                                                                    Literal(
-                                                                                        " || -n ",
-                                                                                    ),
-                                                                                    Variable(
+                                                                                },
+                                                                                Unary {
+                                                                                    operator: NonemptyString,
+                                                                                    operand: Variable(
                                                                                         "other_primary_user",
                                                                                     ),
-                                                                                    Literal(
-                                                                                        " ",
-                                                                                    ),
-                                                                                ],
+                                                                                },
                                                                             ),
                                                                         ),
                                                                     },
@@ -571,8 +554,8 @@ CshAst {
                                                                         ),
                                                                         redirects: [
                                                                             CshAstRedirect {
-                                                                                descriptor: None,
-                                                                                operator: ">&",
+                                                                                descriptor: Default,
+                                                                                operator: DuplicateOutput,
                                                                                 target: Literal(
                                                                                     "2",
                                                                                 ),
@@ -697,10 +680,10 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">",
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -836,10 +819,10 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">",
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),

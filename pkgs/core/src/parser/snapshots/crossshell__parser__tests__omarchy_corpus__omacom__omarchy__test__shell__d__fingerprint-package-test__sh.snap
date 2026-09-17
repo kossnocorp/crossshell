@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -269,8 +272,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -285,8 +288,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -308,8 +311,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -324,8 +327,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -347,8 +350,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -363,8 +366,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -386,8 +389,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -402,8 +405,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -425,8 +428,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -441,8 +444,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -503,8 +506,8 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: DoubleQuoted(
                                         Variable(
                                             "CALL_LOG",
@@ -541,8 +544,8 @@ CshAst {
                                                 ),
                                                 redirects: [
                                                     CshAstRedirect {
-                                                        descriptor: None,
-                                                        operator: ">",
+                                                        descriptor: Default,
+                                                        operator: Output,
                                                         target: DoubleQuoted(
                                                             Concat(
                                                                 [
@@ -557,10 +560,10 @@ CshAst {
                                                         ),
                                                     },
                                                     CshAstRedirect {
-                                                        descriptor: Some(
+                                                        descriptor: Number(
                                                             "2",
                                                         ),
-                                                        operator: ">&",
+                                                        operator: DuplicateOutput,
                                                         target: Literal(
                                                             "1",
                                                         ),
@@ -703,7 +706,43 @@ CshAst {
                         },
                         Binary {
                             left: Arithmetic(
-                                " $(grep -c '^pacman ' \"$CALL_LOG\") == 1 ",
+                                Binary {
+                                    left: Expansion(
+                                        CommandSubstitution {
+                                            commands: [
+                                                Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: Some(
+                                                            Literal(
+                                                                "grep",
+                                                            ),
+                                                        ),
+                                                        args: [
+                                                            Literal(
+                                                                "-c",
+                                                            ),
+                                                            SingleQuoted(
+                                                                "^pacman ",
+                                                            ),
+                                                            DoubleQuoted(
+                                                                Variable(
+                                                                    "CALL_LOG",
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                            ],
+                                            backticks: false,
+                                        },
+                                    ),
+                                    operator: Equal,
+                                    right: Number {
+                                        radix: 10,
+                                        digits: "1",
+                                    },
+                                },
                             ),
                             operator: Or,
                             right: Command(
@@ -1122,18 +1161,13 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -s ",
-                        ),
-                        Variable(
+                Not(
+                    Unary {
+                        operator: NonemptyFile,
+                        operand: Variable(
                             "CALL_LOG",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -1178,31 +1212,41 @@ CshAst {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nexit \"${HARDWARE_STATUS:-0}\"\n",
+            content: Literal(
+                "#!/bin/bash\nexit \"${HARDWARE_STATUS:-0}\"\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\ncase \"$1\" in\n  pacman | fprintd-enroll) exec \"$@\" ;;\n  *) echo \"Unexpected privileged call: $*\" >> \"$CALL_LOG\"; exit 99 ;;\nesac\n",
+            content: Literal(
+                "#!/bin/bash\ncase \"$1\" in\n  pacman | fprintd-enroll) exec \"$@\" ;;\n  *) echo \"Unexpected privileged call: $*\" >> \"$CALL_LOG\"; exit 99 ;;\nesac\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\ncase \"$1\" in\n  -Q) grep -qx \"$2\" <<< \"${INSTALLED:-}\" ;;\n  -S)\n    printf 'pacman %s\\n' \"$*\" >> \"$CALL_LOG\"\n    exit \"${INSTALL_STATUS:-0}\"\n    ;;\n  *) printf 'pacman %s\\n' \"$*\" >> \"$CALL_LOG\"; exit 99 ;;\nesac\n",
+            content: Literal(
+                "#!/bin/bash\ncase \"$1\" in\n  -Q) grep -qx \"$2\" <<< \"${INSTALLED:-}\" ;;\n  -S)\n    printf 'pacman %s\\n' \"$*\" >> \"$CALL_LOG\"\n    exit \"${INSTALL_STATUS:-0}\"\n    ;;\n  *) printf 'pacman %s\\n' \"$*\" >> \"$CALL_LOG\"; exit 99 ;;\nesac\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n# Stop before verification/PAM; no host authentication files may be changed.\necho enroll >> \"$CALL_LOG\"\nexit 1\n",
+            content: Literal(
+                "#!/bin/bash\n# Stop before verification/PAM; no host authentication files may be changed.\necho enroll >> \"$CALL_LOG\"\nexit 1\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\necho verify >> \"$CALL_LOG\"\nexit 1\n",
+            content: Literal(
+                "#!/bin/bash\necho verify >> \"$CALL_LOG\"\nexit 1\n",
+            ),
         },
     ],
 }

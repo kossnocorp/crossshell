@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -388,11 +391,23 @@ CshAst {
                                                     ),
                                                     DoubleQuoted(
                                                         Parameter {
-                                                            prefix: "",
                                                             name: "spec",
-                                                            suffix: Literal(
-                                                                "%%:*",
-                                                            ),
+                                                            subscript: None,
+                                                            mode: Value,
+                                                            operation: Trim {
+                                                                suffix: true,
+                                                                longest: true,
+                                                                pattern: Concat(
+                                                                    [
+                                                                        Literal(
+                                                                            ":",
+                                                                        ),
+                                                                        Glob(
+                                                                            Star,
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            },
                                                         },
                                                     ),
                                                 ],
@@ -400,8 +415,8 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: None,
-                                                operator: ">",
+                                                descriptor: Default,
+                                                operator: Output,
                                                 target: DoubleQuoted(
                                                     Concat(
                                                         [
@@ -438,11 +453,23 @@ CshAst {
                                                     ),
                                                     DoubleQuoted(
                                                         Parameter {
-                                                            prefix: "",
                                                             name: "spec",
-                                                            suffix: Literal(
-                                                                "##*:",
-                                                            ),
+                                                            subscript: None,
+                                                            mode: Value,
+                                                            operation: Trim {
+                                                                suffix: false,
+                                                                longest: true,
+                                                                pattern: Concat(
+                                                                    [
+                                                                        Glob(
+                                                                            Star,
+                                                                        ),
+                                                                        Literal(
+                                                                            ":",
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            },
                                                         },
                                                     ),
                                                 ],
@@ -450,8 +477,8 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: None,
-                                                operator: ">",
+                                                descriptor: Default,
+                                                operator: Output,
                                                 target: DoubleQuoted(
                                                     Concat(
                                                         [
@@ -480,9 +507,16 @@ CshAst {
                                                     name: "index",
                                                     operator: Set,
                                                     value: ArithmeticExpansion(
-                                                        Literal(
-                                                            "index + 1",
-                                                        ),
+                                                        Binary {
+                                                            left: Variable(
+                                                                "index",
+                                                            ),
+                                                            operator: Add,
+                                                            right: Number {
+                                                                radix: 10,
+                                                                digits: "1",
+                                                            },
+                                                        },
                                                     ),
                                                 },
                                             ],
@@ -527,27 +561,17 @@ CshAst {
                         ),
                         Binary {
                             left: Test(
-                                Concat(
-                                    [
+                                Binary {
+                                    left: Variable(
+                                        "1",
+                                    ),
+                                    operator: PatternEqual,
+                                    right: DoubleQuoted(
                                         Literal(
-                                            " ",
+                                            "unset",
                                         ),
-                                        Variable(
-                                            "1",
-                                        ),
-                                        Literal(
-                                            " == ",
-                                        ),
-                                        DoubleQuoted(
-                                            Literal(
-                                                "unset",
-                                            ),
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
-                                ),
+                                    ),
+                                },
                             ),
                             operator: Or,
                             right: Command(
@@ -719,11 +743,18 @@ CshAst {
                         name: "without_kms",
                         operator: Set,
                         value: Parameter {
-                            prefix: "",
                             name: "with_kms",
-                            suffix: Literal(
-                                "/ kms / ",
-                            ),
+                            subscript: None,
+                            mode: Value,
+                            operation: Replace {
+                                anchor: First,
+                                pattern: Literal(
+                                    " kms ",
+                                ),
+                                replacement: Literal(
+                                    " ",
+                                ),
+                            },
                         },
                     },
                 ],
@@ -733,33 +764,27 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        Variable(
-                            "with_kms",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        Glob(
-                            Star,
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                " kms ",
+                Binary {
+                    left: Variable(
+                        "with_kms",
+                    ),
+                    operator: PatternEqual,
+                    right: Concat(
+                        [
+                            Glob(
+                                Star,
                             ),
-                        ),
-                        Glob(
-                            Star,
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                            DoubleQuoted(
+                                Literal(
+                                    " kms ",
+                                ),
+                            ),
+                            Glob(
+                                Star,
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -910,27 +935,17 @@ CshAst {
                         ),
                         Binary {
                             left: Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " ",
-                                        ),
+                                Binary {
+                                    left: Variable(
+                                        "actual",
+                                    ),
+                                    operator: PatternEqual,
+                                    right: DoubleQuoted(
                                         Variable(
-                                            "actual",
+                                            "expected",
                                         ),
-                                        Literal(
-                                            " == ",
-                                        ),
-                                        DoubleQuoted(
-                                            Variable(
-                                                "expected",
-                                            ),
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
-                                ),
+                                    ),
+                                },
                             ),
                             operator: Or,
                             right: Command(

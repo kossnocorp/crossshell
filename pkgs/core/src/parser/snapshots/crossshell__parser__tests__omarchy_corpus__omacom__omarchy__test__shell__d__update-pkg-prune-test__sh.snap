@@ -225,8 +225,8 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: DoubleQuoted(
                                         Concat(
                                             [
@@ -244,8 +244,8 @@ CshAst {
                                     ),
                                 },
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: "<<",
+                                    descriptor: Default,
+                                    operator: HereDocument,
                                     target: Literal(
                                         "SH",
                                     ),
@@ -385,8 +385,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -401,10 +401,10 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: Some(
+                    descriptor: Number(
                         "2",
                     ),
-                    operator: ">&",
+                    operator: DuplicateOutput,
                     target: Literal(
                         "1",
                     ),
@@ -592,8 +592,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: DoubleQuoted(
                             Concat(
                                 [
@@ -608,10 +608,10 @@ CshAst {
                         ),
                     },
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">&",
+                        operator: DuplicateOutput,
                         target: Literal(
                             "1",
                         ),
@@ -923,30 +923,27 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -n ",
-                        ),
-                        Variable(
-                            "prune_line",
-                        ),
-                        Literal(
-                            " && -n ",
-                        ),
-                        Variable(
-                            "snapshot_line",
-                        ),
-                        Literal(
-                            " && -n ",
-                        ),
-                        Variable(
+                And(
+                    And(
+                        Unary {
+                            operator: NonemptyString,
+                            operand: Variable(
+                                "prune_line",
+                            ),
+                        },
+                        Unary {
+                            operator: NonemptyString,
+                            operand: Variable(
+                                "snapshot_line",
+                            ),
+                        },
+                    ),
+                    Unary {
+                        operator: NonemptyString,
+                        operand: Variable(
                             "pkgs_line",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -970,7 +967,15 @@ CshAst {
         },
         Binary {
             left: Arithmetic(
-                " prune_line < pkgs_line ",
+                Binary {
+                    left: Variable(
+                        "prune_line",
+                    ),
+                    operator: Less,
+                    right: Variable(
+                        "pkgs_line",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1028,7 +1033,15 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " prune_line < snapshot_line ",
+                Binary {
+                    left: Variable(
+                        "prune_line",
+                    ),
+                    operator: Less,
+                    right: Variable(
+                        "snapshot_line",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1090,7 +1103,19 @@ CshAst {
             delimiter: "SH",
             quoted: false,
             strip_tabs: false,
-            body: "#!/bin/bash\n$body\n",
+            content: Concat(
+                [
+                    Literal(
+                        "#!/bin/bash\n",
+                    ),
+                    Variable(
+                        "body",
+                    ),
+                    Literal(
+                        "\n",
+                    ),
+                ],
+            ),
         },
     ],
 }

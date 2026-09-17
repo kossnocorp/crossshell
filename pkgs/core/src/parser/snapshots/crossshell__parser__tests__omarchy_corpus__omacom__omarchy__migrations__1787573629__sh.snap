@@ -266,19 +266,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -d ",
-                        ),
-                        Variable(
-                            "bin_dir",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Directory,
+                    operand: Variable(
+                        "bin_dir",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -322,30 +315,29 @@ CshAst {
                 commands: [
                     Binary {
                         left: Test(
-                            Concat(
-                                [
-                                    Literal(
-                                        " -f ",
+                            And(
+                                And(
+                                    Unary {
+                                        operator: Regular,
+                                        operand: Variable(
+                                            "wrapper",
+                                        ),
+                                    },
+                                    Not(
+                                        Unary {
+                                            operator: Symlink,
+                                            operand: Variable(
+                                                "wrapper",
+                                            ),
+                                        },
                                     ),
-                                    Variable(
+                                ),
+                                Unary {
+                                    operator: Readable,
+                                    operand: Variable(
                                         "wrapper",
                                     ),
-                                    Literal(
-                                        " && ! -L ",
-                                    ),
-                                    Variable(
-                                        "wrapper",
-                                    ),
-                                    Literal(
-                                        " && -r ",
-                                    ),
-                                    Variable(
-                                        "wrapper",
-                                    ),
-                                    Literal(
-                                        " ",
-                                    ),
-                                ],
+                                },
                             ),
                         ),
                         operator: Or,
@@ -363,7 +355,40 @@ CshAst {
                     },
                     Binary {
                         left: Arithmetic(
-                            "$(stat -c%s \"$wrapper\") <= 1024",
+                            Binary {
+                                left: Expansion(
+                                    CommandSubstitution {
+                                        commands: [
+                                            Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: Some(
+                                                        Literal(
+                                                            "stat",
+                                                        ),
+                                                    ),
+                                                    args: [
+                                                        Literal(
+                                                            "-c%s",
+                                                        ),
+                                                        DoubleQuoted(
+                                                            Variable(
+                                                                "wrapper",
+                                                            ),
+                                                        ),
+                                                    ],
+                                                },
+                                            ),
+                                        ],
+                                        backticks: false,
+                                    },
+                                ),
+                                operator: LessEqual,
+                                right: Number {
+                                    radix: 10,
+                                    digits: "1024",
+                                },
+                            },
                         ),
                         operator: Or,
                         right: Command(
@@ -396,8 +421,8 @@ CshAst {
                                                 ),
                                                 redirects: [
                                                     CshAstRedirect {
-                                                        descriptor: None,
-                                                        operator: "<",
+                                                        descriptor: Default,
+                                                        operator: Input,
                                                         target: DoubleQuoted(
                                                             Variable(
                                                                 "wrapper",
@@ -444,8 +469,8 @@ CshAst {
                                                 ),
                                                 redirects: [
                                                     CshAstRedirect {
-                                                        descriptor: None,
-                                                        operator: "<<<",
+                                                        descriptor: Default,
+                                                        operator: HereString,
                                                         target: DoubleQuoted(
                                                             Variable(
                                                                 "contents",
@@ -507,8 +532,8 @@ CshAst {
                                                 ),
                                                 redirects: [
                                                     CshAstRedirect {
-                                                        descriptor: None,
-                                                        operator: "<<<",
+                                                        descriptor: Default,
+                                                        operator: HereString,
                                                         target: DoubleQuoted(
                                                             Variable(
                                                                 "contents",
@@ -528,24 +553,19 @@ CshAst {
                     ),
                     Binary {
                         left: Test(
-                            Concat(
-                                [
-                                    Literal(
-                                        " -n ",
-                                    ),
-                                    Variable(
+                            And(
+                                Unary {
+                                    operator: NonemptyString,
+                                    operand: Variable(
                                         "package",
                                     ),
-                                    Literal(
-                                        " && -n ",
-                                    ),
-                                    Variable(
+                                },
+                                Unary {
+                                    operator: NonemptyString,
+                                    operand: Variable(
                                         "bin",
                                     ),
-                                    Literal(
-                                        " ",
-                                    ),
-                                ],
+                                },
                             ),
                         ),
                         operator: Or,
@@ -602,56 +622,46 @@ CshAst {
                                             condition: CshAst {
                                                 commands: [
                                                     Test(
-                                                        Concat(
-                                                            [
-                                                                Literal(
-                                                                    " ",
-                                                                ),
-                                                                Variable(
-                                                                    "contents",
-                                                                ),
-                                                                Literal(
-                                                                    " == ",
-                                                                ),
-                                                                DoubleQuoted(
-                                                                    CommandSubstitution {
-                                                                        commands: [
-                                                                            Command(
-                                                                                CshAstCommand {
-                                                                                    assignments: [],
-                                                                                    name: Some(
-                                                                                        Literal(
-                                                                                            "stale_template",
+                                                        Binary {
+                                                            left: Variable(
+                                                                "contents",
+                                                            ),
+                                                            operator: PatternEqual,
+                                                            right: DoubleQuoted(
+                                                                CommandSubstitution {
+                                                                    commands: [
+                                                                        Command(
+                                                                            CshAstCommand {
+                                                                                assignments: [],
+                                                                                name: Some(
+                                                                                    Literal(
+                                                                                        "stale_template",
+                                                                                    ),
+                                                                                ),
+                                                                                args: [
+                                                                                    DoubleQuoted(
+                                                                                        Variable(
+                                                                                            "form",
                                                                                         ),
                                                                                     ),
-                                                                                    args: [
-                                                                                        DoubleQuoted(
-                                                                                            Variable(
-                                                                                                "form",
-                                                                                            ),
+                                                                                    DoubleQuoted(
+                                                                                        Variable(
+                                                                                            "package",
                                                                                         ),
-                                                                                        DoubleQuoted(
-                                                                                            Variable(
-                                                                                                "package",
-                                                                                            ),
+                                                                                    ),
+                                                                                    DoubleQuoted(
+                                                                                        Variable(
+                                                                                            "bin",
                                                                                         ),
-                                                                                        DoubleQuoted(
-                                                                                            Variable(
-                                                                                                "bin",
-                                                                                            ),
-                                                                                        ),
-                                                                                    ],
-                                                                                },
-                                                                            ),
-                                                                        ],
-                                                                        backticks: false,
-                                                                    },
-                                                                ),
-                                                                Literal(
-                                                                    " ",
-                                                                ),
-                                                            ],
-                                                        ),
+                                                                                    ),
+                                                                                ],
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                    backticks: false,
+                                                                },
+                                                            ),
+                                                        },
                                                     ),
                                                 ],
                                             },
@@ -694,7 +704,9 @@ CshAst {
                     },
                     Binary {
                         left: Arithmetic(
-                            "stale",
+                            Variable(
+                                "stale",
+                            ),
                         ),
                         operator: Or,
                         right: Command(
@@ -725,11 +737,23 @@ CshAst {
                                 ),
                                 DoubleQuoted(
                                     Parameter {
-                                        prefix: "",
                                         name: "wrapper",
-                                        suffix: Literal(
-                                            "##*/",
-                                        ),
+                                        subscript: None,
+                                        mode: Value,
+                                        operation: Trim {
+                                            suffix: false,
+                                            longest: true,
+                                            pattern: Concat(
+                                                [
+                                                    Glob(
+                                                        Star,
+                                                    ),
+                                                    Literal(
+                                                        "/",
+                                                    ),
+                                                ],
+                                            ),
+                                        },
                                     },
                                 ),
                                 DoubleQuoted(

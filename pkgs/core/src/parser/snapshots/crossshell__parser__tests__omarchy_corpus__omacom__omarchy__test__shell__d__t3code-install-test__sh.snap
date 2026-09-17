@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -241,8 +244,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -257,8 +260,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -280,8 +283,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -296,8 +299,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -319,8 +322,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -335,8 +338,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -478,8 +481,8 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: DoubleQuoted(
                                         Concat(
                                             [
@@ -494,10 +497,10 @@ CshAst {
                                     ),
                                 },
                                 CshAstRedirect {
-                                    descriptor: Some(
+                                    descriptor: Number(
                                         "2",
                                     ),
-                                    operator: ">&",
+                                    operator: DuplicateOutput,
                                     target: Literal(
                                         "1",
                                     ),
@@ -625,8 +628,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -742,24 +745,26 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
+                And(
+                    Unary {
+                        operator: Regular,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "state",
+                                ),
+                                Literal(
+                                    "/theme/t3code.json",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "state",
-                        ),
-                        Literal(
-                            "/theme/t3code.json && -f ",
-                        ),
-                        Variable(
+                    },
+                    Unary {
+                        operator: Regular,
+                        operand: Variable(
                             "palette",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -935,18 +940,20 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "test_home",
+                                ),
+                                Literal(
+                                    "/.t3",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "test_home",
-                        ),
-                        Literal(
-                            "/.t3 ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -1015,8 +1022,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1217,8 +1224,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "settings",
@@ -1494,19 +1501,25 @@ CshAst {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n[[ $1 == \"t3code-bin\" ]]\n",
+            content: Literal(
+                "#!/bin/bash\n[[ $1 == \"t3code-bin\" ]]\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n[[ $1 == \"theme\" && $2 == \"set\" && $3 == \"omarchy\" && $4 == \"--base-dir\" && $5 == \"$T3CODE_HOME\" ]] || exit 1\npalette=\"$T3CODE_HOME/userdata/themes/omarchy.json\"\nif [[ ! -f $palette ]] || ! jq -e '.name == \"Omarchy\" and (.accent | test(\"^#[0-9a-fA-F]{6}$\"))' \"$palette\" >/dev/null; then\n  echo \"No published Omarchy theme\"\n  exit 1\nfi\nif [[ ${OMARCHY_TEST_T3_FAIL:-0} == \"1\" ]]; then\n  echo \"T3 theme selection failed\"\n  exit 1\nfi\necho \"T3 selected Omarchy\"\n",
+            content: Literal(
+                "#!/bin/bash\n[[ $1 == \"theme\" && $2 == \"set\" && $3 == \"omarchy\" && $4 == \"--base-dir\" && $5 == \"$T3CODE_HOME\" ]] || exit 1\npalette=\"$T3CODE_HOME/userdata/themes/omarchy.json\"\nif [[ ! -f $palette ]] || ! jq -e '.name == \"Omarchy\" and (.accent | test(\"^#[0-9a-fA-F]{6}$\"))' \"$palette\" >/dev/null; then\n  echo \"No published Omarchy theme\"\n  exit 1\nfi\nif [[ ${OMARCHY_TEST_T3_FAIL:-0} == \"1\" ]]; then\n  echo \"T3 theme selection failed\"\n  exit 1\nfi\necho \"T3 selected Omarchy\"\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nexit 0\n",
+            content: Literal(
+                "#!/bin/bash\nexit 0\n",
+            ),
         },
     ],
 }

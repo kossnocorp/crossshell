@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -251,7 +254,11 @@ CshAst {
                             condition: CshAst {
                                 commands: [
                                     Arithmetic(
-                                        " $# ",
+                                        Expansion(
+                                            Variable(
+                                                "#",
+                                            ),
+                                        ),
                                     ),
                                 ],
                             },
@@ -344,8 +351,8 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: None,
-                                                operator: ">",
+                                                descriptor: Default,
+                                                operator: Output,
                                                 target: DoubleQuoted(
                                                     Concat(
                                                         [
@@ -476,17 +483,17 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: Some(
+                                            descriptor: Number(
                                                 "2",
                                             ),
-                                            operator: ">&",
+                                            operator: DuplicateOutput,
                                             target: Literal(
                                                 "1",
                                             ),
                                         },
                                         CshAstRedirect {
-                                            descriptor: None,
-                                            operator: ">",
+                                            descriptor: Default,
+                                            operator: Output,
                                             target: Literal(
                                                 "/dev/null",
                                             ),
@@ -534,7 +541,16 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " empty_status != 0 ",
+                Binary {
+                    left: Variable(
+                        "empty_status",
+                    ),
+                    operator: NotEqual,
+                    right: Number {
+                        radix: 10,
+                        digits: "0",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -557,19 +573,12 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -z ",
-                        ),
-                        Variable(
-                            "empty_error",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: EmptyString,
+                    operand: Variable(
+                        "empty_error",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(

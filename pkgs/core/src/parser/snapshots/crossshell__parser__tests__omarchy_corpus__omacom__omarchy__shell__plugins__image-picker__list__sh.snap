@@ -12,11 +12,16 @@ CshAst {
                         name: "image_dirs",
                         operator: Set,
                         value: Parameter {
-                            prefix: "",
                             name: "1",
-                            suffix: Literal(
-                                ":-",
-                            ),
+                            subscript: None,
+                            mode: Value,
+                            operation: Default {
+                                operator: Use,
+                                test_empty: true,
+                                word: Literal(
+                                    "",
+                                ),
+                            },
                         },
                     },
                 ],
@@ -33,21 +38,23 @@ CshAst {
                         value: Concat(
                             [
                                 Parameter {
-                                    prefix: "",
                                     name: "XDG_CACHE_HOME",
-                                    suffix: Concat(
-                                        [
-                                            Literal(
-                                                ":-",
-                                            ),
-                                            Variable(
-                                                "HOME",
-                                            ),
-                                            Literal(
-                                                "/.cache",
-                                            ),
-                                        ],
-                                    ),
+                                    subscript: None,
+                                    mode: Value,
+                                    operation: Default {
+                                        operator: Use,
+                                        test_empty: true,
+                                        word: Concat(
+                                            [
+                                                Variable(
+                                                    "HOME",
+                                                ),
+                                                Literal(
+                                                    "/.cache",
+                                                ),
+                                            ],
+                                        ),
+                                    },
                                 },
                                 Literal(
                                     "/omarchy/image-selector",
@@ -156,35 +163,31 @@ CshAst {
                 CshAst {
                     commands: [
                         Test(
-                            Concat(
-                                [
-                                    Literal(
-                                        " ",
-                                    ),
-                                    Parameter {
-                                        prefix: "",
-                                        name: "1",
-                                        suffix: Literal(
-                                            ",,",
+                            Binary {
+                                left: Parameter {
+                                    name: "1",
+                                    subscript: None,
+                                    mode: Value,
+                                    operation: Case {
+                                        upper: false,
+                                        all: true,
+                                        pattern: Literal(
+                                            "",
                                         ),
                                     },
-                                    Literal(
-                                        " =~ ",
-                                    ),
-                                    Escaped(
-                                        ".",
-                                    ),
-                                    Literal(
-                                        "(mp4|m4v|mov|webm|mkv|avi)",
-                                    ),
-                                    Literal(
-                                        "$",
-                                    ),
-                                    Literal(
-                                        " ",
-                                    ),
-                                ],
-                            ),
+                                },
+                                operator: Regex,
+                                right: Concat(
+                                    [
+                                        Escaped(
+                                            ".",
+                                        ),
+                                        Literal(
+                                            "(mp4|m4v|mov|webm|mkv|avi)$",
+                                        ),
+                                    ],
+                                ),
+                            },
                         ),
                     ],
                 },
@@ -357,10 +360,10 @@ CshAst {
                                                     ),
                                                     redirects: [
                                                         CshAstRedirect {
-                                                            descriptor: Some(
+                                                            descriptor: Number(
                                                                 "2",
                                                             ),
-                                                            operator: ">",
+                                                            operator: Output,
                                                             target: Literal(
                                                                 "/dev/null",
                                                             ),
@@ -382,19 +385,12 @@ CshAst {
                                     condition: CshAst {
                                         commands: [
                                             Test(
-                                                Concat(
-                                                    [
-                                                        Literal(
-                                                            " -z ",
-                                                        ),
-                                                        Variable(
-                                                            "hash",
-                                                        ),
-                                                        Literal(
-                                                            " ",
-                                                        ),
-                                                    ],
-                                                ),
+                                                Unary {
+                                                    operator: EmptyString,
+                                                    operand: Variable(
+                                                        "hash",
+                                                    ),
+                                                },
                                             ),
                                         ],
                                     },
@@ -657,23 +653,108 @@ CshAst {
                                         commands: [
                                             Binary {
                                                 left: Test(
-                                                    Concat(
-                                                        [
-                                                            Literal(
-                                                                " -d ",
-                                                            ),
-                                                            Variable(
-                                                                "lock",
-                                                            ),
-                                                            Literal(
-                                                                " ",
-                                                            ),
-                                                        ],
-                                                    ),
+                                                    Unary {
+                                                        operator: Directory,
+                                                        operand: Variable(
+                                                            "lock",
+                                                        ),
+                                                    },
                                                 ),
                                                 operator: And,
                                                 right: Arithmetic(
-                                                    " $(date +%s) - $(stat -c '%Y' \"$lock\" 2>/dev/null || date +%s) > 120 ",
+                                                    Binary {
+                                                        left: Binary {
+                                                            left: Expansion(
+                                                                CommandSubstitution {
+                                                                    commands: [
+                                                                        Command(
+                                                                            CshAstCommand {
+                                                                                assignments: [],
+                                                                                name: Some(
+                                                                                    Literal(
+                                                                                        "date",
+                                                                                    ),
+                                                                                ),
+                                                                                args: [
+                                                                                    Literal(
+                                                                                        "+%s",
+                                                                                    ),
+                                                                                ],
+                                                                            },
+                                                                        ),
+                                                                    ],
+                                                                    backticks: false,
+                                                                },
+                                                            ),
+                                                            operator: Subtract,
+                                                            right: Expansion(
+                                                                CommandSubstitution {
+                                                                    commands: [
+                                                                        Binary {
+                                                                            left: Redirected {
+                                                                                expression: Command(
+                                                                                    CshAstCommand {
+                                                                                        assignments: [],
+                                                                                        name: Some(
+                                                                                            Literal(
+                                                                                                "stat",
+                                                                                            ),
+                                                                                        ),
+                                                                                        args: [
+                                                                                            Literal(
+                                                                                                "-c",
+                                                                                            ),
+                                                                                            SingleQuoted(
+                                                                                                "%Y",
+                                                                                            ),
+                                                                                            DoubleQuoted(
+                                                                                                Variable(
+                                                                                                    "lock",
+                                                                                                ),
+                                                                                            ),
+                                                                                        ],
+                                                                                    },
+                                                                                ),
+                                                                                redirects: [
+                                                                                    CshAstRedirect {
+                                                                                        descriptor: Number(
+                                                                                            "2",
+                                                                                        ),
+                                                                                        operator: Output,
+                                                                                        target: Literal(
+                                                                                            "/dev/null",
+                                                                                        ),
+                                                                                    },
+                                                                                ],
+                                                                            },
+                                                                            operator: Or,
+                                                                            right: Command(
+                                                                                CshAstCommand {
+                                                                                    assignments: [],
+                                                                                    name: Some(
+                                                                                        Literal(
+                                                                                            "date",
+                                                                                        ),
+                                                                                    ),
+                                                                                    args: [
+                                                                                        Literal(
+                                                                                            "+%s",
+                                                                                        ),
+                                                                                    ],
+                                                                                },
+                                                                            ),
+                                                                        },
+                                                                    ],
+                                                                    backticks: false,
+                                                                },
+                                                            ),
+                                                        },
+                                                        operator: Greater,
+                                                        right: Number {
+                                                            radix: 10,
+                                                            digits: "120",
+                                                        },
+                                                    },
                                                 ),
                                             },
                                         ],
@@ -700,10 +781,10 @@ CshAst {
                                                 ),
                                                 redirects: [
                                                     CshAstRedirect {
-                                                        descriptor: Some(
+                                                        descriptor: Number(
                                                             "2",
                                                         ),
-                                                        operator: ">",
+                                                        operator: Output,
                                                         target: Literal(
                                                             "/dev/null",
                                                         ),
@@ -731,10 +812,10 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: Some(
-                                            "{lock_fd}",
+                                        descriptor: Variable(
+                                            "lock_fd",
                                         ),
-                                        operator: ">",
+                                        operator: Output,
                                         target: DoubleQuoted(
                                             Variable(
                                                 "lock",
@@ -828,19 +909,12 @@ CshAst {
                         ),
                         Binary {
                             left: Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " -f ",
-                                        ),
-                                        Variable(
-                                            "thumbnail",
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
-                                ),
+                                Unary {
+                                    operator: Regular,
+                                    operand: Variable(
+                                        "thumbnail",
+                                    ),
+                                },
                             ),
                             operator: And,
                             right: Command(
@@ -915,10 +989,10 @@ CshAst {
                                                 ),
                                                 redirects: [
                                                     CshAstRedirect {
-                                                        descriptor: Some(
-                                                            "{lock_fd}",
+                                                        descriptor: Variable(
+                                                            "lock_fd",
                                                         ),
-                                                        operator: ">&",
+                                                        operator: CloseOutput,
                                                         target: Literal(
                                                             "-",
                                                         ),
@@ -1003,7 +1077,29 @@ CshAst {
                                         ),
                                         Binary {
                                             left: Arithmetic(
-                                                " status == 124 || status == 137 ",
+                                                Binary {
+                                                    left: Binary {
+                                                        left: Variable(
+                                                            "status",
+                                                        ),
+                                                        operator: Equal,
+                                                        right: Number {
+                                                            radix: 10,
+                                                            digits: "124",
+                                                        },
+                                                    },
+                                                    operator: Or,
+                                                    right: Binary {
+                                                        left: Variable(
+                                                            "status",
+                                                        ),
+                                                        operator: Equal,
+                                                        right: Number {
+                                                            radix: 10,
+                                                            digits: "137",
+                                                        },
+                                                    },
+                                                },
                                             ),
                                             operator: Or,
                                             right: Redirected {
@@ -1020,8 +1116,8 @@ CshAst {
                                                 ),
                                                 redirects: [
                                                     CshAstRedirect {
-                                                        descriptor: None,
-                                                        operator: ">",
+                                                        descriptor: Default,
+                                                        operator: Output,
                                                         target: DoubleQuoted(
                                                             Concat(
                                                                 [
@@ -1083,19 +1179,12 @@ CshAst {
                         ),
                         Binary {
                             left: Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " -s ",
-                                        ),
-                                        Variable(
-                                            "pending_video_file",
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
-                                ),
+                                Unary {
+                                    operator: NonemptyFile,
+                                    operand: Variable(
+                                        "pending_video_file",
+                                    ),
+                                },
                             ),
                             operator: Or,
                             right: Command(
@@ -1121,11 +1210,8 @@ CshAst {
                                         name: "video_jobs",
                                         operator: Set,
                                         value: ArithmeticExpansion(
-                                            Concat(
-                                                [
-                                                    Literal(
-                                                        " ",
-                                                    ),
+                                            Binary {
+                                                left: Expansion(
                                                     CommandSubstitution {
                                                         commands: [
                                                             Command(
@@ -1142,11 +1228,13 @@ CshAst {
                                                         ],
                                                         backticks: false,
                                                     },
-                                                    Literal(
-                                                        " / 4 ",
-                                                    ),
-                                                ],
-                                            ),
+                                                ),
+                                                operator: Divide,
+                                                right: Number {
+                                                    radix: 10,
+                                                    digits: "4",
+                                                },
+                                            },
                                         ),
                                     },
                                 ],
@@ -1156,7 +1244,16 @@ CshAst {
                         ),
                         Binary {
                             left: Arithmetic(
-                                " video_jobs > 0 ",
+                                Binary {
+                                    left: Variable(
+                                        "video_jobs",
+                                    ),
+                                    operator: Greater,
+                                    right: Number {
+                                        radix: 10,
+                                        digits: "0",
+                                    },
+                                },
                             ),
                             operator: Or,
                             right: Command(
@@ -1246,17 +1343,17 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">",
+                                        descriptor: Default,
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
                                     },
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">&",
+                                        operator: DuplicateOutput,
                                         target: Literal(
                                             "1",
                                         ),
@@ -1381,18 +1478,13 @@ CshAst {
                                         commands: [
                                             Binary {
                                                 left: Test(
-                                                    Concat(
-                                                        [
-                                                            Literal(
-                                                                " ! -f ",
-                                                            ),
-                                                            Variable(
+                                                    Not(
+                                                        Unary {
+                                                            operator: Regular,
+                                                            operand: Variable(
                                                                 "thumbnail",
                                                             ),
-                                                            Literal(
-                                                                " ",
-                                                            ),
-                                                        ],
+                                                        },
                                                     ),
                                                 ),
                                                 operator: And,
@@ -1449,10 +1541,10 @@ CshAst {
                                                                             ),
                                                                             redirects: [
                                                                                 CshAstRedirect {
-                                                                                    descriptor: Some(
+                                                                                    descriptor: Number(
                                                                                         "2",
                                                                                     ),
-                                                                                    operator: ">",
+                                                                                    operator: Output,
                                                                                     target: Literal(
                                                                                         "/dev/null",
                                                                                     ),
@@ -1496,30 +1588,32 @@ CshAst {
                                             ),
                                             Binary {
                                                 left: Test(
-                                                    Concat(
-                                                        [
-                                                            Literal(
-                                                                " -n ",
-                                                            ),
-                                                            Variable(
+                                                    And(
+                                                        Unary {
+                                                            operator: NonemptyString,
+                                                            operand: Variable(
                                                                 "legacy_hash",
                                                             ),
-                                                            Literal(
-                                                                " && -f ",
+                                                        },
+                                                        Unary {
+                                                            operator: Regular,
+                                                            operand: Concat(
+                                                                [
+                                                                    Variable(
+                                                                        "cache_dir",
+                                                                    ),
+                                                                    Literal(
+                                                                        "/",
+                                                                    ),
+                                                                    Variable(
+                                                                        "legacy_hash",
+                                                                    ),
+                                                                    Literal(
+                                                                        ".jpg",
+                                                                    ),
+                                                                ],
                                                             ),
-                                                            Variable(
-                                                                "cache_dir",
-                                                            ),
-                                                            Literal(
-                                                                "/",
-                                                            ),
-                                                            Variable(
-                                                                "legacy_hash",
-                                                            ),
-                                                            Literal(
-                                                                ".jpg ",
-                                                            ),
-                                                        ],
+                                                        },
                                                     ),
                                                 ),
                                                 operator: And,
@@ -1566,19 +1660,12 @@ CshAst {
                                     condition: CshAst {
                                         commands: [
                                             Test(
-                                                Concat(
-                                                    [
-                                                        Literal(
-                                                            " -f ",
-                                                        ),
-                                                        Variable(
-                                                            "thumbnail",
-                                                        ),
-                                                        Literal(
-                                                            " ",
-                                                        ),
-                                                    ],
-                                                ),
+                                                Unary {
+                                                    operator: Regular,
+                                                    operand: Variable(
+                                                        "thumbnail",
+                                                    ),
+                                                },
                                             ),
                                         ],
                                     },
@@ -1690,8 +1777,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<",
+                    descriptor: Default,
+                    operator: Input,
                     target: ProcessSubstitution {
                         operator: "<",
                         commands: [
@@ -1733,24 +1820,19 @@ CshAst {
                                             commands: [
                                                 Binary {
                                                     left: Test(
-                                                        Concat(
-                                                            [
-                                                                Literal(
-                                                                    " -n ",
-                                                                ),
-                                                                Variable(
+                                                        And(
+                                                            Unary {
+                                                                operator: NonemptyString,
+                                                                operand: Variable(
                                                                     "dir",
                                                                 ),
-                                                                Literal(
-                                                                    " && -d ",
-                                                                ),
-                                                                Variable(
+                                                            },
+                                                            Unary {
+                                                                operator: Directory,
+                                                                operand: Variable(
                                                                     "dir",
                                                                 ),
-                                                                Literal(
-                                                                    " ",
-                                                                ),
-                                                            ],
+                                                            },
                                                         ),
                                                     ),
                                                     operator: Or,
@@ -1915,10 +1997,10 @@ CshAst {
                                                     ),
                                                     redirects: [
                                                         CshAstRedirect {
-                                                            descriptor: Some(
+                                                            descriptor: Number(
                                                                 "2",
                                                             ),
-                                                            operator: ">",
+                                                            operator: Output,
                                                             target: Literal(
                                                                 "/dev/null",
                                                             ),
@@ -1930,8 +2012,8 @@ CshAst {
                                     },
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: None,
-                                            operator: "<<<",
+                                            descriptor: Default,
+                                            operator: HereString,
                                             target: DoubleQuoted(
                                                 Variable(
                                                     "image_dirs",
@@ -1968,11 +2050,14 @@ CshAst {
                 [
                     DoubleQuoted(
                         Parameter {
-                            prefix: "",
                             name: "images",
-                            suffix: Literal(
-                                "[@]",
+                            subscript: Some(
+                                Literal(
+                                    "@",
+                                ),
                             ),
+                            mode: Value,
+                            operation: None,
                         },
                     ),
                 ],
@@ -2055,24 +2140,26 @@ CshAst {
                                         },
                                         Binary {
                                             left: Test(
-                                                Concat(
-                                                    [
-                                                        Literal(
-                                                            " -f ",
-                                                        ),
-                                                        Variable(
+                                                Or(
+                                                    Unary {
+                                                        operator: Regular,
+                                                        operand: Variable(
                                                             "thumbnail",
                                                         ),
-                                                        Literal(
-                                                            " || -f ",
+                                                    },
+                                                    Unary {
+                                                        operator: Regular,
+                                                        operand: Concat(
+                                                            [
+                                                                Variable(
+                                                                    "thumbnail",
+                                                                ),
+                                                                Literal(
+                                                                    ".failed",
+                                                                ),
+                                                            ],
                                                         ),
-                                                        Variable(
-                                                            "thumbnail",
-                                                        ),
-                                                        Literal(
-                                                            ".failed ",
-                                                        ),
-                                                    ],
+                                                    },
                                                 ),
                                             ),
                                             operator: Or,
@@ -2104,8 +2191,8 @@ CshAst {
                                                 ),
                                                 redirects: [
                                                     CshAstRedirect {
-                                                        descriptor: None,
-                                                        operator: ">>",
+                                                        descriptor: Default,
+                                                        operator: Append,
                                                         target: DoubleQuoted(
                                                             Variable(
                                                                 "pending_video_file",
@@ -2141,11 +2228,14 @@ CshAst {
                 [
                     DoubleQuoted(
                         Parameter {
-                            prefix: "",
                             name: "images",
-                            suffix: Literal(
-                                "[@]",
+                            subscript: Some(
+                                Literal(
+                                    "@",
+                                ),
                             ),
+                            mode: Value,
+                            operation: None,
                         },
                     ),
                 ],
@@ -2188,19 +2278,12 @@ CshAst {
                     ),
                     Binary {
                         left: Test(
-                            Concat(
-                                [
-                                    Literal(
-                                        " -n ",
-                                    ),
-                                    Variable(
-                                        "thumbnail",
-                                    ),
-                                    Literal(
-                                        " ",
-                                    ),
-                                ],
-                            ),
+                            Unary {
+                                operator: NonemptyString,
+                                operand: Variable(
+                                    "thumbnail",
+                                ),
+                            },
                         ),
                         operator: Or,
                         right: Command(

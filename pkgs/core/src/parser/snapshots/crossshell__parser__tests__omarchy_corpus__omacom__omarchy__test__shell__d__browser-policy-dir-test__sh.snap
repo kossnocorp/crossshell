@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -247,27 +250,17 @@ CshAst {
                                     condition: CshAst {
                                         commands: [
                                             Test(
-                                                Concat(
-                                                    [
+                                                Binary {
+                                                    left: Variable(
+                                                        "1",
+                                                    ),
+                                                    operator: PatternEqual,
+                                                    right: DoubleQuoted(
                                                         Literal(
-                                                            " ",
+                                                            "install",
                                                         ),
-                                                        Variable(
-                                                            "1",
-                                                        ),
-                                                        Literal(
-                                                            " == ",
-                                                        ),
-                                                        DoubleQuoted(
-                                                            Literal(
-                                                                "install",
-                                                            ),
-                                                        ),
-                                                        Literal(
-                                                            " ",
-                                                        ),
-                                                    ],
-                                                ),
+                                                    ),
+                                                },
                                             ),
                                         ],
                                     },
@@ -360,7 +353,9 @@ CshAst {
                                                                     condition: CshAst {
                                                                         commands: [
                                                                             Arithmetic(
-                                                                                " skip ",
+                                                                                Variable(
+                                                                                    "skip",
+                                                                                ),
                                                                             ),
                                                                         ],
                                                                     },
@@ -485,11 +480,14 @@ CshAst {
                                                         ),
                                                         DoubleQuoted(
                                                             Parameter {
-                                                                prefix: "",
                                                                 name: "args",
-                                                                suffix: Literal(
-                                                                    "[@]",
+                                                                subscript: Some(
+                                                                    Literal(
+                                                                        "@",
+                                                                    ),
                                                                 ),
+                                                                mode: Value,
+                                                                operation: None,
                                                             },
                                                         ),
                                                     ],
@@ -641,8 +639,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -717,27 +715,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "mode",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "644",
                         ),
-                        Variable(
-                            "mode",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "644",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -793,7 +781,16 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Arithmetic(
-                                " EUID == 0 ",
+                                Binary {
+                                    left: Variable(
+                                        "EUID",
+                                    ),
+                                    operator: Equal,
+                                    right: Number {
+                                        radix: 10,
+                                        digits: "0",
+                                    },
+                                },
                             ),
                         ],
                     },
@@ -901,10 +898,10 @@ CshAst {
                                                 ),
                                                 redirects: [
                                                     CshAstRedirect {
-                                                        descriptor: Some(
+                                                        descriptor: Number(
                                                             "2",
                                                         ),
-                                                        operator: ">",
+                                                        operator: Output,
                                                         target: Literal(
                                                             "/dev/null",
                                                         ),
@@ -987,8 +984,8 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">",
+                                        descriptor: Default,
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -1053,8 +1050,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1180,24 +1177,35 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
+                And(
+                    Unary {
+                        operator: Regular,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "write_dir",
+                                ),
+                                Literal(
+                                    "/color.json",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "write_dir",
-                        ),
-                        Literal(
-                            "/color.json && ! -L ",
-                        ),
-                        Variable(
-                            "write_dir",
-                        ),
-                        Literal(
-                            "/color.json ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Symlink,
+                            operand: Concat(
+                                [
+                                    Variable(
+                                        "write_dir",
+                                    ),
+                                    Literal(
+                                        "/color.json",
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -1353,8 +1361,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1414,24 +1422,35 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
+                And(
+                    Unary {
+                        operator: Regular,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "plant_write",
+                                ),
+                                Literal(
+                                    "/color.json",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "plant_write",
-                        ),
-                        Literal(
-                            "/color.json && ! -d ",
-                        ),
-                        Variable(
-                            "plant_write",
-                        ),
-                        Literal(
-                            "/color.json ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Directory,
+                            operand: Concat(
+                                [
+                                    Variable(
+                                        "plant_write",
+                                    ),
+                                    Literal(
+                                        "/color.json",
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -1536,18 +1555,13 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
-                        ),
-                        Variable(
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Variable(
                             "missing_dir",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -1616,10 +1630,10 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">",
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -1683,10 +1697,10 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">",
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -1804,8 +1818,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1839,8 +1853,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1901,18 +1915,20 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "planted_dir",
+                                ),
+                                Literal(
+                                    "/evil",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "planted_dir",
-                        ),
-                        Literal(
-                            "/evil ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -1936,18 +1952,20 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "planted_dir",
+                                ),
+                                Literal(
+                                    "/color.json",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "planted_dir",
-                        ),
-                        Literal(
-                            "/color.json ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -1971,19 +1989,12 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -d ",
-                        ),
-                        Variable(
-                            "planted_dir",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Directory,
+                    operand: Variable(
+                        "planted_dir",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2046,27 +2057,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "mode",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "755",
                         ),
-                        Variable(
-                            "mode",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "755",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2254,11 +2255,14 @@ CshAst {
                             [
                                 DoubleQuoted(
                                     Parameter {
-                                        prefix: "",
                                         name: "BROWSER_POLICY_PARENT_DIRS",
-                                        suffix: Literal(
-                                            "[@]",
+                                        subscript: Some(
+                                            Literal(
+                                                "@",
+                                            ),
                                         ),
+                                        mode: Value,
+                                        operation: None,
                                     },
                                 ),
                             ],
@@ -2336,8 +2340,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -2614,27 +2618,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "mode",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "755",
                         ),
-                        Variable(
-                            "mode",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "755",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2716,27 +2710,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "mode",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "755",
                         ),
-                        Variable(
-                            "mode",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "755",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2771,19 +2755,19 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -d ",
-                        ),
-                        Variable(
-                            "parent_root",
-                        ),
-                        Literal(
-                            "/etc/chromium/policies/managed/keep ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Directory,
+                    operand: Concat(
+                        [
+                            Variable(
+                                "parent_root",
+                            ),
+                            Literal(
+                                "/etc/chromium/policies/managed/keep",
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2900,8 +2884,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -3048,18 +3032,20 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -L ",
+                Not(
+                    Unary {
+                        operator: Symlink,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "symlink_root",
+                                ),
+                                Literal(
+                                    "/etc/chromium",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "symlink_root",
-                        ),
-                        Literal(
-                            "/etc/chromium ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -3083,24 +3069,35 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -d ",
+                And(
+                    Unary {
+                        operator: Directory,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "symlink_root",
+                                ),
+                                Literal(
+                                    "/etc/chromium",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "symlink_root",
-                        ),
-                        Literal(
-                            "/etc/chromium && ! -L ",
-                        ),
-                        Variable(
-                            "symlink_root",
-                        ),
-                        Literal(
-                            "/etc/chromium ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Symlink,
+                            operand: Concat(
+                                [
+                                    Variable(
+                                        "symlink_root",
+                                    ),
+                                    Literal(
+                                        "/etc/chromium",
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -3124,24 +3121,35 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -d ",
+                And(
+                    Unary {
+                        operator: Directory,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "symlink_root",
+                                ),
+                                Literal(
+                                    "/etc/chromium/policies",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "symlink_root",
-                        ),
-                        Literal(
-                            "/etc/chromium/policies && ! -L ",
-                        ),
-                        Variable(
-                            "symlink_root",
-                        ),
-                        Literal(
-                            "/etc/chromium/policies ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Symlink,
+                            operand: Concat(
+                                [
+                                    Variable(
+                                        "symlink_root",
+                                    ),
+                                    Literal(
+                                        "/etc/chromium/policies",
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -3165,18 +3173,20 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "symlink_root",
+                                ),
+                                Literal(
+                                    "/etc/chromium/policies/managed/evil.json",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "symlink_root",
-                        ),
-                        Literal(
-                            "/etc/chromium/policies/managed/evil.json ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -3258,11 +3268,14 @@ CshAst {
                             [
                                 DoubleQuoted(
                                     Parameter {
-                                        prefix: "",
                                         name: "saved_parent_dirs",
-                                        suffix: Literal(
-                                            "[@]",
+                                        subscript: Some(
+                                            Literal(
+                                                "@",
+                                            ),
                                         ),
+                                        mode: Value,
+                                        operation: None,
                                     },
                                 ),
                             ],
@@ -3369,8 +3382,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -3612,18 +3625,20 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -L ",
+                Not(
+                    Unary {
+                        operator: Symlink,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "leaf_link_root",
+                                ),
+                                Literal(
+                                    "/etc/chromium/policies/managed",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "leaf_link_root",
-                        ),
-                        Literal(
-                            "/etc/chromium/policies/managed ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -3647,24 +3662,35 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -d ",
+                And(
+                    Unary {
+                        operator: Directory,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "leaf_link_root",
+                                ),
+                                Literal(
+                                    "/etc/chromium/policies/managed",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "leaf_link_root",
-                        ),
-                        Literal(
-                            "/etc/chromium/policies/managed && ! -L ",
-                        ),
-                        Variable(
-                            "leaf_link_root",
-                        ),
-                        Literal(
-                            "/etc/chromium/policies/managed ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Symlink,
+                            operand: Concat(
+                                [
+                                    Variable(
+                                        "leaf_link_root",
+                                    ),
+                                    Literal(
+                                        "/etc/chromium/policies/managed",
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -3688,18 +3714,20 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "leaf_link_root",
+                                ),
+                                Literal(
+                                    "/etc/chromium/policies/managed/evil.json",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "leaf_link_root",
-                        ),
-                        Literal(
-                            "/etc/chromium/policies/managed/evil.json ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -3781,11 +3809,14 @@ CshAst {
                             [
                                 DoubleQuoted(
                                     Parameter {
-                                        prefix: "",
                                         name: "saved_parent_dirs",
-                                        suffix: Literal(
-                                            "[@]",
+                                        subscript: Some(
+                                            Literal(
+                                                "@",
+                                            ),
                                         ),
+                                        mode: Value,
+                                        operation: None,
                                     },
                                 ),
                             ],
@@ -3892,8 +3923,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -4076,18 +4107,20 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -L ",
+                Not(
+                    Unary {
+                        operator: Symlink,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "fx_link_root",
+                                ),
+                                Literal(
+                                    "/opt/zen",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "fx_link_root",
-                        ),
-                        Literal(
-                            "/opt/zen ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -4111,24 +4144,35 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -d ",
+                And(
+                    Unary {
+                        operator: Directory,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "fx_link_root",
+                                ),
+                                Literal(
+                                    "/opt/zen",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "fx_link_root",
-                        ),
-                        Literal(
-                            "/opt/zen && ! -L ",
-                        ),
-                        Variable(
-                            "fx_link_root",
-                        ),
-                        Literal(
-                            "/opt/zen ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Symlink,
+                            operand: Concat(
+                                [
+                                    Variable(
+                                        "fx_link_root",
+                                    ),
+                                    Literal(
+                                        "/opt/zen",
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -4152,24 +4196,35 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
+                And(
+                    Unary {
+                        operator: Regular,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "fx_link_root",
+                                ),
+                                Literal(
+                                    "/opt/zen/policies.json",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "fx_link_root",
-                        ),
-                        Literal(
-                            "/opt/zen/policies.json && ! -L ",
-                        ),
-                        Variable(
-                            "fx_link_root",
-                        ),
-                        Literal(
-                            "/opt/zen/policies.json ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Symlink,
+                            operand: Concat(
+                                [
+                                    Variable(
+                                        "fx_link_root",
+                                    ),
+                                    Literal(
+                                        "/opt/zen/policies.json",
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -4260,46 +4315,36 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "browser_policy_theme_hex",
+                                        ),
+                                    ),
+                                    args: [
+                                        DoubleQuoted(
                                             Literal(
-                                                "browser_policy_theme_hex",
+                                                "242,240,229",
                                             ),
                                         ),
-                                        args: [
-                                            DoubleQuoted(
-                                                Literal(
-                                                    "242,240,229",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "#f2f0e5",
+                                    ],
+                                },
                             ),
-                        ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "#f2f0e5",
                         ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -4322,44 +4367,34 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "browser_policy_theme_hex",
-                                            ),
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "browser_policy_theme_hex",
                                         ),
-                                        args: [
-                                            AnsiCQuoted(
-                                                "14,31,41\\n",
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "#0e1f29",
+                                    ),
+                                    args: [
+                                        AnsiCQuoted(
+                                            "14,31,41\\n",
+                                        ),
+                                    ],
+                                },
                             ),
-                        ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "#0e1f29",
                         ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -4382,46 +4417,36 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "browser_policy_theme_hex",
+                                        ),
+                                    ),
+                                    args: [
+                                        DoubleQuoted(
                                             Literal(
-                                                "browser_policy_theme_hex",
+                                                "0,0,0",
                                             ),
                                         ),
-                                        args: [
-                                            DoubleQuoted(
-                                                Literal(
-                                                    "0,0,0",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "#000000",
+                                    ],
+                                },
                             ),
-                        ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "#000000",
                         ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -4444,46 +4469,36 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "browser_policy_theme_hex",
+                                        ),
+                                    ),
+                                    args: [
+                                        DoubleQuoted(
                                             Literal(
-                                                "browser_policy_theme_hex",
+                                                " 12 , 11 , 12 ",
                                             ),
                                         ),
-                                        args: [
-                                            DoubleQuoted(
-                                                Literal(
-                                                    " 12 , 11 , 12 ",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "#0c0b0c",
+                                    ],
+                                },
                             ),
-                        ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "#0c0b0c",
                         ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -4506,46 +4521,36 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "browser_policy_theme_hex",
+                                        ),
+                                    ),
+                                    args: [
+                                        DoubleQuoted(
                                             Literal(
-                                                "browser_policy_theme_hex",
+                                                "08,09,10",
                                             ),
                                         ),
-                                        args: [
-                                            DoubleQuoted(
-                                                Literal(
-                                                    "08,09,10",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "#08090a",
+                                    ],
+                                },
                             ),
-                        ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "#08090a",
                         ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -4629,46 +4634,36 @@ CshAst {
                 commands: [
                     Binary {
                         left: Test(
-                            Concat(
-                                [
-                                    Literal(
-                                        " ",
-                                    ),
-                                    CommandSubstitution {
-                                        commands: [
-                                            Command(
-                                                CshAstCommand {
-                                                    assignments: [],
-                                                    name: Some(
-                                                        Literal(
-                                                            "browser_policy_theme_hex",
+                            Binary {
+                                left: CommandSubstitution {
+                                    commands: [
+                                        Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: Some(
+                                                    Literal(
+                                                        "browser_policy_theme_hex",
+                                                    ),
+                                                ),
+                                                args: [
+                                                    DoubleQuoted(
+                                                        Variable(
+                                                            "malformed",
                                                         ),
                                                     ),
-                                                    args: [
-                                                        DoubleQuoted(
-                                                            Variable(
-                                                                "malformed",
-                                                            ),
-                                                        ),
-                                                    ],
-                                                },
-                                            ),
-                                        ],
-                                        backticks: false,
-                                    },
-                                    Literal(
-                                        " == ",
-                                    ),
-                                    DoubleQuoted(
-                                        Literal(
-                                            "#1c2027",
+                                                ],
+                                            },
                                         ),
-                                    ),
+                                    ],
+                                    backticks: false,
+                                },
+                                operator: PatternEqual,
+                                right: DoubleQuoted(
                                     Literal(
-                                        " ",
+                                        "#1c2027",
                                     ),
-                                ],
-                            ),
+                                ),
+                            },
                         ),
                         operator: Or,
                         right: Command(
@@ -4747,19 +4742,12 @@ CshAst {
                 commands: [
                     Binary {
                         left: Test(
-                            Concat(
-                                [
-                                    Literal(
-                                        " -f ",
-                                    ),
-                                    Variable(
-                                        "theme",
-                                    ),
-                                    Literal(
-                                        " ",
-                                    ),
-                                ],
-                            ),
+                            Unary {
+                                operator: Regular,
+                                operand: Variable(
+                                    "theme",
+                                ),
+                            },
                         ),
                         operator: Or,
                         right: Command(
@@ -4792,8 +4780,8 @@ CshAst {
                                                 ),
                                                 redirects: [
                                                     CshAstRedirect {
-                                                        descriptor: None,
-                                                        operator: "<",
+                                                        descriptor: Default,
+                                                        operator: Input,
                                                         target: Variable(
                                                             "theme",
                                                         ),
@@ -4845,25 +4833,15 @@ CshAst {
                     ),
                     Binary {
                         left: Test(
-                            Concat(
-                                [
-                                    Literal(
-                                        " ",
-                                    ),
-                                    Variable(
-                                        "hex",
-                                    ),
-                                    Literal(
-                                        " =~ ^#[0-9a-f]{6}",
-                                    ),
-                                    Literal(
-                                        "$",
-                                    ),
-                                    Literal(
-                                        " ",
-                                    ),
-                                ],
-                            ),
+                            Binary {
+                                left: Variable(
+                                    "hex",
+                                ),
+                                operator: Regex,
+                                right: Literal(
+                                    "^#[0-9a-f]{6}$",
+                                ),
+                            },
                         ),
                         operator: Or,
                         right: Command(
@@ -4978,38 +4956,29 @@ CshAst {
                                 condition: CshAst {
                                     commands: [
                                         Test(
-                                            Concat(
-                                                [
-                                                    Literal(
-                                                        " ",
-                                                    ),
-                                                    Variable(
+                                            And(
+                                                Binary {
+                                                    left: Variable(
                                                         "hex",
                                                     ),
-                                                    Literal(
-                                                        " == ",
-                                                    ),
-                                                    DoubleQuoted(
+                                                    operator: PatternEqual,
+                                                    right: DoubleQuoted(
                                                         Literal(
                                                             "#1c2027",
                                                         ),
                                                     ),
-                                                    Literal(
-                                                        " && ! ",
-                                                    ),
-                                                    Variable(
-                                                        "rgb",
-                                                    ),
-                                                    Literal(
-                                                        " =~ ^[[:space:]]*28[[:space:]]*,[[:space:]]*32[[:space:]]*,[[:space:]]*39[[:space:]]*",
-                                                    ),
-                                                    Literal(
-                                                        "$",
-                                                    ),
-                                                    Literal(
-                                                        " ",
-                                                    ),
-                                                ],
+                                                },
+                                                Not(
+                                                    Binary {
+                                                        left: Variable(
+                                                            "rgb",
+                                                        ),
+                                                        operator: Regex,
+                                                        right: Literal(
+                                                            "^[[:space:]]*28[[:space:]]*,[[:space:]]*32[[:space:]]*,[[:space:]]*39[[:space:]]*$",
+                                                        ),
+                                                    },
+                                                ),
                                             ),
                                         ),
                                     ],
@@ -5175,8 +5144,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -5236,8 +5205,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -5301,8 +5270,8 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">",
+                                        descriptor: Default,
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -5396,8 +5365,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "fx_policy",
@@ -5640,8 +5609,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -5761,24 +5730,35 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
+                And(
+                    Unary {
+                        operator: Regular,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "dist",
+                                ),
+                                Literal(
+                                    "/policies.json",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "dist",
-                        ),
-                        Literal(
-                            "/policies.json && ! -L ",
-                        ),
-                        Variable(
-                            "dist",
-                        ),
-                        Literal(
-                            "/policies.json ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Symlink,
+                            operand: Concat(
+                                [
+                                    Variable(
+                                        "dist",
+                                    ),
+                                    Literal(
+                                        "/policies.json",
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -6034,10 +6014,10 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">",
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -6073,19 +6053,19 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -d ",
-                        ),
-                        Variable(
-                            "dir_dist",
-                        ),
-                        Literal(
-                            "/policies.json ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Directory,
+                    operand: Concat(
+                        [
+                            Variable(
+                                "dir_dist",
+                            ),
+                            Literal(
+                                "/policies.json",
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -6157,8 +6137,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -6250,19 +6230,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -n ",
-                        ),
-                        Variable(
-                            "policy_cleanup",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: NonemptyString,
+                    operand: Variable(
+                        "policy_cleanup",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -6384,8 +6357,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "staged",
@@ -6427,18 +6400,13 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
-                        ),
-                        Variable(
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Variable(
                             "staged",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -6529,8 +6497,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -6720,11 +6688,14 @@ CshAst {
                                             ),
                                             DoubleQuoted(
                                                 Parameter {
-                                                    prefix: "",
                                                     name: "policy_files",
-                                                    suffix: Literal(
-                                                        "[@]",
+                                                    subscript: Some(
+                                                        Literal(
+                                                            "@",
+                                                        ),
                                                     ),
+                                                    mode: Value,
+                                                    operation: None,
                                                 },
                                             ),
                                         ],
@@ -6732,8 +6703,8 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">",
+                                        descriptor: Default,
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -6805,8 +6776,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<",
+                    descriptor: Default,
+                    operator: Input,
                     target: ProcessSubstitution {
                         operator: "<",
                         commands: [
@@ -6847,7 +6818,25 @@ CshAst {
         },
         Binary {
             left: Arithmetic(
-                " ${#migrations[@]} == 1 ",
+                Binary {
+                    left: Expansion(
+                        Parameter {
+                            name: "migrations",
+                            subscript: Some(
+                                Literal(
+                                    "@",
+                                ),
+                            ),
+                            mode: Length,
+                            operation: None,
+                        },
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "1",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -6866,11 +6855,14 @@ CshAst {
                         ),
                         DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "migrations",
-                                suffix: Literal(
-                                    "[*]",
+                                subscript: Some(
+                                    Literal(
+                                        "*",
+                                    ),
                                 ),
+                                mode: Value,
+                                operation: None,
                             },
                         ),
                     ],
@@ -6896,11 +6888,14 @@ CshAst {
                             ),
                             DoubleQuoted(
                                 Parameter {
-                                    prefix: "",
                                     name: "migrations",
-                                    suffix: Literal(
-                                        "[0]",
+                                    subscript: Some(
+                                        Literal(
+                                            "0",
+                                        ),
                                     ),
+                                    mode: Value,
+                                    operation: None,
                                 },
                             ),
                         ],
@@ -6908,8 +6903,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -6958,11 +6953,14 @@ CshAst {
                                             ),
                                             DoubleQuoted(
                                                 Parameter {
-                                                    prefix: "",
                                                     name: "migrations",
-                                                    suffix: Literal(
-                                                        "[0]",
+                                                    subscript: Some(
+                                                        Literal(
+                                                            "0",
+                                                        ),
                                                     ),
+                                                    mode: Value,
+                                                    operation: None,
                                                 },
                                             ),
                                         ],
@@ -6970,8 +6968,8 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">",
+                                        descriptor: Default,
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -7024,11 +7022,14 @@ CshAst {
                             ),
                             DoubleQuoted(
                                 Parameter {
-                                    prefix: "",
                                     name: "migrations",
-                                    suffix: Literal(
-                                        "[0]",
+                                    subscript: Some(
+                                        Literal(
+                                            "0",
+                                        ),
                                     ),
+                                    mode: Value,
+                                    operation: None,
                                 },
                             ),
                         ],
@@ -7036,8 +7037,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -7082,11 +7083,14 @@ CshAst {
                             ),
                             DoubleQuoted(
                                 Parameter {
-                                    prefix: "",
                                     name: "migrations",
-                                    suffix: Literal(
-                                        "[0]",
+                                    subscript: Some(
+                                        Literal(
+                                            "0",
+                                        ),
                                     ),
+                                    mode: Value,
+                                    operation: None,
                                 },
                             ),
                         ],
@@ -7094,8 +7098,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -7155,8 +7159,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),

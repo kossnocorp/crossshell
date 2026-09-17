@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -123,8 +126,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "JS",
                     ),
@@ -506,8 +509,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "JS",
                     ),
@@ -533,8 +536,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -645,8 +648,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -707,8 +710,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -853,10 +856,10 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: Some(
+                                                descriptor: Number(
                                                     "2",
                                                 ),
-                                                operator: ">&",
+                                                operator: DuplicateOutput,
                                                 target: Literal(
                                                     "1",
                                                 ),
@@ -898,33 +901,27 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        Variable(
-                            "output",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        Glob(
-                            Star,
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "RESULT pass",
+                Binary {
+                    left: Variable(
+                        "output",
+                    ),
+                    operator: PatternEqual,
+                    right: Concat(
+                        [
+                            Glob(
+                                Star,
                             ),
-                        ),
-                        Glob(
-                            Star,
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                            DoubleQuoted(
+                                Literal(
+                                    "RESULT pass",
+                                ),
+                            ),
+                            Glob(
+                                Star,
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -976,8 +973,8 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: "<<<",
+                                        descriptor: Default,
+                                        operator: HereString,
                                         target: DoubleQuoted(
                                             Variable(
                                                 "output",
@@ -1020,19 +1017,19 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "stage",
-                        ),
-                        Literal(
-                            "/browser.log ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Concat(
+                        [
+                            Variable(
+                                "stage",
+                            ),
+                            Literal(
+                                "/browser.log",
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1055,56 +1052,46 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Redirected {
-                                    expression: Command(
-                                        CshAstCommand {
-                                            assignments: [],
-                                            name: None,
-                                            args: [],
-                                        },
-                                    ),
-                                    redirects: [
-                                        CshAstRedirect {
-                                            descriptor: None,
-                                            operator: "<",
-                                            target: DoubleQuoted(
-                                                Concat(
-                                                    [
-                                                        Variable(
-                                                            "stage",
-                                                        ),
-                                                        Literal(
-                                                            "/browser.log",
-                                                        ),
-                                                    ],
-                                                ),
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Redirected {
+                                expression: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: None,
+                                        args: [],
+                                    },
+                                ),
+                                redirects: [
+                                    CshAstRedirect {
+                                        descriptor: Default,
+                                        operator: Input,
+                                        target: DoubleQuoted(
+                                            Concat(
+                                                [
+                                                    Variable(
+                                                        "stage",
+                                                    ),
+                                                    Literal(
+                                                        "/browser.log",
+                                                    ),
+                                                ],
                                             ),
-                                        },
-                                    ],
-                                },
-                            ],
-                            backticks: false,
-                        },
+                                        ),
+                                    },
+                                ],
+                            },
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " == ",
+                            "http://ping.archlinux.org/nm-check.txt",
                         ),
-                        DoubleQuoted(
-                            Literal(
-                                "http://ping.archlinux.org/nm-check.txt",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1148,13 +1135,17 @@ CshAst {
             delimiter: "JS",
             quoted: true,
             strip_tabs: false,
-            body: "const network = requireFromRoot('shell/plugins/panels/network/Model.js')\nconst states = { Unknown: 0, None: 1, Portal: 2, Limited: 3, Full: 4 }\n\nfor (const kind of ['wifi', 'ethernet']) {\n  for (const [native, expected] of [\n    ['Unknown', 'unknown'], ['None', 'none'], ['Portal', 'portal'],\n    ['Limited', 'limited'], ['Full', 'full']\n  ]) {\n    assertEqual(network.connectivityState(kind, states[native], states, true), expected,\n      `${kind} maps native ${native} connectivity without confusing an outage with a portal`)\n  }\n  assertEqual(network.connectivityState(kind, 99, states, true), 'unknown', `${kind} handles unknown connectivity`)\n  for (const native of Object.values(states)) {\n    assertEqual(network.connectivityState(kind, native, states, false), 'unknown', `${kind} ignores stale results with probing disabled (${native})`)\n  }\n}\nfor (const native of Object.values(states)) {\n  assertEqual(network.connectivityState('disconnected', native, states, true), 'none', `disconnect clears stale connectivity (${native})`)\n}\nfor (const state of ['portal', 'limited']) {\n  assertEqual(network.connectionIcon('wifi', 80, state), '\u{f0929}', `${state} uses a blocked Wi-Fi icon`)\n  assertEqual(network.connectionIcon('ethernet', 80, state), '\u{f0202}', `${state} uses a blocked Ethernet icon`)\n  assertEqual(network.connectionIcon('disconnected', 80, state), '\u{f092e}', `${state} does not override the disconnected icon`)\n}\nfor (const state of ['full', 'unknown', 'none', undefined]) {\n  for (const signal of [-1, 0, 20, 40, 60, 80, 100]) {\n    assertEqual(network.connectionIcon('wifi', signal, state), network.wifiIconFor(signal), `${state} preserves Wi-Fi strength ${signal}`)\n  }\n  assertEqual(network.connectionIcon('ethernet', -1, state), '\u{f0200}', `${state} preserves the Ethernet icon`)\n}\nconst url = new URL(network.captivePortalUrl)\nassertEqual(url.protocol, 'http:', 'browser entry point uses plain HTTP so a portal can intercept it')\nassertEqual(url.hostname, 'ping.archlinux.org', 'browser entry point is fixed rather than portal-supplied')\nassertEqual(url.username + url.password, '', 'browser entry point contains no credentials')\n",
+            content: Literal(
+                "const network = requireFromRoot('shell/plugins/panels/network/Model.js')\nconst states = { Unknown: 0, None: 1, Portal: 2, Limited: 3, Full: 4 }\n\nfor (const kind of ['wifi', 'ethernet']) {\n  for (const [native, expected] of [\n    ['Unknown', 'unknown'], ['None', 'none'], ['Portal', 'portal'],\n    ['Limited', 'limited'], ['Full', 'full']\n  ]) {\n    assertEqual(network.connectivityState(kind, states[native], states, true), expected,\n      `${kind} maps native ${native} connectivity without confusing an outage with a portal`)\n  }\n  assertEqual(network.connectivityState(kind, 99, states, true), 'unknown', `${kind} handles unknown connectivity`)\n  for (const native of Object.values(states)) {\n    assertEqual(network.connectivityState(kind, native, states, false), 'unknown', `${kind} ignores stale results with probing disabled (${native})`)\n  }\n}\nfor (const native of Object.values(states)) {\n  assertEqual(network.connectivityState('disconnected', native, states, true), 'none', `disconnect clears stale connectivity (${native})`)\n}\nfor (const state of ['portal', 'limited']) {\n  assertEqual(network.connectionIcon('wifi', 80, state), '\u{f0929}', `${state} uses a blocked Wi-Fi icon`)\n  assertEqual(network.connectionIcon('ethernet', 80, state), '\u{f0202}', `${state} uses a blocked Ethernet icon`)\n  assertEqual(network.connectionIcon('disconnected', 80, state), '\u{f092e}', `${state} does not override the disconnected icon`)\n}\nfor (const state of ['full', 'unknown', 'none', undefined]) {\n  for (const signal of [-1, 0, 20, 40, 60, 80, 100]) {\n    assertEqual(network.connectionIcon('wifi', signal, state), network.wifiIconFor(signal), `${state} preserves Wi-Fi strength ${signal}`)\n  }\n  assertEqual(network.connectionIcon('ethernet', -1, state), '\u{f0200}', `${state} preserves the Ethernet icon`)\n}\nconst url = new URL(network.captivePortalUrl)\nassertEqual(url.protocol, 'http:', 'browser entry point uses plain HTTP so a portal can intercept it')\nassertEqual(url.hostname, 'ping.archlinux.org', 'browser entry point is fixed rather than portal-supplied')\nassertEqual(url.username + url.password, '', 'browser entry point contains no credentials')\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "JS",
             quoted: true,
             strip_tabs: false,
-            body: "const fs = require('fs')\nconst [root, stage] = process.argv.slice(2)\nlet source = fs.readFileSync(`${root}/shell/plugins/panels/network/Panel.qml`, 'utf8')\n// Keep installed enum values and actual UI bindings. Only replace the singleton\n// and expose private IDs in the disposable copy, never in production code.\nsource = source.replace('import Quickshell.Networking', 'import Quickshell.Networking\\nimport \"../mocks\"')\nsource = source.replace(/\\bNetworking\\./g, 'NetworkMock.')\nsource = source.replace('  id: root', `  id: root\n  property alias testButton: portalAction\n  property alias testKeys: keyCatcher\n  property alias testMeta: heroMeta\n  property alias testTitle: heroSsid\n  property alias testPoll: connectivityPoll\n  property alias testBarButton: button`)\nfs.writeFileSync(`${stage}/network/Panel.qml`, source)\n",
+            content: Literal(
+                "const fs = require('fs')\nconst [root, stage] = process.argv.slice(2)\nlet source = fs.readFileSync(`${root}/shell/plugins/panels/network/Panel.qml`, 'utf8')\n// Keep installed enum values and actual UI bindings. Only replace the singleton\n// and expose private IDs in the disposable copy, never in production code.\nsource = source.replace('import Quickshell.Networking', 'import Quickshell.Networking\\nimport \"../mocks\"')\nsource = source.replace(/\\bNetworking\\./g, 'NetworkMock.')\nsource = source.replace('  id: root', `  id: root\n  property alias testButton: portalAction\n  property alias testKeys: keyCatcher\n  property alias testMeta: heroMeta\n  property alias testTitle: heroSsid\n  property alias testPoll: connectivityPoll\n  property alias testBarButton: button`)\nfs.writeFileSync(`${stage}/network/Panel.qml`, source)\n",
+            ),
         },
     ],
 }

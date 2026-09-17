@@ -130,10 +130,7 @@ CshAst {
                                         "cwd_bin",
                                     ),
                                     Literal(
-                                        "')[[:space:]]*(#.*)?",
-                                    ),
-                                    Literal(
-                                        "$",
+                                        "')[[:space:]]*(#.*)?$",
                                     ),
                                 ],
                             ),
@@ -195,18 +192,13 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " ! -e ",
-                                        ),
-                                        Variable(
+                                Not(
+                                    Unary {
+                                        operator: Exists,
+                                        operand: Variable(
                                             "work_dir",
                                         ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
+                                    },
                                 ),
                             ),
                         ],
@@ -275,19 +267,12 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " -d ",
-                                        ),
-                                        Variable(
-                                            "work_dir",
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
-                                ),
+                                Unary {
+                                    operator: Directory,
+                                    operand: Variable(
+                                        "work_dir",
+                                    ),
+                                },
                             ),
                         ],
                     },
@@ -300,35 +285,39 @@ CshAst {
                                             name: "mise_state_dir",
                                             operator: Set,
                                             value: Parameter {
-                                                prefix: "",
                                                 name: "MISE_STATE_DIR",
-                                                suffix: Concat(
-                                                    [
-                                                        Literal(
-                                                            ":-",
-                                                        ),
-                                                        Parameter {
-                                                            prefix: "",
-                                                            name: "XDG_STATE_HOME",
-                                                            suffix: Concat(
-                                                                [
-                                                                    Literal(
-                                                                        ":-",
+                                                subscript: None,
+                                                mode: Value,
+                                                operation: Default {
+                                                    operator: Use,
+                                                    test_empty: true,
+                                                    word: Concat(
+                                                        [
+                                                            Parameter {
+                                                                name: "XDG_STATE_HOME",
+                                                                subscript: None,
+                                                                mode: Value,
+                                                                operation: Default {
+                                                                    operator: Use,
+                                                                    test_empty: true,
+                                                                    word: Concat(
+                                                                        [
+                                                                            Variable(
+                                                                                "HOME",
+                                                                            ),
+                                                                            Literal(
+                                                                                "/.local/state",
+                                                                            ),
+                                                                        ],
                                                                     ),
-                                                                    Variable(
-                                                                        "HOME",
-                                                                    ),
-                                                                    Literal(
-                                                                        "/.local/state",
-                                                                    ),
-                                                                ],
+                                                                },
+                                                            },
+                                                            Literal(
+                                                                "/mise",
                                                             ),
-                                                        },
-                                                        Literal(
-                                                            "/mise",
-                                                        ),
-                                                    ],
-                                                ),
+                                                        ],
+                                                    ),
+                                                },
                                             },
                                         },
                                     ],
@@ -464,19 +453,12 @@ CshAst {
                                         condition: CshAst {
                                             commands: [
                                                 Test(
-                                                    Concat(
-                                                        [
-                                                            Literal(
-                                                                " -d ",
-                                                            ),
-                                                            Variable(
-                                                                "ignored_configs_dir",
-                                                            ),
-                                                            Literal(
-                                                                " ",
-                                                            ),
-                                                        ],
-                                                    ),
+                                                    Unary {
+                                                        operator: Directory,
+                                                        operand: Variable(
+                                                            "ignored_configs_dir",
+                                                        ),
+                                                    },
                                                 ),
                                             ],
                                         },
@@ -507,19 +489,12 @@ CshAst {
                                                         commands: [
                                                             Binary {
                                                                 left: Test(
-                                                                    Concat(
-                                                                        [
-                                                                            Literal(
-                                                                                " -L ",
-                                                                            ),
-                                                                            Variable(
-                                                                                "ignored_entry",
-                                                                            ),
-                                                                            Literal(
-                                                                                " ",
-                                                                            ),
-                                                                        ],
-                                                                    ),
+                                                                    Unary {
+                                                                        operator: Symlink,
+                                                                        operand: Variable(
+                                                                            "ignored_entry",
+                                                                        ),
+                                                                    },
                                                                 ),
                                                                 operator: Or,
                                                                 right: Command(
@@ -574,48 +549,36 @@ CshAst {
                                                                         condition: CshAst {
                                                                             commands: [
                                                                                 Test(
-                                                                                    Concat(
-                                                                                        [
-                                                                                            Literal(
-                                                                                                " ",
-                                                                                            ),
-                                                                                            Variable(
+                                                                                    Or(
+                                                                                        Or(
+                                                                                            Binary {
+                                                                                                left: Variable(
+                                                                                                    "ignored_target",
+                                                                                                ),
+                                                                                                operator: PatternEqual,
+                                                                                                right: Variable(
+                                                                                                    "work_target",
+                                                                                                ),
+                                                                                            },
+                                                                                            Binary {
+                                                                                                left: Variable(
+                                                                                                    "ignored_target",
+                                                                                                ),
+                                                                                                operator: PatternEqual,
+                                                                                                right: Variable(
+                                                                                                    "config_path_target",
+                                                                                                ),
+                                                                                            },
+                                                                                        ),
+                                                                                        Binary {
+                                                                                            left: Variable(
                                                                                                 "ignored_target",
                                                                                             ),
-                                                                                            Literal(
-                                                                                                " == ",
-                                                                                            ),
-                                                                                            Variable(
-                                                                                                "work_target",
-                                                                                            ),
-                                                                                            Literal(
-                                                                                                " || ",
-                                                                                            ),
-                                                                                            Variable(
-                                                                                                "ignored_target",
-                                                                                            ),
-                                                                                            Literal(
-                                                                                                " == ",
-                                                                                            ),
-                                                                                            Variable(
-                                                                                                "config_path_target",
-                                                                                            ),
-                                                                                            Literal(
-                                                                                                " || ",
-                                                                                            ),
-                                                                                            Variable(
-                                                                                                "ignored_target",
-                                                                                            ),
-                                                                                            Literal(
-                                                                                                " == ",
-                                                                                            ),
-                                                                                            Variable(
+                                                                                            operator: PatternEqual,
+                                                                                            right: Variable(
                                                                                                 "config_target",
                                                                                             ),
-                                                                                            Literal(
-                                                                                                " ",
-                                                                                            ),
-                                                                                        ],
+                                                                                        },
                                                                                     ),
                                                                                 ),
                                                                             ],
@@ -669,27 +632,17 @@ CshAst {
                                         condition: CshAst {
                                             commands: [
                                                 Test(
-                                                    Concat(
-                                                        [
+                                                    Binary {
+                                                        left: Variable(
+                                                            "was_ignored",
+                                                        ),
+                                                        operator: PatternEqual,
+                                                        right: DoubleQuoted(
                                                             Literal(
-                                                                " ",
+                                                                "false",
                                                             ),
-                                                            Variable(
-                                                                "was_ignored",
-                                                            ),
-                                                            Literal(
-                                                                " == ",
-                                                            ),
-                                                            DoubleQuoted(
-                                                                Literal(
-                                                                    "false",
-                                                                ),
-                                                            ),
-                                                            Literal(
-                                                                " ",
-                                                            ),
-                                                        ],
-                                                    ),
+                                                        ),
+                                                    },
                                                 ),
                                             ],
                                         },
@@ -716,24 +669,23 @@ CshAst {
                                                             condition: CshAst {
                                                                 commands: [
                                                                     Test(
-                                                                        Concat(
-                                                                            [
-                                                                                Literal(
-                                                                                    " ! -e ",
-                                                                                ),
-                                                                                Variable(
-                                                                                    "mise_config",
-                                                                                ),
-                                                                                Literal(
-                                                                                    " && ! -L ",
-                                                                                ),
-                                                                                Variable(
-                                                                                    "mise_config",
-                                                                                ),
-                                                                                Literal(
-                                                                                    " ",
-                                                                                ),
-                                                                            ],
+                                                                        And(
+                                                                            Not(
+                                                                                Unary {
+                                                                                    operator: Exists,
+                                                                                    operand: Variable(
+                                                                                        "mise_config",
+                                                                                    ),
+                                                                                },
+                                                                            ),
+                                                                            Not(
+                                                                                Unary {
+                                                                                    operator: Symlink,
+                                                                                    operand: Variable(
+                                                                                        "mise_config",
+                                                                                    ),
+                                                                                },
+                                                                            ),
                                                                         ),
                                                                     ),
                                                                 ],
@@ -781,8 +733,8 @@ CshAst {
                                                                                                             ),
                                                                                                             redirects: [
                                                                                                                 CshAstRedirect {
-                                                                                                                    descriptor: None,
-                                                                                                                    operator: ">",
+                                                                                                                    descriptor: Default,
+                                                                                                                    operator: Output,
                                                                                                                     target: DoubleQuoted(
                                                                                                                         Variable(
                                                                                                                             "mise_config",
@@ -796,10 +748,10 @@ CshAst {
                                                                                             ),
                                                                                             redirects: [
                                                                                                 CshAstRedirect {
-                                                                                                    descriptor: Some(
+                                                                                                    descriptor: Number(
                                                                                                         "2",
                                                                                                     ),
-                                                                                                    operator: ">",
+                                                                                                    operator: Output,
                                                                                                     target: Literal(
                                                                                                         "/dev/null",
                                                                                                     ),
@@ -860,19 +812,12 @@ CshAst {
                                                             condition: CshAst {
                                                                 commands: [
                                                                     Test(
-                                                                        Concat(
-                                                                            [
-                                                                                Literal(
-                                                                                    " -f ",
-                                                                                ),
-                                                                                Variable(
-                                                                                    "mise_config",
-                                                                                ),
-                                                                                Literal(
-                                                                                    " ",
-                                                                                ),
-                                                                            ],
-                                                                        ),
+                                                                        Unary {
+                                                                            operator: Regular,
+                                                                            operand: Variable(
+                                                                                "mise_config",
+                                                                            ),
+                                                                        },
                                                                     ),
                                                                 ],
                                                             },
@@ -957,27 +902,17 @@ CshAst {
                                                                             condition: CshAst {
                                                                                 commands: [
                                                                                     Test(
-                                                                                        Concat(
-                                                                                            [
+                                                                                        Binary {
+                                                                                            left: Variable(
+                                                                                                "remove_empty_mise_config",
+                                                                                            ),
+                                                                                            operator: PatternEqual,
+                                                                                            right: DoubleQuoted(
                                                                                                 Literal(
-                                                                                                    " ",
+                                                                                                    "true",
                                                                                                 ),
-                                                                                                Variable(
-                                                                                                    "remove_empty_mise_config",
-                                                                                                ),
-                                                                                                Literal(
-                                                                                                    " == ",
-                                                                                                ),
-                                                                                                DoubleQuoted(
-                                                                                                    Literal(
-                                                                                                        "true",
-                                                                                                    ),
-                                                                                                ),
-                                                                                                Literal(
-                                                                                                    " ",
-                                                                                                ),
-                                                                                            ],
-                                                                                        ),
+                                                                                            ),
+                                                                                        },
                                                                                     ),
                                                                                 ],
                                                                             },
@@ -1037,27 +972,17 @@ CshAst {
                                                             condition: CshAst {
                                                                 commands: [
                                                                     Test(
-                                                                        Concat(
-                                                                            [
+                                                                        Binary {
+                                                                            left: Variable(
+                                                                                "remove_empty_mise_config",
+                                                                            ),
+                                                                            operator: PatternEqual,
+                                                                            right: DoubleQuoted(
                                                                                 Literal(
-                                                                                    " ",
+                                                                                    "true",
                                                                                 ),
-                                                                                Variable(
-                                                                                    "remove_empty_mise_config",
-                                                                                ),
-                                                                                Literal(
-                                                                                    " == ",
-                                                                                ),
-                                                                                DoubleQuoted(
-                                                                                    Literal(
-                                                                                        "true",
-                                                                                    ),
-                                                                                ),
-                                                                                Literal(
-                                                                                    " ",
-                                                                                ),
-                                                                            ],
-                                                                        ),
+                                                                            ),
+                                                                        },
                                                                     ),
                                                                 ],
                                                             },
@@ -1110,19 +1035,12 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " -f ",
-                                        ),
-                                        Variable(
-                                            "mise_config",
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
-                                ),
+                                Unary {
+                                    operator: Regular,
+                                    operand: Variable(
+                                        "mise_config",
+                                    ),
+                                },
                             ),
                         ],
                     },
@@ -1134,18 +1052,17 @@ CshAst {
                                         condition: CshAst {
                                             commands: [
                                                 Test(
-                                                    Concat(
-                                                        [
-                                                            Literal(
-                                                                " ! -L ",
-                                                            ),
-                                                            Variable(
-                                                                "mise_config",
-                                                            ),
-                                                            Literal(
-                                                                " && ",
-                                                            ),
-                                                            CommandSubstitution {
+                                                    And(
+                                                        Not(
+                                                            Unary {
+                                                                operator: Symlink,
+                                                                operand: Variable(
+                                                                    "mise_config",
+                                                                ),
+                                                            },
+                                                        ),
+                                                        Binary {
+                                                            left: CommandSubstitution {
                                                                 commands: [
                                                                     Binary {
                                                                         left: Command(
@@ -1194,16 +1111,11 @@ CshAst {
                                                                 ],
                                                                 backticks: false,
                                                             },
-                                                            Literal(
-                                                                " == ",
-                                                            ),
-                                                            Variable(
+                                                            operator: PatternEqual,
+                                                            right: Variable(
                                                                 "stock_sha",
                                                             ),
-                                                            Literal(
-                                                                " ",
-                                                            ),
-                                                        ],
+                                                        },
                                                     ),
                                                 ),
                                             ],
@@ -1328,19 +1240,12 @@ CshAst {
                                                         condition: CshAst {
                                                             commands: [
                                                                 Test(
-                                                                    Concat(
-                                                                        [
-                                                                            Literal(
-                                                                                " -n ",
-                                                                            ),
-                                                                            Variable(
-                                                                                "unsafe_env_paths",
-                                                                            ),
-                                                                            Literal(
-                                                                                " ",
-                                                                            ),
-                                                                        ],
-                                                                    ),
+                                                                    Unary {
+                                                                        operator: NonemptyString,
+                                                                        operand: Variable(
+                                                                            "unsafe_env_paths",
+                                                                        ),
+                                                                    },
                                                                 ),
                                                             ],
                                                         },
@@ -1550,19 +1455,12 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " -f ",
-                                        ),
-                                        Variable(
-                                            "mise_config",
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
-                                ),
+                                Unary {
+                                    operator: Regular,
+                                    operand: Variable(
+                                        "mise_config",
+                                    ),
+                                },
                             ),
                         ],
                     },
@@ -1574,27 +1472,17 @@ CshAst {
                                         condition: CshAst {
                                             commands: [
                                                 Test(
-                                                    Concat(
-                                                        [
+                                                    Binary {
+                                                        left: Variable(
+                                                            "was_ignored",
+                                                        ),
+                                                        operator: PatternEqual,
+                                                        right: DoubleQuoted(
                                                             Literal(
-                                                                " ",
+                                                                "true",
                                                             ),
-                                                            Variable(
-                                                                "was_ignored",
-                                                            ),
-                                                            Literal(
-                                                                " == ",
-                                                            ),
-                                                            DoubleQuoted(
-                                                                Literal(
-                                                                    "true",
-                                                                ),
-                                                            ),
-                                                            Literal(
-                                                                " ",
-                                                            ),
-                                                        ],
-                                                    ),
+                                                        ),
+                                                    },
                                                 ),
                                             ],
                                         },
@@ -1675,27 +1563,17 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
+                                Binary {
+                                    left: Variable(
+                                        "remove_empty_work_dir",
+                                    ),
+                                    operator: PatternEqual,
+                                    right: DoubleQuoted(
                                         Literal(
-                                            " ",
+                                            "true",
                                         ),
-                                        Variable(
-                                            "remove_empty_work_dir",
-                                        ),
-                                        Literal(
-                                            " == ",
-                                        ),
-                                        DoubleQuoted(
-                                            Literal(
-                                                "true",
-                                            ),
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
-                                ),
+                                    ),
+                                },
                             ),
                         ],
                     },
@@ -1722,10 +1600,10 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: Some(
+                                            descriptor: Number(
                                                 "2",
                                             ),
-                                            operator: ">",
+                                            operator: Output,
                                             target: Literal(
                                                 "/dev/null",
                                             ),

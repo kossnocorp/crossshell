@@ -1,6 +1,9 @@
 //! Resolve arena links when formatting the tree, so debug output describes syntax.
 use super::*;
 use std::fmt::{self, Debug};
+#[path = "debug_syntax.rs"]
+mod syntax;
+use syntax::*;
 
 struct List<'a>(&'a CshAst, &'a [CshAstNodeId]);
 struct Nodes<'a>(&'a CshAst, &'a [CshAstNodeId]);
@@ -13,7 +16,7 @@ impl Debug for CshAst {
         let mut debug = f.debug_struct("CshAst");
         debug.field("commands", &Nodes(self, &self.commands));
         if !self.here_documents.is_empty() {
-            debug.field("here_documents", &self.here_documents);
+            debug.field("here_documents", &Documents(self));
         }
         debug.finish()
     }
@@ -81,11 +84,25 @@ impl Debug for Node<'_> {
                 .field("name", name)
                 .field("body", &Node(ast, *body))
                 .finish(),
-            CshAstExpression::Test(word) => f.debug_tuple("Test").field(&Word(ast, word)).finish(),
-            CshAstExpression::Arithmetic(text) => f.debug_tuple("Arithmetic").field(text).finish(),
+            CshAstExpression::Test(condition) => f
+                .debug_tuple("Test")
+                .field(&Condition(ast, condition))
+                .finish(),
+            CshAstExpression::Arithmetic(expression) => f
+                .debug_tuple("Arithmetic")
+                .field(&Arithmetic(ast, expression))
+                .finish(),
             CshAstExpression::ArithmeticFor { clauses, body } => f
                 .debug_struct("ArithmeticFor")
-                .field("clauses", clauses)
+                .field("init", &clauses.init.as_ref().map(|e| Arithmetic(ast, e)))
+                .field(
+                    "condition",
+                    &clauses.condition.as_ref().map(|e| Arithmetic(ast, e)),
+                )
+                .field(
+                    "update",
+                    &clauses.update.as_ref().map(|e| Arithmetic(ast, e)),
+                )
                 .field("body", &List(ast, body))
                 .finish(),
             CshAstExpression::Command(command) => f
@@ -187,8 +204,14 @@ impl Debug for Word<'_> {
                 .finish(),
             ArithmeticExpansion(w) => f
                 .debug_tuple("ArithmeticExpansion")
-                .field(&Word(self.0, w))
+                .field(&Arithmetic(self.0, w))
                 .finish(),
+            BraceAlternatives(words) => f
+                .debug_tuple("BraceAlternatives")
+                .field(&Words(self.0, words))
+                .finish(),
+            BraceSequence(sequence) => f.debug_tuple("BraceSequence").field(sequence).finish(),
+            Tilde(tilde) => f.debug_tuple("Tilde").field(tilde).finish(),
             Concat(w) => f.debug_tuple("Concat").field(&Words(self.0, w)).finish(),
             Array(w) => f.debug_tuple("Array").field(&Words(self.0, w)).finish(),
             Assignment(assignment) => f
@@ -205,15 +228,18 @@ impl Debug for Word<'_> {
                 .field("operator", operator)
                 .field("value", &Word(self.0, value))
                 .finish(),
-            Parameter {
-                prefix,
-                name,
-                suffix,
-            } => f
+            Parameter(parameter) => f
                 .debug_struct("Parameter")
-                .field("prefix", prefix)
-                .field("name", name)
-                .field("suffix", &Word(self.0, suffix))
+                .field("name", &parameter.name)
+                .field(
+                    "subscript",
+                    &parameter.subscript.as_ref().map(|w| Word(self.0, w)),
+                )
+                .field("mode", &parameter.mode)
+                .field(
+                    "operation",
+                    &ParameterOperation(self.0, &parameter.operation),
+                )
                 .finish(),
             ExtendedGlob {
                 operator,

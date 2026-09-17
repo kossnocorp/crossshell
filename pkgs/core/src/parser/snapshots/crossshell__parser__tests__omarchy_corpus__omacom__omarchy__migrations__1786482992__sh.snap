@@ -30,11 +30,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_LIMINE_DEFAULTS_CONF",
-                                suffix: Literal(
-                                    ":-/etc/limine-entry-tool.d/omarchy-defaults.conf",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/etc/limine-entry-tool.d/omarchy-defaults.conf",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -51,11 +56,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_RUNNING_CMDLINE",
-                                suffix: Literal(
-                                    ":-/proc/cmdline",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/proc/cmdline",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -72,11 +82,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_LIMINE_REBUILD_MARKER",
-                                suffix: Literal(
-                                    ":-/var/lib/omarchy/migrations/1786482992",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/var/lib/omarchy/migrations/1786482992",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -120,24 +135,19 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
+                And(
+                    Unary {
+                        operator: Regular,
+                        operand: Variable(
                             "defaults_conf",
                         ),
-                        Literal(
-                            " && -r ",
-                        ),
-                        Variable(
+                    },
+                    Unary {
+                        operator: Readable,
+                        operand: Variable(
                             "running_cmdline",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -159,18 +169,13 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
-                        ),
-                        Variable(
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Variable(
                             "rebuild_marker",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -208,8 +213,8 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: None,
-                                            operator: "<",
+                                            descriptor: Default,
+                                            operator: Input,
                                             target: DoubleQuoted(
                                                 Variable(
                                                     "running_cmdline",
@@ -280,55 +285,49 @@ CshAst {
                 commands: [
                     Binary {
                         left: Test(
-                            Concat(
-                                [
-                                    Literal(
-                                        " ",
+                            Binary {
+                                left: DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Literal(
+                                                " ",
+                                            ),
+                                            Variable(
+                                                "booted",
+                                            ),
+                                            Literal(
+                                                " ",
+                                            ),
+                                        ],
                                     ),
-                                    DoubleQuoted(
-                                        Concat(
-                                            [
-                                                Literal(
-                                                    " ",
-                                                ),
-                                                Variable(
-                                                    "booted",
-                                                ),
-                                                Literal(
-                                                    " ",
-                                                ),
-                                            ],
+                                ),
+                                operator: PatternEqual,
+                                right: Concat(
+                                    [
+                                        Glob(
+                                            Star,
                                         ),
-                                    ),
-                                    Literal(
-                                        " == ",
-                                    ),
-                                    Glob(
-                                        Star,
-                                    ),
-                                    DoubleQuoted(
-                                        Concat(
-                                            [
-                                                Literal(
-                                                    " ",
-                                                ),
-                                                Variable(
-                                                    "param",
-                                                ),
-                                                Literal(
-                                                    " ",
-                                                ),
-                                            ],
+                                        DoubleQuoted(
+                                            Concat(
+                                                [
+                                                    Literal(
+                                                        " ",
+                                                    ),
+                                                    Variable(
+                                                        "param",
+                                                    ),
+                                                    Literal(
+                                                        " ",
+                                                    ),
+                                                ],
+                                            ),
                                         ),
-                                    ),
-                                    Glob(
-                                        Star,
-                                    ),
-                                    Literal(
-                                        " ",
-                                    ),
-                                ],
-                            ),
+                                        Glob(
+                                            Star,
+                                        ),
+                                    ],
+                                ),
+                            },
                         ),
                         operator: Or,
                         right: Command(
@@ -358,7 +357,18 @@ CshAst {
         },
         Binary {
             left: Arithmetic(
-                " ${#missing[@]} ",
+                Expansion(
+                    Parameter {
+                        name: "missing",
+                        subscript: Some(
+                            Literal(
+                                "@",
+                            ),
+                        ),
+                        mode: Length,
+                        operation: None,
+                    },
+                ),
             ),
             operator: Or,
             right: Command(
@@ -393,11 +403,14 @@ CshAst {
                                     "The booted kernel is missing ",
                                 ),
                                 Parameter {
-                                    prefix: "",
                                     name: "missing",
-                                    suffix: Literal(
-                                        "[*]",
+                                    subscript: Some(
+                                        Literal(
+                                            "*",
+                                        ),
                                     ),
+                                    mode: Value,
+                                    operation: None,
                                 },
                                 Literal(
                                     "; rebuilding the boot image",

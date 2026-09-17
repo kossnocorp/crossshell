@@ -51,11 +51,14 @@ CshAst {
                                                     ),
                                                     DoubleQuoted(
                                                         Parameter {
-                                                            prefix: "",
                                                             name: "BASH_SOURCE",
-                                                            suffix: Literal(
-                                                                "[0]",
+                                                            subscript: Some(
+                                                                Literal(
+                                                                    "0",
+                                                                ),
                                                             ),
+                                                            mode: Value,
+                                                            operation: None,
                                                         },
                                                     ),
                                                 ],
@@ -185,8 +188,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "failing_script",
@@ -194,8 +197,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SCRIPT",
                     ),
@@ -355,7 +358,16 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " status != 0 ",
+                Binary {
+                    left: Variable(
+                        "status",
+                    ),
+                    operator: NotEqual,
+                    right: Number {
+                        radix: 10,
+                        digits: "0",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -686,8 +698,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "stdout_log",
@@ -695,10 +707,10 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: Some(
+                    descriptor: Number(
                         "2",
                     ),
-                    operator: ">&",
+                    operator: DuplicateOutput,
                     target: Literal(
                         "1",
                     ),
@@ -737,7 +749,16 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " stdout_status != 0 ",
+                Binary {
+                    left: Variable(
+                        "stdout_status",
+                    ),
+                    operator: NotEqual,
+                    right: Number {
+                        radix: 10,
+                        digits: "0",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -760,18 +781,20 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "work_dir",
+                                ),
+                                Literal(
+                                    "/iso-owned.log",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "work_dir",
-                        ),
-                        Literal(
-                            "/iso-owned.log ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -968,7 +991,9 @@ CshAst {
             delimiter: "SCRIPT",
             quoted: true,
             strip_tabs: false,
-            body: "echo \"about to fail\"\nfalse\n",
+            content: Literal(
+                "echo \"about to fail\"\nfalse\n",
+            ),
         },
     ],
 }

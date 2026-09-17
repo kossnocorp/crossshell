@@ -1,5 +1,10 @@
 use crate::prelude::internal::*;
+mod arithmetic;
+mod brace;
+mod condition;
 mod glob;
+mod heredoc;
+mod parameter;
 mod word;
 
 type Parsed<'a, T> = Result<T, CshError<'a>>;
@@ -98,6 +103,7 @@ pub(super) struct Cursor<'a> {
     source: &'a str,
     pos: usize,
     nodes: Vec<CshAstExpression>,
+    spans: Vec<Range<usize>>,
     depth: usize,
     here_documents: Vec<CshAstHereDocument>,
     pending_here_documents: Vec<usize>,
@@ -110,6 +116,7 @@ impl<'a> Cursor<'a> {
             source,
             pos: 0,
             nodes: Vec::new(),
+            spans: Vec::new(),
             depth: 0,
             here_documents: Vec::new(),
             pending_here_documents: Vec::new(),
@@ -125,6 +132,7 @@ impl<'a> Cursor<'a> {
         Ok(CshAst {
             commands,
             nodes: cursor.nodes,
+            spans: cursor.spans,
             here_documents: cursor.here_documents,
         })
     }
@@ -253,33 +261,78 @@ impl<'a> Cursor<'a> {
             return Ok(false);
         }
         for id in std::mem::take(&mut self.pending_here_documents) {
+            let body_start = self.pos;
             let doc = &mut self.here_documents[id];
+            let body_end;
             loop {
-                let rest = &self.source[self.pos..];
-                let len = rest.find('\n').unwrap_or(rest.len());
-                let mut line = &rest[..len];
-                if doc.strip_tabs {
-                    line = line.trim_start_matches('\t');
+                let line_start = self.pos;
+                let mut raw = String::new();
+                let mut logical = String::new();
+                loop {
+                    let rest = &self.source[self.pos..];
+                    if rest.is_empty() {
+                        return Err(self.expected("a here-document delimiter"));
+                    }
+                    let len = rest.find('\n').unwrap_or(rest.len());
+                    let mut line = &rest[..len];
+                    if doc.strip_tabs {
+                        line = line.trim_start_matches('\t');
+                    }
+                    let newline = len < rest.len();
+                    self.pos += len + usize::from(newline);
+                    raw.push_str(line);
+                    if newline {
+                        raw.push('\n');
+                    }
+                    let continued = !doc.quoted
+                        && newline
+                        && line.bytes().rev().take_while(|b| *b == b'\\').count() % 2 == 1;
+                    logical.push_str(if continued {
+                        &line[..line.len() - 1]
+                    } else {
+                        line
+                    });
+                    if !continued {
+                        break;
+                    }
                 }
-                self.pos += len + usize::from(len < rest.len());
-                if line == doc.delimiter {
+                if logical == doc.delimiter {
+                    body_end = line_start;
                     break;
                 }
-                if rest.is_empty() {
-                    return Err(self.expected("a here-document delimiter"));
-                }
-                doc.body.push_str(line);
-                if len < rest.len() {
-                    doc.body.push('\n');
-                }
+                doc.body.push_str(&raw);
             }
+            let after = self.pos;
+            let quoted = doc.quoted;
+            let strip_tabs = doc.strip_tabs;
+            doc.span = body_start..body_end;
+            let content = if quoted {
+                CshAstWord::Literal(doc.body.clone())
+            } else {
+                self.pos = body_start;
+                self.heredoc_word(body_end, strip_tabs)?
+            };
+            self.here_documents[id].content = content;
+            self.pos = after;
         }
         Ok(true)
     }
 
     fn alloc(&mut self, expression: CshAstExpression) -> CshAstNodeId {
+        let start = match &expression {
+            CshAstExpression::Binary { left, .. } => self.spans[left.0].start,
+            CshAstExpression::Background(id)
+            | CshAstExpression::Negated(id)
+            | CshAstExpression::Redirected { expression: id, .. } => self.spans[id.0].start,
+            _ => self.pos,
+        };
+        self.alloc_at(expression, start)
+    }
+
+    fn alloc_at(&mut self, expression: CshAstExpression, start: usize) -> CshAstNodeId {
         let id = CshAstNodeId(self.nodes.len());
         self.nodes.push(expression);
+        self.spans.push(start..self.pos);
         id
     }
 
@@ -386,6 +439,7 @@ impl<'a> Cursor<'a> {
 
     fn pipeline(&mut self) -> Parsed<'a, CshAstNodeId> {
         self.space();
+        let start = self.pos;
         let negated = self.byte() == Some(b'!') && self.eat_keyword(Keyword::Bang);
         let mut left = self.command()?;
         loop {
@@ -408,7 +462,7 @@ impl<'a> Cursor<'a> {
             });
         }
         Ok(if negated {
-            self.alloc(CshAstExpression::Negated(left))
+            self.alloc_at(CshAstExpression::Negated(left), start)
         } else {
             left
         })
@@ -416,6 +470,7 @@ impl<'a> Cursor<'a> {
 
     fn command(&mut self) -> Parsed<'a, CshAstNodeId> {
         self.space();
+        let command_start = self.pos;
         let expression = if let Some(name) = self.function_header()? {
             self.continuation()?;
             if !matches!(self.byte(), Some(b'(' | b'{')) {
@@ -424,14 +479,29 @@ impl<'a> Cursor<'a> {
             let body = self.command()?;
             CshAstExpression::Function { name, body }
         } else if self.byte() == Some(b'[') && self.peek(1) == Some(b'[') {
-            CshAstExpression::Test(self.test_expression()?)
+            CshAstExpression::Test(self.condition()?)
         } else if self.byte() == Some(b'(') && self.peek(1) == Some(b'(') {
             // Bash also permits adjacent nested subshells: ((cmd) || other).
             // Arithmetic requires a matching, adjacent closing `))`.
             let start = self.pos;
-            match self.arithmetic() {
-                Ok(text) => CshAstExpression::Arithmetic(text),
-                Err(_) => {
+            let nodes = self.nodes.len();
+            let documents = self.here_documents.len();
+            let pending = self.pending_here_documents.clone();
+            let depth = self.depth;
+            match self.arithmetic_command() {
+                Ok(expression) => CshAstExpression::Arithmetic(expression),
+                Err(error) => {
+                    self.nodes.truncate(nodes);
+                    self.spans.truncate(nodes);
+                    self.here_documents.truncate(documents);
+                    self.pending_here_documents = pending;
+                    self.depth = depth;
+                    self.pos = start;
+                    // If delimiters unambiguously identify arithmetic, retain
+                    // its error instead of accepting it as two subshells.
+                    if self.arithmetic_delimiters().is_ok() {
+                        return Err(error);
+                    }
                     self.pos = start + 1;
                     let body = self.list(Stop::Subshell, true)?;
                     self.require_close_paren()?;
@@ -478,7 +548,7 @@ impl<'a> Cursor<'a> {
                 _ => return Err(self.expected("a command")),
             }
         };
-        let id = self.alloc(expression);
+        let id = self.alloc_at(expression, command_start);
         let mut redirects = Vec::new();
         loop {
             self.space();
@@ -541,72 +611,11 @@ impl<'a> Cursor<'a> {
         Ok(Some(self.source[start..end].to_owned()))
     }
 
-    fn arithmetic(&mut self) -> Parsed<'a, String> {
+    fn arithmetic_delimiters(&mut self) -> Parsed<'a, ()> {
         self.pos += 2;
-        let start = self.pos;
         self.balanced(b')')?;
-        let end = self.pos - 1;
         self.require_close_paren()?;
-        Ok(self.source[start..end].to_owned())
-    }
-
-    fn test_expression(&mut self) -> Parsed<'a, CshAstWord> {
-        self.pos += 2;
-        let mut start = self.pos;
-        let mut parts = Vec::new();
-        let mut boundary = true;
-        let mut regex = false;
-        loop {
-            if boundary && self.byte() == Some(b'=') && self.peek(1) == Some(b'~') {
-                regex = true;
-            }
-            if boundary
-                && matches!(
-                    (self.byte(), self.peek(1)),
-                    (Some(b'&'), Some(b'&')) | (Some(b'|'), Some(b'|'))
-                )
-            {
-                regex = false;
-            }
-            match self.byte() {
-                None => return Err(self.expected("a closing ]]")),
-                Some(b']') if boundary && self.peek(1) == Some(b']') => {
-                    if start < self.pos {
-                        parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
-                    }
-                    self.pos += 2;
-                    return Ok(CshAstWord::concat(parts));
-                }
-                Some(b'\'' | b'"' | b'$' | b'`' | b'\\') => {
-                    if start < self.pos {
-                        parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
-                    }
-                    parts.push(self.word_part(false, self.source.len())?);
-                    start = self.pos;
-                    boundary = false;
-                }
-                Some(b'*' | b'?' | b'[') if !regex => {
-                    if start < self.pos {
-                        parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
-                    }
-                    parts.push(self.word_part(false, self.source.len())?);
-                    start = self.pos;
-                    boundary = false;
-                }
-                Some(b'+' | b'@' | b'!') if !regex && self.peek(1) == Some(b'(') => {
-                    if start < self.pos {
-                        parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
-                    }
-                    parts.push(self.word_part(false, self.source.len())?);
-                    start = self.pos;
-                    boundary = false;
-                }
-                Some(b) => {
-                    boundary = b.is_ascii_whitespace() || matches!(b, b'(' | b')' | b'&' | b'|');
-                    self.pos += 1;
-                }
-            }
-        }
+        Ok(())
     }
 
     fn conditional(&mut self) -> Parsed<'a, CshAstExpression> {
@@ -635,7 +644,7 @@ impl<'a> Cursor<'a> {
     fn for_loop(&mut self) -> Parsed<'a, CshAstExpression> {
         self.space();
         if self.byte() == Some(b'(') && self.peek(1) == Some(b'(') {
-            let clauses = self.arithmetic()?;
+            let clauses = self.arithmetic_for()?;
             self.space();
             self.eat(b';');
             self.continuation()?;
@@ -715,6 +724,7 @@ impl<'a> Cursor<'a> {
     }
 
     fn simple(&mut self) -> Parsed<'a, CshAstNodeId> {
+        let start = self.pos;
         let mut command = CshAstCommand {
             assignments: Vec::new(),
             name: None,
@@ -758,7 +768,7 @@ impl<'a> Cursor<'a> {
         if !has_item {
             return Err(self.expected("a command"));
         }
-        let id = self.alloc(CshAstExpression::Command(command));
+        let id = self.alloc_at(CshAstExpression::Command(command), start);
         Ok(self.redirected(id, redirects))
     }
 
@@ -823,7 +833,13 @@ impl<'a> Cursor<'a> {
             _ => return Ok(None),
         };
         self.pos += prefix + operator.len();
-        let descriptor = (prefix > 0).then(|| self.source[start..start + prefix].to_owned());
+        let descriptor = if prefix == 0 {
+            CshAstDescriptor::Default
+        } else if self.source.as_bytes()[start] == b'{' {
+            CshAstDescriptor::Variable(self.source[start + 1..start + prefix - 1].to_owned())
+        } else {
+            CshAstDescriptor::Number(self.source[start..start + prefix].to_owned())
+        };
         self.space();
         let delimiter_start = self.pos;
         let delimiter = if matches!(operator, "<<" | "<<-") {
@@ -844,19 +860,42 @@ impl<'a> Cursor<'a> {
             let id = self.here_documents.len();
             self.here_documents.push(CshAstHereDocument {
                 delimiter: delimiter.unwrap(),
-                quoted: self.source[delimiter_start..self.pos].contains(['\'', '"', '\\']),
+                quoted: self.source[delimiter_start..self.pos]
+                    .replace("\\\n", "")
+                    .contains(['\'', '"', '\\']),
                 strip_tabs: operator == "<<-",
                 body: String::new(),
+                content: CshAstWord::Literal(String::new()),
+                span: self.pos..self.pos,
             });
             self.pending_here_documents.push(id);
             Some(id)
         } else {
             None
         };
+        use CshAstRedirectOperator as R;
+        let operator = match operator {
+            "<" => R::Input,
+            ">" => R::Output,
+            ">>" => R::Append,
+            ">|" => R::Clobber,
+            "<>" => R::ReadWrite,
+            "<&" if target == CshAstWord::Literal("-".into()) => R::CloseInput,
+            ">&" if target == CshAstWord::Literal("-".into()) => R::CloseOutput,
+            "<&" => R::DuplicateInput,
+            ">&" => R::DuplicateOutput,
+            "<<" => R::HereDocument,
+            "<<-" => R::HereDocumentStripTabs,
+            "<<<" => R::HereString,
+            "&>" => R::OutputAndError,
+            "&>>" => R::AppendAndError,
+            _ => unreachable!(),
+        };
         Ok(Some(CshAstRedirect {
             descriptor,
-            operator: operator.to_owned(),
+            operator,
             target,
+            span: start..self.pos,
             here_document,
         }))
     }
@@ -1045,6 +1084,7 @@ impl<'a> Cursor<'a> {
             return Err(self.expected("a here-document body"));
         }
         self.nodes.truncate(checkpoint);
+        self.spans.truncate(checkpoint);
         self.here_documents.truncate(document_checkpoint);
         self.pending_here_documents = outer_pending;
         text.push_str(&self.source[start..self.pos]);

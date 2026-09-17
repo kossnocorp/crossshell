@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -254,8 +257,8 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: DoubleQuoted(
                                         Variable(
                                             "logo",
@@ -522,8 +525,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<",
+                    descriptor: Default,
+                    operator: Input,
                     target: DoubleQuoted(
                         Variable(
                             "logo",
@@ -534,7 +537,33 @@ CshAst {
         },
         Binary {
             left: Arithmetic(
-                " ${#SHEEN_FRAMES[@]} > ${#expected[0]} ",
+                Binary {
+                    left: Expansion(
+                        Parameter {
+                            name: "SHEEN_FRAMES",
+                            subscript: Some(
+                                Literal(
+                                    "@",
+                                ),
+                            ),
+                            mode: Length,
+                            operation: None,
+                        },
+                    ),
+                    operator: Greater,
+                    right: Expansion(
+                        Parameter {
+                            name: "expected",
+                            subscript: Some(
+                                Literal(
+                                    "0",
+                                ),
+                            ),
+                            mode: Length,
+                            operation: None,
+                        },
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -553,11 +582,14 @@ CshAst {
                         ),
                         DoubleQuoted(
                             Parameter {
-                                prefix: "#",
                                 name: "SHEEN_FRAMES",
-                                suffix: Literal(
-                                    "[@]",
+                                subscript: Some(
+                                    Literal(
+                                        "@",
+                                    ),
                                 ),
+                                mode: Length,
+                                operation: None,
                             },
                         ),
                     ],
@@ -603,9 +635,23 @@ CshAst {
                         name: "band_width",
                         operator: Set,
                         value: ArithmeticExpansion(
-                            Literal(
-                                " SHEEN_HALF * 2 + 1 ",
-                            ),
+                            Binary {
+                                left: Binary {
+                                    left: Variable(
+                                        "SHEEN_HALF",
+                                    ),
+                                    operator: Multiply,
+                                    right: Number {
+                                        radix: 10,
+                                        digits: "2",
+                                    },
+                                },
+                                operator: Add,
+                                right: Number {
+                                    radix: 10,
+                                    digits: "1",
+                                },
+                            },
                         ),
                     },
                 ],
@@ -693,11 +739,16 @@ CshAst {
                 [
                     DoubleQuoted(
                         Parameter {
-                            prefix: "!",
                             name: "SHEEN_FRAMES",
-                            suffix: Literal(
-                                "[@]",
+                            subscript: Some(
+                                Literal(
+                                    "@",
+                                ),
                             ),
+                            mode: Indices {
+                                separate: true,
+                            },
+                            operation: None,
                         },
                     ),
                 ],
@@ -771,19 +822,12 @@ CshAst {
                                 commands: [
                                     Binary {
                                         left: Test(
-                                            Concat(
-                                                [
-                                                    Literal(
-                                                        " -n ",
-                                                    ),
-                                                    Variable(
-                                                        "drawn",
-                                                    ),
-                                                    Literal(
-                                                        " ",
-                                                    ),
-                                                ],
-                                            ),
+                                            Unary {
+                                                operator: NonemptyString,
+                                                operand: Variable(
+                                                    "drawn",
+                                                ),
+                                            },
                                         ),
                                         operator: Or,
                                         right: Command(
@@ -800,55 +844,54 @@ CshAst {
                                     },
                                     Binary {
                                         left: Test(
-                                            Concat(
-                                                [
-                                                    Literal(
-                                                        " ",
-                                                    ),
-                                                    Variable(
-                                                        "drawn",
-                                                    ),
-                                                    Literal(
-                                                        " == ",
-                                                    ),
-                                                    DoubleQuoted(
-                                                        Concat(
-                                                            [
-                                                                Variable(
-                                                                    "esc",
-                                                                ),
-                                                                Literal(
-                                                                    "[",
-                                                                ),
-                                                                ArithmeticExpansion(
+                                            Binary {
+                                                left: Variable(
+                                                    "drawn",
+                                                ),
+                                                operator: PatternEqual,
+                                                right: Concat(
+                                                    [
+                                                        DoubleQuoted(
+                                                            Concat(
+                                                                [
+                                                                    Variable(
+                                                                        "esc",
+                                                                    ),
                                                                     Literal(
-                                                                        "top + row",
+                                                                        "[",
                                                                     ),
-                                                                ),
-                                                                Literal(
-                                                                    ";",
-                                                                ),
-                                                                Parameter {
-                                                                    prefix: "",
-                                                                    name: "left",
-                                                                    suffix: Literal(
-                                                                        "",
+                                                                    ArithmeticExpansion(
+                                                                        Binary {
+                                                                            left: Variable(
+                                                                                "top",
+                                                                            ),
+                                                                            operator: Add,
+                                                                            right: Variable(
+                                                                                "row",
+                                                                            ),
+                                                                        },
                                                                     ),
-                                                                },
-                                                                Literal(
-                                                                    "H",
-                                                                ),
-                                                            ],
+                                                                    Literal(
+                                                                        ";",
+                                                                    ),
+                                                                    Parameter {
+                                                                        name: "left",
+                                                                        subscript: None,
+                                                                        mode: Value,
+                                                                        operation: None,
+                                                                    },
+                                                                    Literal(
+                                                                        "H",
+                                                                    ),
+                                                                ],
+                                                            ),
                                                         ),
-                                                    ),
-                                                    Glob(
-                                                        Star,
-                                                    ),
-                                                    Literal(
-                                                        " ",
-                                                    ),
-                                                ],
-                                            ),
+                                                        Glob(
+                                                            Star,
+                                                        ),
+                                                    ],
+                                                ),
+                                            },
                                         ),
                                         operator: Or,
                                         right: Command(
@@ -858,9 +901,16 @@ CshAst {
                                                         name: "misplaced",
                                                         operator: Set,
                                                         value: ArithmeticExpansion(
-                                                            Literal(
-                                                                "misplaced + 1",
-                                                            ),
+                                                            Binary {
+                                                                left: Variable(
+                                                                    "misplaced",
+                                                                ),
+                                                                operator: Add,
+                                                                right: Number {
+                                                                    radix: 10,
+                                                                    digits: "1",
+                                                                },
+                                                            },
                                                         ),
                                                     },
                                                 ],
@@ -876,11 +926,23 @@ CshAst {
                                                     name: "rest",
                                                     operator: Set,
                                                     value: Parameter {
-                                                        prefix: "",
                                                         name: "drawn",
-                                                        suffix: Literal(
-                                                            "#*H",
-                                                        ),
+                                                        subscript: None,
+                                                        mode: Value,
+                                                        operation: Trim {
+                                                            suffix: false,
+                                                            longest: false,
+                                                            pattern: Concat(
+                                                                [
+                                                                    Glob(
+                                                                        Star,
+                                                                    ),
+                                                                    Literal(
+                                                                        "H",
+                                                                    ),
+                                                                ],
+                                                            ),
+                                                        },
                                                     },
                                                 },
                                             ],
@@ -890,30 +952,24 @@ CshAst {
                                     ),
                                     Binary {
                                         left: Test(
-                                            Concat(
-                                                [
-                                                    Literal(
-                                                        " ",
-                                                    ),
-                                                    Variable(
-                                                        "rest",
-                                                    ),
-                                                    Literal(
-                                                        " == ",
-                                                    ),
-                                                    DoubleQuoted(
-                                                        Variable(
-                                                            "base",
+                                            Binary {
+                                                left: Variable(
+                                                    "rest",
+                                                ),
+                                                operator: PatternEqual,
+                                                right: Concat(
+                                                    [
+                                                        DoubleQuoted(
+                                                            Variable(
+                                                                "base",
+                                                            ),
                                                         ),
-                                                    ),
-                                                    Glob(
-                                                        Star,
-                                                    ),
-                                                    Literal(
-                                                        " ",
-                                                    ),
-                                                ],
-                                            ),
+                                                        Glob(
+                                                            Star,
+                                                        ),
+                                                    ],
+                                                ),
+                                            },
                                         ),
                                         operator: Or,
                                         right: Command(
@@ -923,9 +979,16 @@ CshAst {
                                                         name: "unbased",
                                                         operator: Set,
                                                         value: ArithmeticExpansion(
-                                                            Literal(
-                                                                "unbased + 1",
-                                                            ),
+                                                            Binary {
+                                                                left: Variable(
+                                                                    "unbased",
+                                                                ),
+                                                                operator: Add,
+                                                                right: Number {
+                                                                    radix: 10,
+                                                                    digits: "1",
+                                                                },
+                                                            },
                                                         ),
                                                     },
                                                 ],
@@ -941,20 +1004,18 @@ CshAst {
                                                     name: "rest",
                                                     operator: Set,
                                                     value: Parameter {
-                                                        prefix: "",
                                                         name: "rest",
-                                                        suffix: Concat(
-                                                            [
-                                                                Literal(
-                                                                    "#",
+                                                        subscript: None,
+                                                        mode: Value,
+                                                        operation: Trim {
+                                                            suffix: false,
+                                                            longest: false,
+                                                            pattern: DoubleQuoted(
+                                                                Variable(
+                                                                    "base",
                                                                 ),
-                                                                DoubleQuoted(
-                                                                    Variable(
-                                                                        "base",
-                                                                    ),
-                                                                ),
-                                                            ],
-                                                        ),
+                                                            ),
+                                                        },
                                                     },
                                                 },
                                             ],
@@ -970,23 +1031,25 @@ CshAst {
                                                         name: "head",
                                                         operator: Set,
                                                         value: Parameter {
-                                                            prefix: "",
                                                             name: "rest",
-                                                            suffix: Concat(
-                                                                [
-                                                                    Literal(
-                                                                        "%%",
-                                                                    ),
-                                                                    DoubleQuoted(
-                                                                        Variable(
-                                                                            "SHEEN_BAND",
+                                                            subscript: None,
+                                                            mode: Value,
+                                                            operation: Trim {
+                                                                suffix: true,
+                                                                longest: true,
+                                                                pattern: Concat(
+                                                                    [
+                                                                        DoubleQuoted(
+                                                                            Variable(
+                                                                                "SHEEN_BAND",
+                                                                            ),
                                                                         ),
-                                                                    ),
-                                                                    Literal(
-                                                                        "*",
-                                                                    ),
-                                                                ],
-                                                            ),
+                                                                        Glob(
+                                                                            Star,
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            },
                                                         },
                                                     },
                                                 ],
@@ -1002,20 +1065,25 @@ CshAst {
                                                         name: "rest",
                                                         operator: Set,
                                                         value: Parameter {
-                                                            prefix: "",
                                                             name: "rest",
-                                                            suffix: Concat(
-                                                                [
-                                                                    Literal(
-                                                                        "#*",
-                                                                    ),
-                                                                    DoubleQuoted(
-                                                                        Variable(
-                                                                            "SHEEN_BAND",
+                                                            subscript: None,
+                                                            mode: Value,
+                                                            operation: Trim {
+                                                                suffix: false,
+                                                                longest: false,
+                                                                pattern: Concat(
+                                                                    [
+                                                                        Glob(
+                                                                            Star,
                                                                         ),
-                                                                    ),
-                                                                ],
-                                                            ),
+                                                                        DoubleQuoted(
+                                                                            Variable(
+                                                                                "SHEEN_BAND",
+                                                                            ),
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            },
                                                         },
                                                     },
                                                 ],
@@ -1032,23 +1100,25 @@ CshAst {
                                                         name: "lit",
                                                         operator: Set,
                                                         value: Parameter {
-                                                            prefix: "",
                                                             name: "rest",
-                                                            suffix: Concat(
-                                                                [
-                                                                    Literal(
-                                                                        "%%",
-                                                                    ),
-                                                                    DoubleQuoted(
-                                                                        Variable(
-                                                                            "base",
+                                                            subscript: None,
+                                                            mode: Value,
+                                                            operation: Trim {
+                                                                suffix: true,
+                                                                longest: true,
+                                                                pattern: Concat(
+                                                                    [
+                                                                        DoubleQuoted(
+                                                                            Variable(
+                                                                                "base",
+                                                                            ),
                                                                         ),
-                                                                    ),
-                                                                    Literal(
-                                                                        "*",
-                                                                    ),
-                                                                ],
-                                                            ),
+                                                                        Glob(
+                                                                            Star,
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            },
                                                         },
                                                     },
                                                 ],
@@ -1064,20 +1134,25 @@ CshAst {
                                                         name: "tail",
                                                         operator: Set,
                                                         value: Parameter {
-                                                            prefix: "",
                                                             name: "rest",
-                                                            suffix: Concat(
-                                                                [
-                                                                    Literal(
-                                                                        "#*",
-                                                                    ),
-                                                                    DoubleQuoted(
-                                                                        Variable(
-                                                                            "base",
+                                                            subscript: None,
+                                                            mode: Value,
+                                                            operation: Trim {
+                                                                suffix: false,
+                                                                longest: false,
+                                                                pattern: Concat(
+                                                                    [
+                                                                        Glob(
+                                                                            Star,
                                                                         ),
-                                                                    ),
-                                                                ],
-                                                            ),
+                                                                        DoubleQuoted(
+                                                                            Variable(
+                                                                                "base",
+                                                                            ),
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            },
                                                         },
                                                     },
                                                 ],
@@ -1088,37 +1163,34 @@ CshAst {
                                     },
                                     Binary {
                                         left: Test(
-                                            Concat(
-                                                [
-                                                    Literal(
-                                                        " ",
-                                                    ),
-                                                    Variable(
-                                                        "head",
-                                                    ),
-                                                    Variable(
-                                                        "lit",
-                                                    ),
-                                                    Variable(
-                                                        "tail",
-                                                    ),
-                                                    Literal(
-                                                        " == ",
-                                                    ),
-                                                    DoubleQuoted(
-                                                        Parameter {
-                                                            prefix: "",
-                                                            name: "expected",
-                                                            suffix: Literal(
-                                                                "[row]",
+                                            Binary {
+                                                left: Concat(
+                                                    [
+                                                        Variable(
+                                                            "head",
+                                                        ),
+                                                        Variable(
+                                                            "lit",
+                                                        ),
+                                                        Variable(
+                                                            "tail",
+                                                        ),
+                                                    ],
+                                                ),
+                                                operator: PatternEqual,
+                                                right: DoubleQuoted(
+                                                    Parameter {
+                                                        name: "expected",
+                                                        subscript: Some(
+                                                            Literal(
+                                                                "row",
                                                             ),
-                                                        },
-                                                    ),
-                                                    Literal(
-                                                        " ",
-                                                    ),
-                                                ],
-                                            ),
+                                                        ),
+                                                        mode: Value,
+                                                        operation: None,
+                                                    },
+                                                ),
+                                            },
                                         ),
                                         operator: Or,
                                         right: Command(
@@ -1128,9 +1200,16 @@ CshAst {
                                                         name: "rewritten",
                                                         operator: Set,
                                                         value: ArithmeticExpansion(
-                                                            Literal(
-                                                                "rewritten + 1",
-                                                            ),
+                                                            Binary {
+                                                                left: Variable(
+                                                                    "rewritten",
+                                                                ),
+                                                                operator: Add,
+                                                                right: Number {
+                                                                    radix: 10,
+                                                                    digits: "1",
+                                                                },
+                                                            },
                                                         ),
                                                     },
                                                 ],
@@ -1141,7 +1220,51 @@ CshAst {
                                     },
                                     Binary {
                                         left: Arithmetic(
-                                            " ${#head} + ${#lit} + ${#tail} > ${#expected[row]} ",
+                                            Binary {
+                                                left: Binary {
+                                                    left: Binary {
+                                                        left: Expansion(
+                                                            Parameter {
+                                                                name: "head",
+                                                                subscript: None,
+                                                                mode: Length,
+                                                                operation: None,
+                                                            },
+                                                        ),
+                                                        operator: Add,
+                                                        right: Expansion(
+                                                            Parameter {
+                                                                name: "lit",
+                                                                subscript: None,
+                                                                mode: Length,
+                                                                operation: None,
+                                                            },
+                                                        ),
+                                                    },
+                                                    operator: Add,
+                                                    right: Expansion(
+                                                        Parameter {
+                                                            name: "tail",
+                                                            subscript: None,
+                                                            mode: Length,
+                                                            operation: None,
+                                                        },
+                                                    ),
+                                                },
+                                                operator: Greater,
+                                                right: Expansion(
+                                                    Parameter {
+                                                        name: "expected",
+                                                        subscript: Some(
+                                                            Literal(
+                                                                "row",
+                                                            ),
+                                                        ),
+                                                        mode: Length,
+                                                        operation: None,
+                                                    },
+                                                ),
+                                            },
                                         ),
                                         operator: And,
                                         right: Command(
@@ -1151,9 +1274,16 @@ CshAst {
                                                         name: "overrun",
                                                         operator: Set,
                                                         value: ArithmeticExpansion(
-                                                            Literal(
-                                                                "overrun + 1",
-                                                            ),
+                                                            Binary {
+                                                                left: Variable(
+                                                                    "overrun",
+                                                                ),
+                                                                operator: Add,
+                                                                right: Number {
+                                                                    radix: 10,
+                                                                    digits: "1",
+                                                                },
+                                                            },
                                                         ),
                                                     },
                                                 ],
@@ -1164,7 +1294,20 @@ CshAst {
                                     },
                                     Binary {
                                         left: Arithmetic(
-                                            " ${#lit} > band_width ",
+                                            Binary {
+                                                left: Expansion(
+                                                    Parameter {
+                                                        name: "lit",
+                                                        subscript: None,
+                                                        mode: Length,
+                                                        operation: None,
+                                                    },
+                                                ),
+                                                operator: Greater,
+                                                right: Variable(
+                                                    "band_width",
+                                                ),
+                                            },
                                         ),
                                         operator: And,
                                         right: Command(
@@ -1174,9 +1317,16 @@ CshAst {
                                                         name: "washed",
                                                         operator: Set,
                                                         value: ArithmeticExpansion(
-                                                            Literal(
-                                                                "washed + 1",
-                                                            ),
+                                                            Binary {
+                                                                left: Variable(
+                                                                    "washed",
+                                                                ),
+                                                                operator: Add,
+                                                                right: Number {
+                                                                    radix: 10,
+                                                                    digits: "1",
+                                                                },
+                                                            },
                                                         ),
                                                     },
                                                 ],
@@ -1191,7 +1341,21 @@ CshAst {
                                                 condition: CshAst {
                                                     commands: [
                                                         Arithmetic(
-                                                            " ${#lit} > 0 ",
+                                                            Binary {
+                                                                left: Expansion(
+                                                                    Parameter {
+                                                                        name: "lit",
+                                                                        subscript: None,
+                                                                        mode: Length,
+                                                                        operation: None,
+                                                                    },
+                                                                ),
+                                                                operator: Greater,
+                                                                right: Number {
+                                                                    radix: 10,
+                                                                    digits: "0",
+                                                                },
+                                                            },
                                                         ),
                                                     ],
                                                 },
@@ -1228,9 +1392,16 @@ CshAst {
                                                                         name: "frame_lit",
                                                                         operator: Set,
                                                                         value: ArithmeticExpansion(
-                                                                            Literal(
-                                                                                "frame_lit + 1",
-                                                                            ),
+                                                                            Binary {
+                                                                                left: Variable(
+                                                                                    "frame_lit",
+                                                                                ),
+                                                                                operator: Add,
+                                                                                right: Number {
+                                                                                    radix: 10,
+                                                                                    digits: "1",
+                                                                                },
+                                                                            },
                                                                         ),
                                                                     },
                                                                 ],
@@ -1251,9 +1422,16 @@ CshAst {
                                                     name: "row",
                                                     operator: Set,
                                                     value: ArithmeticExpansion(
-                                                        Literal(
-                                                            "row + 1",
-                                                        ),
+                                                        Binary {
+                                                            left: Variable(
+                                                                "row",
+                                                            ),
+                                                            operator: Add,
+                                                            right: Number {
+                                                                radix: 10,
+                                                                digits: "1",
+                                                            },
+                                                        },
                                                     ),
                                                 },
                                             ],
@@ -1266,8 +1444,8 @@ CshAst {
                         },
                         redirects: [
                             CshAstRedirect {
-                                descriptor: None,
-                                operator: "<",
+                                descriptor: Default,
+                                operator: Input,
                                 target: ProcessSubstitution {
                                     operator: "<",
                                     commands: [
@@ -1286,11 +1464,14 @@ CshAst {
                                                         ),
                                                         DoubleQuoted(
                                                             Parameter {
-                                                                prefix: "",
                                                                 name: "SHEEN_FRAMES",
-                                                                suffix: Literal(
-                                                                    "[index]",
+                                                                subscript: Some(
+                                                                    Literal(
+                                                                        "index",
+                                                                    ),
                                                                 ),
+                                                                mode: Value,
+                                                                operation: None,
                                                             },
                                                         ),
                                                     ],
@@ -1341,7 +1522,24 @@ CshAst {
                     },
                     Binary {
                         left: Arithmetic(
-                            " row == ${#expected[@]} ",
+                            Binary {
+                                left: Variable(
+                                    "row",
+                                ),
+                                operator: Equal,
+                                right: Expansion(
+                                    Parameter {
+                                        name: "expected",
+                                        subscript: Some(
+                                            Literal(
+                                                "@",
+                                            ),
+                                        ),
+                                        mode: Length,
+                                        operation: None,
+                                    },
+                                ),
+                            },
                         ),
                         operator: Or,
                         right: Command(
@@ -1371,11 +1569,14 @@ CshAst {
                                                     " of ",
                                                 ),
                                                 Parameter {
-                                                    prefix: "#",
                                                     name: "expected",
-                                                    suffix: Literal(
-                                                        "[@]",
+                                                    subscript: Some(
+                                                        Literal(
+                                                            "@",
+                                                        ),
                                                     ),
+                                                    mode: Length,
+                                                    operation: None,
                                                 },
                                             ],
                                         ),
@@ -1386,7 +1587,15 @@ CshAst {
                     },
                     Binary {
                         left: Arithmetic(
-                            " frame_lit > widest_glint ",
+                            Binary {
+                                left: Variable(
+                                    "frame_lit",
+                                ),
+                                operator: Greater,
+                                right: Variable(
+                                    "widest_glint",
+                                ),
+                            },
                         ),
                         operator: And,
                         right: Command(
@@ -1407,7 +1616,16 @@ CshAst {
                     },
                     Binary {
                         left: Arithmetic(
-                            " index == 0 ",
+                            Binary {
+                                left: Variable(
+                                    "index",
+                                ),
+                                operator: Equal,
+                                right: Number {
+                                    radix: 10,
+                                    digits: "0",
+                                },
+                            },
                         ),
                         operator: And,
                         right: Command(
@@ -1431,7 +1649,16 @@ CshAst {
         },
         Binary {
             left: Arithmetic(
-                " misplaced == 0 ",
+                Binary {
+                    left: Variable(
+                        "misplaced",
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "0",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -1483,7 +1710,16 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " unbased == 0 ",
+                Binary {
+                    left: Variable(
+                        "unbased",
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "0",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -1535,7 +1771,16 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " rewritten == 0 ",
+                Binary {
+                    left: Variable(
+                        "rewritten",
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "0",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -1587,7 +1832,16 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " overrun == 0 ",
+                Binary {
+                    left: Variable(
+                        "overrun",
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "0",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -1639,7 +1893,16 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " washed == 0 ",
+                Binary {
+                    left: Variable(
+                        "washed",
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "0",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -1698,11 +1961,16 @@ CshAst {
                 [
                     DoubleQuoted(
                         Parameter {
-                            prefix: "!",
                             name: "expected",
-                            suffix: Literal(
-                                "[@]",
+                            subscript: Some(
+                                Literal(
+                                    "@",
+                                ),
                             ),
+                            mode: Indices {
+                                separate: true,
+                            },
+                            operation: None,
                         },
                     ),
                 ],
@@ -1711,52 +1979,46 @@ CshAst {
                 commands: [
                     Binary {
                         left: Test(
-                            Concat(
-                                [
-                                    Literal(
-                                        " ",
+                            Binary {
+                                left: DoubleQuoted(
+                                    Concat(
+                                        [
+                                            Literal(
+                                                " ",
+                                            ),
+                                            Variable(
+                                                "lit_rows",
+                                            ),
+                                        ],
                                     ),
-                                    DoubleQuoted(
-                                        Concat(
-                                            [
-                                                Literal(
-                                                    " ",
-                                                ),
-                                                Variable(
-                                                    "lit_rows",
-                                                ),
-                                            ],
+                                ),
+                                operator: PatternEqual,
+                                right: Concat(
+                                    [
+                                        Glob(
+                                            Star,
                                         ),
-                                    ),
-                                    Literal(
-                                        " == ",
-                                    ),
-                                    Glob(
-                                        Star,
-                                    ),
-                                    DoubleQuoted(
-                                        Concat(
-                                            [
-                                                Literal(
-                                                    " ",
-                                                ),
-                                                Variable(
-                                                    "row",
-                                                ),
-                                                Literal(
-                                                    " ",
-                                                ),
-                                            ],
+                                        DoubleQuoted(
+                                            Concat(
+                                                [
+                                                    Literal(
+                                                        " ",
+                                                    ),
+                                                    Variable(
+                                                        "row",
+                                                    ),
+                                                    Literal(
+                                                        " ",
+                                                    ),
+                                                ],
+                                            ),
                                         ),
-                                    ),
-                                    Glob(
-                                        Star,
-                                    ),
-                                    Literal(
-                                        " ",
-                                    ),
-                                ],
-                            ),
+                                        Glob(
+                                            Star,
+                                        ),
+                                    ],
+                                ),
+                            },
                         ),
                         operator: Or,
                         right: Command(
@@ -1814,7 +2076,24 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " widest_glint == ${#expected[@]} ",
+                Binary {
+                    left: Variable(
+                        "widest_glint",
+                    ),
+                    operator: Equal,
+                    right: Expansion(
+                        Parameter {
+                            name: "expected",
+                            subscript: Some(
+                                Literal(
+                                    "@",
+                                ),
+                            ),
+                            mode: Length,
+                            operation: None,
+                        },
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1844,11 +2123,14 @@ CshAst {
                                         " of ",
                                     ),
                                     Parameter {
-                                        prefix: "#",
                                         name: "expected",
-                                        suffix: Literal(
-                                            "[@]",
+                                        subscript: Some(
+                                            Literal(
+                                                "@",
+                                            ),
                                         ),
+                                        mode: Length,
+                                        operation: None,
                                     },
                                 ],
                             ),
@@ -1876,7 +2158,16 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " first_lit == 1 ",
+                Binary {
+                    left: Variable(
+                        "first_lit",
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "1",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -1952,11 +2243,16 @@ CshAst {
                 [
                     DoubleQuoted(
                         Parameter {
-                            prefix: "!",
                             name: "expected",
-                            suffix: Literal(
-                                "[@]",
+                            subscript: Some(
+                                Literal(
+                                    "@",
+                                ),
                             ),
+                            mode: Indices {
+                                separate: true,
+                            },
+                            operation: None,
                         },
                     ),
                 ],
@@ -1979,19 +2275,24 @@ CshAst {
                                                     "[",
                                                 ),
                                                 ArithmeticExpansion(
-                                                    Literal(
-                                                        "top + row",
-                                                    ),
+                                                    Binary {
+                                                        left: Variable(
+                                                            "top",
+                                                        ),
+                                                        operator: Add,
+                                                        right: Variable(
+                                                            "row",
+                                                        ),
+                                                    },
                                                 ),
                                                 Literal(
                                                     ";",
                                                 ),
                                                 Parameter {
-                                                    prefix: "",
                                                     name: "left",
-                                                    suffix: Literal(
-                                                        "",
-                                                    ),
+                                                    subscript: None,
+                                                    mode: Value,
+                                                    operation: None,
                                                 },
                                                 Literal(
                                                     "H",
@@ -2000,11 +2301,14 @@ CshAst {
                                                     "base",
                                                 ),
                                                 Parameter {
-                                                    prefix: "",
                                                     name: "expected",
-                                                    suffix: Literal(
-                                                        "[row]",
+                                                    subscript: Some(
+                                                        Literal(
+                                                            "row",
+                                                        ),
                                                     ),
+                                                    mode: Value,
+                                                    operation: None,
                                                 },
                                                 Variable(
                                                     "SHEEN_BAND",
@@ -2026,31 +2330,24 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        Parameter {
-                            prefix: "",
-                            name: "SHEEN_FRAMES",
-                            suffix: Literal(
-                                "[-1]",
-                            ),
-                        },
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Variable(
-                                "settled",
+                Binary {
+                    left: Parameter {
+                        name: "SHEEN_FRAMES",
+                        subscript: Some(
+                            Literal(
+                                "-1",
                             ),
                         ),
-                        Literal(
-                            " ",
+                        mode: Value,
+                        operation: None,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
+                        Variable(
+                            "settled",
                         ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2090,24 +2387,23 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! ",
-                        ),
-                        Variable(
+                Not(
+                    Binary {
+                        left: Variable(
                             "SHEEN_BAND",
                         ),
-                        Literal(
-                            " =~ ",
+                        operator: Regex,
+                        right: Concat(
+                            [
+                                Escaped(
+                                    "[",
+                                ),
+                                Literal(
+                                    "9[0-6]m",
+                                ),
+                            ],
                         ),
-                        Escaped(
-                            "[",
-                        ),
-                        Literal(
-                            "9[0-6]m ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -2535,27 +2831,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "byte_counting",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "still",
                         ),
-                        Variable(
-                            "byte_counting",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "still",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2663,27 +2949,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "ascii_counting",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "animated",
                         ),
-                        Variable(
-                            "ascii_counting",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "animated",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2805,8 +3081,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "logo",
@@ -2875,17 +3151,17 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: Some(
+                                                descriptor: Number(
                                                     "2",
                                                 ),
-                                                operator: ">&",
+                                                operator: DuplicateOutput,
                                                 target: Literal(
                                                     "1",
                                                 ),
                                             },
                                             CshAstRedirect {
-                                                descriptor: None,
-                                                operator: ">",
+                                                descriptor: Default,
+                                                operator: Output,
                                                 target: Literal(
                                                     "/dev/null",
                                                 ),
@@ -2916,19 +3192,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -z ",
-                        ),
-                        Variable(
-                            "missing",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: EmptyString,
+                    operand: Variable(
+                        "missing",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(

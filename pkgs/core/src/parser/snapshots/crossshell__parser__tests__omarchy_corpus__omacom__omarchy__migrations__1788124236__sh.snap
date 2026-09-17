@@ -72,7 +72,16 @@ CshAst {
                                     condition: CshAst {
                                         commands: [
                                             Arithmetic(
-                                                " EUID == 0 ",
+                                                Binary {
+                                                    left: Variable(
+                                                        "EUID",
+                                                    ),
+                                                    operator: Equal,
+                                                    right: Number {
+                                                        radix: 10,
+                                                        digits: "0",
+                                                    },
+                                                },
                                             ),
                                         ],
                                     },
@@ -177,24 +186,19 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " -e ",
-                                        ),
-                                        Variable(
+                                Or(
+                                    Unary {
+                                        operator: Exists,
+                                        operand: Variable(
                                             "config",
                                         ),
-                                        Literal(
-                                            " || -L ",
-                                        ),
-                                        Variable(
+                                    },
+                                    Unary {
+                                        operator: Symlink,
+                                        operand: Variable(
                                             "config",
                                         ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
+                                    },
                                 ),
                             ),
                         ],
@@ -253,10 +257,10 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: Some(
+                                                descriptor: Number(
                                                     "2",
                                                 ),
-                                                operator: ">",
+                                                operator: Output,
                                                 target: Literal(
                                                     "/dev/null",
                                                 ),
@@ -290,10 +294,10 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: Some(
+                                                descriptor: Number(
                                                     "2",
                                                 ),
-                                                operator: ">",
+                                                operator: Output,
                                                 target: Literal(
                                                     "/dev/null",
                                                 ),
@@ -381,19 +385,12 @@ CshAst {
                                             ),
                                             operator: Or,
                                             right: Test(
-                                                Concat(
-                                                    [
-                                                        Literal(
-                                                            " -n ",
-                                                        ),
-                                                        Variable(
-                                                            "line",
-                                                        ),
-                                                        Literal(
-                                                            " ",
-                                                        ),
-                                                    ],
-                                                ),
+                                                Unary {
+                                                    operator: NonemptyString,
+                                                    operand: Variable(
+                                                        "line",
+                                                    ),
+                                                },
                                             ),
                                         },
                                     ],
@@ -406,25 +403,15 @@ CshAst {
                                                     condition: CshAst {
                                                         commands: [
                                                             Test(
-                                                                Concat(
-                                                                    [
-                                                                        Literal(
-                                                                            " ",
-                                                                        ),
-                                                                        Variable(
-                                                                            "line",
-                                                                        ),
-                                                                        Literal(
-                                                                            " =~ ^[[:space:]]*(#|",
-                                                                        ),
-                                                                        Literal(
-                                                                            "$",
-                                                                        ),
-                                                                        Literal(
-                                                                            ") ",
-                                                                        ),
-                                                                    ],
-                                                                ),
+                                                                Binary {
+                                                                    left: Variable(
+                                                                        "line",
+                                                                    ),
+                                                                    operator: Regex,
+                                                                    right: Literal(
+                                                                        "^[[:space:]]*(#|$)",
+                                                                    ),
+                                                                },
                                                             ),
                                                         ],
                                                     },
@@ -473,8 +460,8 @@ CshAst {
                                                                 ),
                                                                 redirects: [
                                                                     CshAstRedirect {
-                                                                        descriptor: None,
-                                                                        operator: "<<<",
+                                                                        descriptor: Default,
+                                                                        operator: HereString,
                                                                         target: DoubleQuoted(
                                                                             Variable(
                                                                                 "line",
@@ -482,17 +469,17 @@ CshAst {
                                                                         ),
                                                                     },
                                                                     CshAstRedirect {
-                                                                        descriptor: None,
-                                                                        operator: ">",
+                                                                        descriptor: Default,
+                                                                        operator: Output,
                                                                         target: Literal(
                                                                             "/dev/null",
                                                                         ),
                                                                     },
                                                                     CshAstRedirect {
-                                                                        descriptor: Some(
+                                                                        descriptor: Number(
                                                                             "2",
                                                                         ),
-                                                                        operator: ">&",
+                                                                        operator: DuplicateOutput,
                                                                         target: Literal(
                                                                             "1",
                                                                         ),
@@ -529,8 +516,8 @@ CshAst {
                             },
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: "<",
+                                    descriptor: Default,
+                                    operator: Input,
                                     target: DoubleQuoted(
                                         Variable(
                                             "authorized_keys",
@@ -564,24 +551,21 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " -f ",
-                                        ),
-                                        Variable(
+                                And(
+                                    Unary {
+                                        operator: Regular,
+                                        operand: Variable(
                                             "authorized_keys",
                                         ),
-                                        Literal(
-                                            " && ! -r ",
-                                        ),
-                                        Variable(
-                                            "authorized_keys",
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
+                                    },
+                                    Not(
+                                        Unary {
+                                            operator: Readable,
+                                            operand: Variable(
+                                                "authorized_keys",
+                                            ),
+                                        },
+                                    ),
                                 ),
                             ),
                         ],
@@ -628,18 +612,13 @@ CshAst {
                         commands: [
                             Binary {
                                 left: Test(
-                                    Concat(
-                                        [
-                                            Literal(
-                                                " ! -f ",
-                                            ),
-                                            Variable(
+                                    Not(
+                                        Unary {
+                                            operator: Regular,
+                                            operand: Variable(
                                                 "authorized_keys",
                                             ),
-                                            Literal(
-                                                " ",
-                                            ),
-                                        ],
+                                        },
                                     ),
                                 ),
                                 operator: Or,
@@ -716,8 +695,8 @@ CshAst {
                                                     ),
                                                     redirects: [
                                                         CshAstRedirect {
-                                                            descriptor: None,
-                                                            operator: ">&",
+                                                            descriptor: Default,
+                                                            operator: DuplicateOutput,
                                                             target: Literal(
                                                                 "2",
                                                             ),
@@ -818,10 +797,10 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: Some(
+                                                descriptor: Number(
                                                     "2",
                                                 ),
-                                                operator: ">",
+                                                operator: Output,
                                                 target: Literal(
                                                     "/dev/null",
                                                 ),
@@ -872,7 +851,25 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Arithmetic(
-                                " 8#$home_mode & 8#022 ",
+                                Binary {
+                                    left: Expansion(
+                                        Concat(
+                                            [
+                                                Literal(
+                                                    "8#",
+                                                ),
+                                                Variable(
+                                                    "home_mode",
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    operator: BitAnd,
+                                    right: Number {
+                                        radix: 8,
+                                        digits: "022",
+                                    },
+                                },
                             ),
                         ],
                     },
@@ -1056,8 +1053,8 @@ CshAst {
                                     ),
                                     redirects: [
                                         CshAstRedirect {
-                                            descriptor: None,
-                                            operator: "<<",
+                                            descriptor: Default,
+                                            operator: HereDocument,
                                             target: Literal(
                                                 "CONF",
                                             ),
@@ -1090,8 +1087,8 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">&",
+                                        descriptor: Default,
+                                        operator: DuplicateOutput,
                                         target: Literal(
                                             "2",
                                         ),
@@ -1342,8 +1339,8 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: None,
-                                                operator: "<<<",
+                                                descriptor: Default,
+                                                operator: HereString,
                                                 target: DoubleQuoted(
                                                     Variable(
                                                         "effective_config",
@@ -1378,8 +1375,8 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: None,
-                                                operator: "<<<",
+                                                descriptor: Default,
+                                                operator: HereString,
                                                 target: DoubleQuoted(
                                                     Variable(
                                                         "effective_config",
@@ -1486,10 +1483,10 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">",
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -1552,8 +1549,8 @@ CshAst {
                                                     ),
                                                     redirects: [
                                                         CshAstRedirect {
-                                                            descriptor: None,
-                                                            operator: ">&",
+                                                            descriptor: Default,
+                                                            operator: DuplicateOutput,
                                                             target: Literal(
                                                                 "2",
                                                             ),
@@ -1593,7 +1590,9 @@ CshAst {
             delimiter: "CONF",
             quoted: true,
             strip_tabs: false,
-            body: "# Written by Omarchy once an SSH key was already authorized.\n# Delete this file and reload sshd to allow password logins again.\nPasswordAuthentication no\nKbdInteractiveAuthentication no\n",
+            content: Literal(
+                "# Written by Omarchy once an SSH key was already authorized.\n# Delete this file and reload sshd to allow password logins again.\nPasswordAuthentication no\nKbdInteractiveAuthentication no\n",
+            ),
         },
     ],
 }

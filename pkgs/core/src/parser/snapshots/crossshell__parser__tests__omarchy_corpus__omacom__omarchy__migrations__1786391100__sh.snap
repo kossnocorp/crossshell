@@ -30,11 +30,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_BRCMFMAC_DMI_VENDOR",
-                                suffix: Literal(
-                                    ":-/sys/class/dmi/id/sys_vendor",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/sys/class/dmi/id/sys_vendor",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -51,11 +56,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_BRCMFMAC_CONF",
-                                suffix: Literal(
-                                    ":-/etc/modprobe.d/brcmfmac.conf",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/etc/modprobe.d/brcmfmac.conf",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -94,10 +104,10 @@ CshAst {
                                             ),
                                             redirects: [
                                                 CshAstRedirect {
-                                                    descriptor: Some(
+                                                    descriptor: Number(
                                                         "2",
                                                     ),
-                                                    operator: ">",
+                                                    operator: Output,
                                                     target: Literal(
                                                         "/dev/null",
                                                     ),
@@ -171,8 +181,8 @@ CshAst {
                                             ),
                                             redirects: [
                                                 CshAstRedirect {
-                                                    descriptor: None,
-                                                    operator: ">",
+                                                    descriptor: Default,
+                                                    operator: Output,
                                                     target: Literal(
                                                         "/dev/null",
                                                     ),
@@ -188,25 +198,22 @@ CshAst {
                                             commands: [
                                                 Binary {
                                                     left: Test(
-                                                        Concat(
-                                                            [
-                                                                Literal(
-                                                                    " ",
-                                                                ),
-                                                                Variable(
-                                                                    "sys_vendor",
-                                                                ),
-                                                                Literal(
-                                                                    " == Apple",
-                                                                ),
-                                                                Glob(
-                                                                    Star,
-                                                                ),
-                                                                Literal(
-                                                                    " ",
-                                                                ),
-                                                            ],
-                                                        ),
+                                                        Binary {
+                                                            left: Variable(
+                                                                "sys_vendor",
+                                                            ),
+                                                            operator: PatternEqual,
+                                                            right: Concat(
+                                                                [
+                                                                    Literal(
+                                                                        "Apple",
+                                                                    ),
+                                                                    Glob(
+                                                                        Star,
+                                                                    ),
+                                                                ],
+                                                            ),
+                                                        },
                                                     ),
                                                     operator: And,
                                                     right: Binary {
@@ -249,8 +256,8 @@ CshAst {
                                                             ),
                                                             redirects: [
                                                                 CshAstRedirect {
-                                                                    descriptor: None,
-                                                                    operator: ">",
+                                                                    descriptor: Default,
+                                                                    operator: Output,
                                                                     target: Literal(
                                                                         "/dev/null",
                                                                     ),
@@ -296,19 +303,12 @@ CshAst {
                         commands: [
                             Binary {
                                 left: Test(
-                                    Concat(
-                                        [
-                                            Literal(
-                                                " -f ",
-                                            ),
-                                            Variable(
-                                                "conf",
-                                            ),
-                                            Literal(
-                                                " ",
-                                            ),
-                                        ],
-                                    ),
+                                    Unary {
+                                        operator: Regular,
+                                        operand: Variable(
+                                            "conf",
+                                        ),
+                                    },
                                 ),
                                 operator: And,
                                 right: Command(
@@ -428,15 +428,15 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: Literal(
                         "/dev/null",
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "EOF",
                     ),
@@ -468,7 +468,9 @@ CshAst {
             delimiter: "EOF",
             quoted: true,
             strip_tabs: false,
-            body: "\n# Broadcom's firmware supplicant and authenticator fail the WPA four-way\n# handshake on Apple hardware, which surfaces as a rejected password. Disable\n# both so wpa_supplicant performs the handshake instead.\noptions brcmfmac feature_disable=0x82000\n",
+            content: Literal(
+                "\n# Broadcom's firmware supplicant and authenticator fail the WPA four-way\n# handshake on Apple hardware, which surfaces as a rejected password. Disable\n# both so wpa_supplicant performs the handshake instead.\noptions brcmfmac feature_disable=0x82000\n",
+            ),
         },
     ],
 }

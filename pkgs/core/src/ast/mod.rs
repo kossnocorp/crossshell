@@ -1,4 +1,6 @@
 mod debug;
+mod syntax;
+pub use syntax::*;
 
 /// An owned syntax tree. Expression links are stable indices into `nodes`.
 /// Moving the tree or growing the arena never invalidates a node ID.
@@ -6,6 +8,8 @@ mod debug;
 pub struct CshAst {
     pub commands: CshAstList,
     pub nodes: Vec<CshAstExpression>,
+    /// UTF-8 source byte ranges, indexed by the corresponding expression ID.
+    pub spans: Vec<std::ops::Range<usize>>,
     pub here_documents: Vec<CshAstHereDocument>,
 }
 
@@ -30,13 +34,12 @@ pub enum CshAstExpression {
         name: String,
         body: CshAstNodeId,
     },
-    /// Conditional syntax with structured expansions and quotes. Operators and
-    /// regex text are literal fragments, rather than command-list operators.
-    Test(CshAstWord),
+    /// Conditional operators and precedence, with quote-aware word operands.
+    Test(CshAstCondition),
     /// Arithmetic syntax is retained without evaluating it.
-    Arithmetic(String),
+    Arithmetic(CshAstArithmetic),
     ArithmeticFor {
-        clauses: String,
+        clauses: CshAstArithmeticFor,
         body: CshAstList,
     },
     Binary {
@@ -87,12 +90,11 @@ pub struct CshAstCaseArm {
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct CshAstRedirect {
-    /// An explicit descriptor number, or `{name}` for Bash descriptor allocation
-    /// (and variable-selected closing with `<&-`/`>&-`). Braces are retained to
-    /// distinguish the variable form; `None` selects the operator's default.
-    pub descriptor: Option<String>,
-    pub operator: String,
+    /// Default, numbered, or variable-allocated descriptor (`{name}`).
+    pub descriptor: CshAstDescriptor,
+    pub operator: CshAstRedirectOperator,
     pub target: CshAstWord,
+    pub span: std::ops::Range<usize>,
     /// Index into the owning AST's here-document arena.
     pub here_document: Option<usize>,
 }
@@ -103,6 +105,10 @@ pub struct CshAstHereDocument {
     pub quoted: bool,
     pub strip_tabs: bool,
     pub body: String,
+    /// Expanded with here-document rules, not ordinary shell-word rules.
+    /// Quoted delimiters always produce a literal body.
+    pub content: CshAstWord,
+    pub span: std::ops::Range<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,12 +152,8 @@ pub enum CshAstWord {
     LocaleQuoted(Box<CshAstWord>),
     Escaped(String),
     Variable(String),
-    /// Braced parameter syntax, including structured expansions in the suffix.
-    Parameter {
-        prefix: String,
-        name: String,
-        suffix: Box<CshAstWord>,
-    },
+    /// Parameter selection, subscript, and a typed operation with expansion operands.
+    Parameter(Box<CshAstParameter>),
     CommandSubstitution {
         commands: CshAstList,
         backticks: bool,
@@ -160,7 +162,12 @@ pub enum CshAstWord {
         operator: String,
         commands: CshAstList,
     },
-    ArithmeticExpansion(Box<CshAstWord>),
+    ArithmeticExpansion(Box<CshAstArithmetic>),
+    BraceAlternatives(Vec<CshAstWord>),
+    BraceSequence(CshAstBraceSequence),
+    /// An unquoted tilde prefix. Eligibility is checked after brace expansion:
+    /// start of a resulting word, or an unquoted colon in an assignment value.
+    Tilde(CshAstTilde),
     Concat(Vec<CshAstWord>),
     Array(Vec<CshAstWord>),
     /// An assignment argument of a declaration builtin, retaining argument order.
@@ -205,6 +212,17 @@ pub enum CshAstGlobClassItem {
 
 impl CshAstWord {
     pub(crate) fn concat(mut parts: Vec<Self>) -> Self {
+        let mut merged = Vec::new();
+        for part in parts.drain(..) {
+            if let Self::Literal(text) = &part
+                && let Some(Self::Literal(previous)) = merged.last_mut()
+            {
+                previous.push_str(text);
+            } else {
+                merged.push(part);
+            }
+        }
+        parts = merged;
         match parts.len() {
             0 => Self::Literal(String::new()),
             1 => parts.pop().unwrap(),

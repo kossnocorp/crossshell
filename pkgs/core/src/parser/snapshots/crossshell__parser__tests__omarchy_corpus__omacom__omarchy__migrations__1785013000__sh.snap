@@ -30,11 +30,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_ZRAM_CONF",
-                                suffix: Literal(
-                                    ":-/etc/systemd/zram-generator.conf",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/etc/systemd/zram-generator.conf",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -51,11 +56,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_ZRAM_DROPIN",
-                                suffix: Literal(
-                                    ":-/usr/lib/systemd/zram-generator.conf.d/90-omarchy.conf",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/usr/lib/systemd/zram-generator.conf.d/90-omarchy.conf",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -66,19 +76,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "zram_conf",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Variable(
+                        "zram_conf",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -99,19 +102,12 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "zram_dropin",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Variable(
+                        "zram_dropin",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -154,8 +150,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: "&>",
+                        descriptor: Default,
+                        operator: OutputAndError,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -260,42 +256,38 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " -z ",
-                                        ),
-                                        Variable(
+                                Or(
+                                    Unary {
+                                        operator: EmptyString,
+                                        operand: Variable(
                                             "settings",
                                         ),
-                                        Literal(
-                                            " || ",
-                                        ),
-                                        Variable(
+                                    },
+                                    Binary {
+                                        left: Variable(
                                             "settings",
                                         ),
-                                        Literal(
-                                            " =~ ^",
+                                        operator: Regex,
+                                        right: Concat(
+                                            [
+                                                Literal(
+                                                    "^",
+                                                ),
+                                                Escaped(
+                                                    "[",
+                                                ),
+                                                Literal(
+                                                    "zram0",
+                                                ),
+                                                Escaped(
+                                                    "]",
+                                                ),
+                                                Literal(
+                                                    "compression-algorithm=[[:alnum:]-]+$",
+                                                ),
+                                            ],
                                         ),
-                                        Escaped(
-                                            "[",
-                                        ),
-                                        Literal(
-                                            "zram0",
-                                        ),
-                                        Escaped(
-                                            "]",
-                                        ),
-                                        Literal(
-                                            "compression-algorithm=[[:alnum:]-]+",
-                                        ),
-                                        Literal(
-                                            "$",
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
+                                    },
                                 ),
                             ),
                         ],

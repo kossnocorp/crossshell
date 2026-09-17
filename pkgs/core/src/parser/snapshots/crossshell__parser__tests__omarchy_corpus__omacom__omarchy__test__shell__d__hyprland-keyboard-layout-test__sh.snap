@@ -30,11 +30,14 @@ CshAst {
                                                 args: [
                                                     DoubleQuoted(
                                                         Parameter {
-                                                            prefix: "",
                                                             name: "BASH_SOURCE",
-                                                            suffix: Literal(
-                                                                "[0]",
+                                                            subscript: Some(
+                                                                Literal(
+                                                                    "0",
+                                                                ),
                                                             ),
+                                                            mode: Value,
+                                                            operation: None,
                                                         },
                                                     ),
                                                 ],
@@ -90,11 +93,16 @@ CshAst {
                                             operator: Set,
                                             value: DoubleQuoted(
                                                 Parameter {
-                                                    prefix: "",
                                                     name: "1",
-                                                    suffix: Literal(
-                                                        "-",
-                                                    ),
+                                                    subscript: None,
+                                                    mode: Value,
+                                                    operation: Default {
+                                                        operator: Use,
+                                                        test_empty: false,
+                                                        word: Literal(
+                                                            "",
+                                                        ),
+                                                    },
                                                 },
                                             ),
                                         },
@@ -109,8 +117,8 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: "<<",
+                                    descriptor: Default,
+                                    operator: HereDocument,
                                     target: Literal(
                                         "LUA",
                                     ),
@@ -194,7 +202,18 @@ CshAst {
                                     condition: CshAst {
                                         commands: [
                                             Arithmetic(
-                                                " $# > 2 ",
+                                                Binary {
+                                                    left: Expansion(
+                                                        Variable(
+                                                            "#",
+                                                        ),
+                                                    ),
+                                                    operator: Greater,
+                                                    right: Number {
+                                                        radix: 10,
+                                                        digits: "2",
+                                                    },
+                                                },
                                             ),
                                         ],
                                     },
@@ -275,27 +294,17 @@ CshAst {
                         },
                         Binary {
                             left: Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " ",
-                                        ),
+                                Binary {
+                                    left: Variable(
+                                        "actual",
+                                    ),
+                                    operator: PatternEqual,
+                                    right: DoubleQuoted(
                                         Variable(
-                                            "actual",
+                                            "expected",
                                         ),
-                                        Literal(
-                                            " == ",
-                                        ),
-                                        DoubleQuoted(
-                                            Variable(
-                                                "expected",
-                                            ),
-                                        ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
-                                ),
+                                    ),
+                                },
                             ),
                             operator: Or,
                             right: Command(
@@ -880,19 +889,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -n ",
-                        ),
-                        Variable(
-                            "hooks_layouts",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: NonemptyString,
+                    operand: Variable(
+                        "hooks_layouts",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -915,27 +917,17 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
+                Binary {
+                    left: Variable(
+                        "hooks_layouts",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Variable(
-                            "hooks_layouts",
+                            "lua_layouts",
                         ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Variable(
-                                "lua_layouts",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1042,7 +1034,9 @@ CshAst {
             delimiter: "LUA",
             quoted: true,
             strip_tabs: false,
-            body: "package.path = os.getenv(\"OMARCHY_PATH\") .. \"/?.lua;\" .. package.path\n\nlocal vconsole = os.getenv(\"OMARCHY_VCONSOLE\")\nlocal real_open = io.open\n\nio.open = function(path, mode)\n  if path ~= \"/etc/vconsole.conf\" then\n    return real_open(path, mode)\n  end\n\n  if not vconsole then\n    return nil\n  end\n\n  local file = io.tmpfile()\n  file:write(vconsole)\n  file:seek(\"set\")\n  return file\nend\n\nhl = {\n  config = function(config)\n    local input = config.input\n    print((\"[%s] [%s] [%s]\"):format(input.kb_layout, input.kb_variant, input.kb_options))\n  end,\n}\n\no = { window = function() end }\n\nrequire(\"default.hypr.input\")\n",
+            content: Literal(
+                "package.path = os.getenv(\"OMARCHY_PATH\") .. \"/?.lua;\" .. package.path\n\nlocal vconsole = os.getenv(\"OMARCHY_VCONSOLE\")\nlocal real_open = io.open\n\nio.open = function(path, mode)\n  if path ~= \"/etc/vconsole.conf\" then\n    return real_open(path, mode)\n  end\n\n  if not vconsole then\n    return nil\n  end\n\n  local file = io.tmpfile()\n  file:write(vconsole)\n  file:seek(\"set\")\n  return file\nend\n\nhl = {\n  config = function(config)\n    local input = config.input\n    print((\"[%s] [%s] [%s]\"):format(input.kb_layout, input.kb_variant, input.kb_options))\n  end,\n}\n\no = { window = function() end }\n\nrequire(\"default.hypr.input\")\n",
+            ),
         },
     ],
 }

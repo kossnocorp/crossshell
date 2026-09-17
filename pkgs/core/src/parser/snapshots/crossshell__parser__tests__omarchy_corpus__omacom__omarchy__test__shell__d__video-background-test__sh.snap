@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -123,8 +126,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "JS",
                     ),
@@ -263,8 +266,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -294,8 +297,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -310,8 +313,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -360,8 +363,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -376,8 +379,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -584,19 +587,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -s ",
-                        ),
-                        Variable(
-                            "generator_thumbnail",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: NonemptyFile,
+                    operand: Variable(
+                        "generator_thumbnail",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -716,8 +712,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<<",
+                    descriptor: Default,
+                    operator: HereString,
                     target: DoubleQuoted(
                         Variable(
                             "generator_row",
@@ -728,18 +724,13 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        Variable(
+                And(
+                    Binary {
+                        left: Variable(
                             "generator_row_path",
                         ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
+                        operator: PatternEqual,
+                        right: DoubleQuoted(
                             Concat(
                                 [
                                     Variable(
@@ -751,24 +742,18 @@ CshAst {
                                 ],
                             ),
                         ),
-                        Literal(
-                            " && ",
-                        ),
-                        Variable(
+                    },
+                    Binary {
+                        left: Variable(
                             "generator_row_thumbnail",
                         ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
+                        operator: PatternEqual,
+                        right: DoubleQuoted(
                             Variable(
                                 "generator_thumbnail",
                             ),
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -922,8 +907,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<<",
+                    descriptor: Default,
+                    operator: HereString,
                     target: DoubleQuoted(
                         Variable(
                             "row",
@@ -934,51 +919,49 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        Variable(
-                            "row_path",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Concat(
+                And(
+                    And(
+                        Binary {
+                            left: Variable(
+                                "row_path",
+                            ),
+                            operator: PatternEqual,
+                            right: DoubleQuoted(
+                                Concat(
+                                    [
+                                        Variable(
+                                            "test_tmp",
+                                        ),
+                                        Literal(
+                                            "/backgrounds/sample.mp4",
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        },
+                        Binary {
+                            left: Variable(
+                                "row_thumbnail",
+                            ),
+                            operator: PatternEqual,
+                            right: Concat(
                                 [
-                                    Variable(
-                                        "test_tmp",
+                                    Glob(
+                                        Star,
                                     ),
                                     Literal(
-                                        "/backgrounds/sample.mp4",
+                                        ".jpg",
                                     ),
                                 ],
                             ),
-                        ),
-                        Literal(
-                            " && ",
-                        ),
-                        Variable(
+                        },
+                    ),
+                    Unary {
+                        operator: NonemptyFile,
+                        operand: Variable(
                             "row_thumbnail",
                         ),
-                        Literal(
-                            " == ",
-                        ),
-                        Glob(
-                            Star,
-                        ),
-                        Literal(
-                            ".jpg && -s ",
-                        ),
-                        Variable(
-                            "row_thumbnail",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -1007,18 +990,13 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -s ",
-                        ),
-                        Variable(
+                Not(
+                    Unary {
+                        operator: NonemptyFile,
+                        operand: Variable(
                             "md5_file_calls",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -1049,8 +1027,8 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: None,
-                                                operator: "<",
+                                                descriptor: Default,
+                                                operator: Input,
                                                 target: DoubleQuoted(
                                                     Variable(
                                                         "md5_file_calls",
@@ -1158,8 +1136,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1189,8 +1167,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1205,8 +1183,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -1311,27 +1289,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
+                Binary {
+                    left: Variable(
+                        "cached_row",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Variable(
-                            "cached_row",
+                            "row",
                         ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Variable(
-                                "row",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1440,19 +1408,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -z ",
-                        ),
-                        Variable(
-                            "failed_rows",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: EmptyString,
+                    operand: Variable(
+                        "failed_rows",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1545,19 +1506,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -n ",
-                        ),
-                        Variable(
-                            "failed_marker",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: NonemptyString,
+                    operand: Variable(
+                        "failed_marker",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1616,8 +1570,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1632,8 +1586,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -1724,24 +1678,21 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -z ",
-                        ),
-                        Variable(
+                And(
+                    Unary {
+                        operator: EmptyString,
+                        operand: Variable(
                             "failed_rows",
                         ),
-                        Literal(
-                            " && ! -e ",
-                        ),
-                        Variable(
-                            "thumbnailer_calls",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Exists,
+                            operand: Variable(
+                                "thumbnailer_calls",
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -1782,10 +1733,10 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: Some(
+                                                descriptor: Number(
                                                     "2",
                                                 ),
-                                                operator: ">",
+                                                operator: Output,
                                                 target: Literal(
                                                     "/dev/null",
                                                 ),
@@ -1893,19 +1844,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -s ",
-                        ),
-                        Variable(
-                            "thumbnailer_calls",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: NonemptyFile,
+                    operand: Variable(
+                        "thumbnailer_calls",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1993,19 +1937,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -n ",
-                        ),
-                        Variable(
-                            "generator_marker",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: NonemptyString,
+                    operand: Variable(
+                        "generator_marker",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2115,18 +2052,13 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
-                        ),
-                        Variable(
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Variable(
                             "thumbnailer_calls",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -2157,8 +2089,8 @@ CshAst {
                                         ),
                                         redirects: [
                                             CshAstRedirect {
-                                                descriptor: None,
-                                                operator: "<",
+                                                descriptor: Default,
+                                                operator: Input,
                                                 target: DoubleQuoted(
                                                     Variable(
                                                         "thumbnailer_calls",
@@ -2274,19 +2206,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -s ",
-                        ),
-                        Variable(
-                            "thumbnailer_calls",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: NonemptyFile,
+                    operand: Variable(
+                        "thumbnailer_calls",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2393,8 +2318,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -2424,8 +2349,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -2440,8 +2365,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -2523,19 +2448,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -z ",
-                        ),
-                        Variable(
-                            "timeout_rows",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: EmptyString,
+                    operand: Variable(
+                        "timeout_rows",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2628,19 +2546,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -z ",
-                        ),
-                        Variable(
-                            "timeout_marker",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: EmptyString,
+                    operand: Variable(
+                        "timeout_marker",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -3150,8 +3061,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -3185,8 +3096,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -3220,8 +3131,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -3326,25 +3237,15 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        Variable(
-                            "CHOSEN_THEME_BACKGROUND",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        Variable(
-                            "expected_staged_background",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Binary {
+                    left: Variable(
+                        "CHOSEN_THEME_BACKGROUND",
+                    ),
+                    operator: PatternEqual,
+                    right: Variable(
+                        "expected_staged_background",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -3498,8 +3399,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -3651,24 +3552,21 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -z ",
-                        ),
-                        Variable(
+                And(
+                    Unary {
+                        operator: EmptyString,
+                        operand: Variable(
                             "video_snapshot",
                         ),
-                        Literal(
-                            " && ! -e ",
-                        ),
-                        Variable(
-                            "BACKGROUND_TRANSITION_CACHE",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Exists,
+                            operand: Variable(
+                                "BACKGROUND_TRANSITION_CACHE",
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -3813,18 +3711,15 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
+                And(
+                    Unary {
+                        operator: Regular,
+                        operand: Variable(
                             "CHOSEN_THEME_BACKGROUND",
                         ),
-                        Literal(
-                            " && ",
-                        ),
-                        CommandSubstitution {
+                    },
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Command(
                                     CshAstCommand {
@@ -3846,18 +3741,13 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
+                        operator: PatternEqual,
+                        right: DoubleQuoted(
                             Variable(
                                 "CHOSEN_THEME_BACKGROUND",
                             ),
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -3924,37 +3814,49 @@ CshAst {
             delimiter: "JS",
             quoted: true,
             strip_tabs: false,
-            body: "const fs = require('fs')\n\nconst utilQml = fs.readFileSync(path.join(root, 'shell/Commons/Util.qml'), 'utf8')\nconst mediaQml = fs.readFileSync(path.join(root, 'shell/Ui/BackgroundMedia.qml'), 'utf8')\nconst videoQml = fs.readFileSync(path.join(root, 'shell/Ui/BackgroundVideo.qml'), 'utf8')\nconst backgroundQml = fs.readFileSync(path.join(root, 'shell/plugins/background/Background.qml'), 'utf8')\nconst lockQml = fs.readFileSync(path.join(root, 'shell/plugins/lock/LockView.qml'), 'utf8')\nconst themeSwitcher = fs.readFileSync(path.join(root, 'bin/omarchy-theme-switcher'), 'utf8')\nconst quattroUpgrade = fs.readFileSync(path.join(root, 'bin/omarchy-upgrade-to-quattro'), 'utf8')\nconst multimediaMigration = fs.readFileSync(path.join(root, 'migrations/1786609204.sh'), 'utf8')\nconst barTextColor = fs.readFileSync(path.join(root, 'bin/omarchy-bar-text-color'), 'utf8')\nconst menuImages = fs.readFileSync(path.join(root, 'bin/omarchy-menu-images'), 'utf8')\nconst lockView = fs.readFileSync(path.join(root, 'shell/plugins/lock/LockView.qml'), 'utf8')\nconst lockService = fs.readFileSync(path.join(root, 'shell/plugins/lock/Service.qml'), 'utf8')\nconst batteryService = fs.readFileSync(path.join(root, 'shell/plugins/services/battery/Service.qml'), 'utf8')\nconst themeSet = fs.readFileSync(path.join(root, 'bin/omarchy-theme-set'), 'utf8')\nconst directImageList = fs.readFileSync(path.join(root, 'shell/plugins/image-picker/list.sh'), 'utf8')\n\nassert(\n  /function isVideoPath\\(path\\)[\\s\\S]*\\.test\\(String\\(path \\|\\| \"\"\\)\\)/.test(utilQml) &&\n    !utilQml.includes('split(/[?#]/)'),\n  'shared media helper identifies video paths without truncating valid local names'\n)\nassert(\n  videoQml.includes('loops: MediaPlayer.Infinite') &&\n    videoQml.includes('autoPlay: root.playbackEnabled') &&\n    videoQml.includes('fillMode: VideoOutput.PreserveAspectCrop') &&\n    /imageUrl: path && !Util\\.isVideoPath\\(path\\) \\? Util\\.fileUrl\\(path\\) \\+ \\(version \\? \"\\?v=\" \\+ version : \"\"\\) : \"\"/.test(mediaQml) &&\n    /videoUrl: path && Util\\.isVideoPath\\(path\\) \\? Util\\.fileUrl\\(path\\) : \"\"/.test(mediaQml),\n  'background media plays aspect-cropped videos on a loop, and hands each loader only its own kind of file'\n)\nassert(\n  videoQml.includes('MediaPlayer.LoadedMedia') &&\n    videoQml.includes('primePauseTimer') &&\n    videoQml.includes('mediaGeneration') &&\n    videoQml.includes('videoSink') &&\n    videoQml.includes('onVideoFrameChanged') &&\n    videoQml.includes('MediaPlayer.BufferedMedia') &&\n    videoQml.includes('mediaStatus !== MediaPlayer.BufferedMedia') &&\n    videoQml.includes('interval: 1000') &&\n    videoQml.includes('interval: 50') &&\n    videoQml.includes('frameReceived') &&\n    videoQml.includes('output.clearOutput()') &&\n    !videoQml.includes('KeepLastFrame') &&\n    /onPlaybackEnabledChanged:[\\s\\S]*?if \\(playbackEnabled\\) player\\.play\\(\\)[\\s\\S]*?else player\\.pause\\(\\)/.test(videoQml) &&\n    videoQml.includes('primingGeneration') &&\n    videoQml.includes('player.play()') &&\n    videoQml.includes('player.pause()'),\n  'paused video sources are primed to display their first frame'\n)\nassert(\n  !/^\\s*import QtMultimedia/m.test(mediaQml) &&\n    mediaQml.includes('source: \"BackgroundVideo.qml\"'),\n  'the still-image path never imports QtMultimedia, so image-only sessions do not map it'\n)\nassert(\n  !/^\\s*Video\\s*\\{/m.test(videoQml) &&\n    /property bool audioEnabled: false/.test(videoQml) &&\n    /property bool audioEnabled: false/.test(mediaQml) &&\n    /active: root\\.audioEnabled && player\\.hasAudio/.test(videoQml) &&\n    /audioOutput: audioLoader\\.item/.test(videoQml) &&\n    /muted: root\\.priming \\|\\| !root\\.playbackEnabled/.test(videoQml) &&\n    /property: \"audioEnabled\"\\s*\\n\\s*value: root\\.audioEnabled/.test(mediaQml) &&\n    /firstScreen: Quickshell\\.screens\\.length > 0\\s*\\n\\s*&& String\\(Quickshell\\.screens\\[0\\]\\.name/.test(backgroundQml) &&\n    backgroundQml.includes('audioEnabled: panel.firstScreen') &&\n    !lockQml.includes('audioEnabled'),\n  'a sound track plays from the first monitor only, a silent file builds no audio output, and the lock stays quiet'\n)\nassert(\n  /property: \"mediaSource\"[\\s\\S]*?when: videoLoader\\.item !== null && Util\\.isVideoPath\\(root\\.path\\)\\s*\\n\\s*restoreMode: Binding\\.RestoreNone/.test(mediaQml) &&\n    !videoQml.includes('Component.onDestruction'),\n  'a player on its way out keeps its source, so nothing is left loading for its destructor to cancel'\n)\nassert(\n  !mediaQml.includes('mipmap'),\n  'the shared image path leaves mipmapping off, as the desktop background had it'\n)\nassert(\n  /instant \\|\\| !displayedBackground \\|\\| isVideo\\(path\\) \\|\\| isVideo\\(displayedBackground\\)[\\s\\S]*displayedBackground = finalPath/.test(backgroundQml),\n  'video switches bypass the image-only reveal stack and use the durable background path'\n)\nassert(backgroundQml.includes('BackgroundMedia {') && lockQml.includes('BackgroundMedia {'), 'desktop and lock screen share video-capable media rendering')\nassert(\n  lockQml.includes('source: wallpaper.video ? null : wallpaper') &&\n    lockQml.includes('visible: !wallpaper.video') &&\n    lockQml.includes('visible: wallpaper.video'),\n  'lock screen bypasses its image effect for video output'\n)\nassert(\n  /sessionObscured:\\s*lockActive \\|\\| screensaverActive/.test(backgroundQml) &&\n    backgroundQml.includes('playbackEnabled: !root.sessionObscured && !root.powerSaverActive && !panel.fullscreenHere') &&\n    backgroundQml.includes('omarchy.lock') &&\n    backgroundQml.includes('omarchy.idle') &&\n    backgroundQml.includes('omarchy.battery'),\n  'desktop playback stops while covered or on battery power-saver'\n)\nassert(\n  backgroundQml.includes('Hyprland.monitorFor(modelData)') &&\n    /fullscreenHere: visibleWorkspace \\? visibleWorkspace\\.hasFullscreen : false/.test(backgroundQml) &&\n    !backgroundQml.includes('ToplevelManager.activeToplevel'),\n  'a fullscreen window pauses only the output it covers, wherever focus is'\n)\nassert(\n  /if \\(displayedBackground === finalPath\\) displayedReloads \\+= 1/.test(backgroundQml) &&\n    backgroundQml.includes('reloads: root.displayedReloads') &&\n    /active: root\\.path !== \"\" && root\\.video && !root\\.reloading/.test(mediaQml) &&\n    /onReloadsChanged: \\{[\\s\\S]*?reloading = true/.test(mediaQml),\n  'a theme switch that keeps the video path still reopens the replaced file'\n)\nassert(\n  barTextColor.includes('magick \"$background_path[0]\"'),\n  'bar colour sampling reads one frame instead of decoding a whole video'\n)\nassert(\n  menuImages.includes('pending_video_file') && /video_jobs=\\$\\(\\( \\$\\(nproc\\) \\/ 4 \\)\\)/.test(menuImages),\n  'video thumbnails fan out narrower than single-threaded vips jobs'\n)\nassert(\n  themeSwitcher.includes('fast_signature=\"v2\"'),\n  'the theme preview cache rebuilds after preview discovery learned about video'\n)\nassert(\n  /lazy_thumbnails == true && \\$cache_only != true \\]\\] && ! is_video_path/.test(menuImages),\n  'a video never stands in as its own lazy thumbnail, so the fan out cap always applies'\n)\nassert(\n  /thumbnail_command=\\(timeout -k \\d+ \\d+ ffmpegthumbnailer/.test(menuImages),\n  'a stalled video cannot hold the picker shut, because its generator is time bounded'\n)\nassert(\n  directImageList.includes('generate_video_thumbnail') &&\n    /timeout -k \\d+ \\d+ ffmpegthumbnailer/.test(directImageList) &&\n    /if \\[\\[ ! -f \\$thumbnail \\]\\] && ! is_video_path/.test(directImageList),\n  'a direct picker scan generates bounded video thumbnails without content-hashing the media'\n)\nassert(\n  themeSet.includes('choose_staged_theme_background') &&\n    themeSet.includes('background_transition_uses_snapshots') &&\n    themeSet.includes('BACKGROUND_TRANSITION_SNAPSHOTS=false') &&\n    /if \\[\\[ \\$BACKGROUND_TRANSITION_SNAPSHOTS == \"true\" \\]\\]/.test(themeSet) &&\n    /if \\[\\[ -z \\$CHOSEN_THEME_BACKGROUND \\|\\| ! -f \\$CHOSEN_THEME_BACKGROUND \\]\\]/.test(themeSet),\n  'theme changes disable both transition snapshots whenever either side is a video'\n)\nassert(\n  /function onScreensChanged\\(\\) \\{[\\s\\S]*?root\\.displaysBlank = false/.test(lockService),\n  'a display coming back gives up the blank state instead of freezing a visible wallpaper'\n)\nassert(\n  lockService.includes('function screenBlank(screenName)') &&\n    lockService.includes('function applyMonitorDpms(text)') &&\n    lockService.includes('command: [\"hyprctl\", \"monitors\", \"-j\"]') &&\n    lockService.includes('running: root.locked && root.videoBackground') &&\n    /displaysBlank: root\\.screenBlank\\(lockSurface\\.screen/.test(lockService) &&\n    /function runWake\\(\\) \\{[\\s\\S]*?root\\.monitorDpmsKnown = false/.test(lockService) &&\n    /function runBlank\\(\\) \\{[\\s\\S]*?root\\.monitorDpmsKnown = false/.test(lockService),\n  'a locked video wallpaper follows what each panel actually did, not only what the lock asked for'\n)\nassert(\n  lockView.includes('playbackEnabled: root.loadBackground && !root.displaysBlank') &&\n    lockView.includes('&& !root.powerSaverActive') &&\n    /displaysBlank: root\\.screenBlank\\(/.test(lockService) &&\n    /powerSaverActive: root\\.powerSaverActive/.test(lockService) &&\n    /function runBlank\\(\\) \\{\\s*\\n\\s*root\\.displaysBlank = true/.test(lockService) &&\n    /function runWake\\(\\) \\{\\s*\\n\\s*root\\.displaysBlank = false/.test(lockService),\n  'the lock screen stops playback once displays go dark or power-saver is active'\n)\nassert(\n  batteryService.includes('property string activePowerProfile') &&\n    batteryService.includes('UPower.onBattery && activePowerProfile === \"power-saver\"') &&\n    batteryService.includes('\"get-property\", \"net.hadess.PowerProfiles\", \"/net/hadess/PowerProfiles\", \"net.hadess.PowerProfiles\", \"ActiveProfile\"') &&\n    !batteryService.includes('[\"powerprofilesctl\"') &&\n    batteryService.includes('interval: 2000'),\n  'the battery service tracks the active power-saver profile'\n)\nassert(\n  themeSwitcher.includes(\"-iname '*.mp4'\") &&\n    themeSwitcher.includes('mp4 m4v mov webm mkv avi') &&\n    themeSwitcher.includes('preview.mp4'),\n  'theme switcher previews video-only themes, named preview files included'\n)\nassert(quattroUpgrade.includes(\"-iname '*.mp4'\"), 'Quattro upgrade can seed a video-only theme background')\nassert(\n  multimediaMigration.includes('omarchy-pkg-add qt6-multimedia qt6-multimedia-ffmpeg'),\n  'existing Quattro installations receive video playback dependencies'\n)\n",
+            content: Literal(
+                "const fs = require('fs')\n\nconst utilQml = fs.readFileSync(path.join(root, 'shell/Commons/Util.qml'), 'utf8')\nconst mediaQml = fs.readFileSync(path.join(root, 'shell/Ui/BackgroundMedia.qml'), 'utf8')\nconst videoQml = fs.readFileSync(path.join(root, 'shell/Ui/BackgroundVideo.qml'), 'utf8')\nconst backgroundQml = fs.readFileSync(path.join(root, 'shell/plugins/background/Background.qml'), 'utf8')\nconst lockQml = fs.readFileSync(path.join(root, 'shell/plugins/lock/LockView.qml'), 'utf8')\nconst themeSwitcher = fs.readFileSync(path.join(root, 'bin/omarchy-theme-switcher'), 'utf8')\nconst quattroUpgrade = fs.readFileSync(path.join(root, 'bin/omarchy-upgrade-to-quattro'), 'utf8')\nconst multimediaMigration = fs.readFileSync(path.join(root, 'migrations/1786609204.sh'), 'utf8')\nconst barTextColor = fs.readFileSync(path.join(root, 'bin/omarchy-bar-text-color'), 'utf8')\nconst menuImages = fs.readFileSync(path.join(root, 'bin/omarchy-menu-images'), 'utf8')\nconst lockView = fs.readFileSync(path.join(root, 'shell/plugins/lock/LockView.qml'), 'utf8')\nconst lockService = fs.readFileSync(path.join(root, 'shell/plugins/lock/Service.qml'), 'utf8')\nconst batteryService = fs.readFileSync(path.join(root, 'shell/plugins/services/battery/Service.qml'), 'utf8')\nconst themeSet = fs.readFileSync(path.join(root, 'bin/omarchy-theme-set'), 'utf8')\nconst directImageList = fs.readFileSync(path.join(root, 'shell/plugins/image-picker/list.sh'), 'utf8')\n\nassert(\n  /function isVideoPath\\(path\\)[\\s\\S]*\\.test\\(String\\(path \\|\\| \"\"\\)\\)/.test(utilQml) &&\n    !utilQml.includes('split(/[?#]/)'),\n  'shared media helper identifies video paths without truncating valid local names'\n)\nassert(\n  videoQml.includes('loops: MediaPlayer.Infinite') &&\n    videoQml.includes('autoPlay: root.playbackEnabled') &&\n    videoQml.includes('fillMode: VideoOutput.PreserveAspectCrop') &&\n    /imageUrl: path && !Util\\.isVideoPath\\(path\\) \\? Util\\.fileUrl\\(path\\) \\+ \\(version \\? \"\\?v=\" \\+ version : \"\"\\) : \"\"/.test(mediaQml) &&\n    /videoUrl: path && Util\\.isVideoPath\\(path\\) \\? Util\\.fileUrl\\(path\\) : \"\"/.test(mediaQml),\n  'background media plays aspect-cropped videos on a loop, and hands each loader only its own kind of file'\n)\nassert(\n  videoQml.includes('MediaPlayer.LoadedMedia') &&\n    videoQml.includes('primePauseTimer') &&\n    videoQml.includes('mediaGeneration') &&\n    videoQml.includes('videoSink') &&\n    videoQml.includes('onVideoFrameChanged') &&\n    videoQml.includes('MediaPlayer.BufferedMedia') &&\n    videoQml.includes('mediaStatus !== MediaPlayer.BufferedMedia') &&\n    videoQml.includes('interval: 1000') &&\n    videoQml.includes('interval: 50') &&\n    videoQml.includes('frameReceived') &&\n    videoQml.includes('output.clearOutput()') &&\n    !videoQml.includes('KeepLastFrame') &&\n    /onPlaybackEnabledChanged:[\\s\\S]*?if \\(playbackEnabled\\) player\\.play\\(\\)[\\s\\S]*?else player\\.pause\\(\\)/.test(videoQml) &&\n    videoQml.includes('primingGeneration') &&\n    videoQml.includes('player.play()') &&\n    videoQml.includes('player.pause()'),\n  'paused video sources are primed to display their first frame'\n)\nassert(\n  !/^\\s*import QtMultimedia/m.test(mediaQml) &&\n    mediaQml.includes('source: \"BackgroundVideo.qml\"'),\n  'the still-image path never imports QtMultimedia, so image-only sessions do not map it'\n)\nassert(\n  !/^\\s*Video\\s*\\{/m.test(videoQml) &&\n    /property bool audioEnabled: false/.test(videoQml) &&\n    /property bool audioEnabled: false/.test(mediaQml) &&\n    /active: root\\.audioEnabled && player\\.hasAudio/.test(videoQml) &&\n    /audioOutput: audioLoader\\.item/.test(videoQml) &&\n    /muted: root\\.priming \\|\\| !root\\.playbackEnabled/.test(videoQml) &&\n    /property: \"audioEnabled\"\\s*\\n\\s*value: root\\.audioEnabled/.test(mediaQml) &&\n    /firstScreen: Quickshell\\.screens\\.length > 0\\s*\\n\\s*&& String\\(Quickshell\\.screens\\[0\\]\\.name/.test(backgroundQml) &&\n    backgroundQml.includes('audioEnabled: panel.firstScreen') &&\n    !lockQml.includes('audioEnabled'),\n  'a sound track plays from the first monitor only, a silent file builds no audio output, and the lock stays quiet'\n)\nassert(\n  /property: \"mediaSource\"[\\s\\S]*?when: videoLoader\\.item !== null && Util\\.isVideoPath\\(root\\.path\\)\\s*\\n\\s*restoreMode: Binding\\.RestoreNone/.test(mediaQml) &&\n    !videoQml.includes('Component.onDestruction'),\n  'a player on its way out keeps its source, so nothing is left loading for its destructor to cancel'\n)\nassert(\n  !mediaQml.includes('mipmap'),\n  'the shared image path leaves mipmapping off, as the desktop background had it'\n)\nassert(\n  /instant \\|\\| !displayedBackground \\|\\| isVideo\\(path\\) \\|\\| isVideo\\(displayedBackground\\)[\\s\\S]*displayedBackground = finalPath/.test(backgroundQml),\n  'video switches bypass the image-only reveal stack and use the durable background path'\n)\nassert(backgroundQml.includes('BackgroundMedia {') && lockQml.includes('BackgroundMedia {'), 'desktop and lock screen share video-capable media rendering')\nassert(\n  lockQml.includes('source: wallpaper.video ? null : wallpaper') &&\n    lockQml.includes('visible: !wallpaper.video') &&\n    lockQml.includes('visible: wallpaper.video'),\n  'lock screen bypasses its image effect for video output'\n)\nassert(\n  /sessionObscured:\\s*lockActive \\|\\| screensaverActive/.test(backgroundQml) &&\n    backgroundQml.includes('playbackEnabled: !root.sessionObscured && !root.powerSaverActive && !panel.fullscreenHere') &&\n    backgroundQml.includes('omarchy.lock') &&\n    backgroundQml.includes('omarchy.idle') &&\n    backgroundQml.includes('omarchy.battery'),\n  'desktop playback stops while covered or on battery power-saver'\n)\nassert(\n  backgroundQml.includes('Hyprland.monitorFor(modelData)') &&\n    /fullscreenHere: visibleWorkspace \\? visibleWorkspace\\.hasFullscreen : false/.test(backgroundQml) &&\n    !backgroundQml.includes('ToplevelManager.activeToplevel'),\n  'a fullscreen window pauses only the output it covers, wherever focus is'\n)\nassert(\n  /if \\(displayedBackground === finalPath\\) displayedReloads \\+= 1/.test(backgroundQml) &&\n    backgroundQml.includes('reloads: root.displayedReloads') &&\n    /active: root\\.path !== \"\" && root\\.video && !root\\.reloading/.test(mediaQml) &&\n    /onReloadsChanged: \\{[\\s\\S]*?reloading = true/.test(mediaQml),\n  'a theme switch that keeps the video path still reopens the replaced file'\n)\nassert(\n  barTextColor.includes('magick \"$background_path[0]\"'),\n  'bar colour sampling reads one frame instead of decoding a whole video'\n)\nassert(\n  menuImages.includes('pending_video_file') && /video_jobs=\\$\\(\\( \\$\\(nproc\\) \\/ 4 \\)\\)/.test(menuImages),\n  'video thumbnails fan out narrower than single-threaded vips jobs'\n)\nassert(\n  themeSwitcher.includes('fast_signature=\"v2\"'),\n  'the theme preview cache rebuilds after preview discovery learned about video'\n)\nassert(\n  /lazy_thumbnails == true && \\$cache_only != true \\]\\] && ! is_video_path/.test(menuImages),\n  'a video never stands in as its own lazy thumbnail, so the fan out cap always applies'\n)\nassert(\n  /thumbnail_command=\\(timeout -k \\d+ \\d+ ffmpegthumbnailer/.test(menuImages),\n  'a stalled video cannot hold the picker shut, because its generator is time bounded'\n)\nassert(\n  directImageList.includes('generate_video_thumbnail') &&\n    /timeout -k \\d+ \\d+ ffmpegthumbnailer/.test(directImageList) &&\n    /if \\[\\[ ! -f \\$thumbnail \\]\\] && ! is_video_path/.test(directImageList),\n  'a direct picker scan generates bounded video thumbnails without content-hashing the media'\n)\nassert(\n  themeSet.includes('choose_staged_theme_background') &&\n    themeSet.includes('background_transition_uses_snapshots') &&\n    themeSet.includes('BACKGROUND_TRANSITION_SNAPSHOTS=false') &&\n    /if \\[\\[ \\$BACKGROUND_TRANSITION_SNAPSHOTS == \"true\" \\]\\]/.test(themeSet) &&\n    /if \\[\\[ -z \\$CHOSEN_THEME_BACKGROUND \\|\\| ! -f \\$CHOSEN_THEME_BACKGROUND \\]\\]/.test(themeSet),\n  'theme changes disable both transition snapshots whenever either side is a video'\n)\nassert(\n  /function onScreensChanged\\(\\) \\{[\\s\\S]*?root\\.displaysBlank = false/.test(lockService),\n  'a display coming back gives up the blank state instead of freezing a visible wallpaper'\n)\nassert(\n  lockService.includes('function screenBlank(screenName)') &&\n    lockService.includes('function applyMonitorDpms(text)') &&\n    lockService.includes('command: [\"hyprctl\", \"monitors\", \"-j\"]') &&\n    lockService.includes('running: root.locked && root.videoBackground') &&\n    /displaysBlank: root\\.screenBlank\\(lockSurface\\.screen/.test(lockService) &&\n    /function runWake\\(\\) \\{[\\s\\S]*?root\\.monitorDpmsKnown = false/.test(lockService) &&\n    /function runBlank\\(\\) \\{[\\s\\S]*?root\\.monitorDpmsKnown = false/.test(lockService),\n  'a locked video wallpaper follows what each panel actually did, not only what the lock asked for'\n)\nassert(\n  lockView.includes('playbackEnabled: root.loadBackground && !root.displaysBlank') &&\n    lockView.includes('&& !root.powerSaverActive') &&\n    /displaysBlank: root\\.screenBlank\\(/.test(lockService) &&\n    /powerSaverActive: root\\.powerSaverActive/.test(lockService) &&\n    /function runBlank\\(\\) \\{\\s*\\n\\s*root\\.displaysBlank = true/.test(lockService) &&\n    /function runWake\\(\\) \\{\\s*\\n\\s*root\\.displaysBlank = false/.test(lockService),\n  'the lock screen stops playback once displays go dark or power-saver is active'\n)\nassert(\n  batteryService.includes('property string activePowerProfile') &&\n    batteryService.includes('UPower.onBattery && activePowerProfile === \"power-saver\"') &&\n    batteryService.includes('\"get-property\", \"net.hadess.PowerProfiles\", \"/net/hadess/PowerProfiles\", \"net.hadess.PowerProfiles\", \"ActiveProfile\"') &&\n    !batteryService.includes('[\"powerprofilesctl\"') &&\n    batteryService.includes('interval: 2000'),\n  'the battery service tracks the active power-saver profile'\n)\nassert(\n  themeSwitcher.includes(\"-iname '*.mp4'\") &&\n    themeSwitcher.includes('mp4 m4v mov webm mkv avi') &&\n    themeSwitcher.includes('preview.mp4'),\n  'theme switcher previews video-only themes, named preview files included'\n)\nassert(quattroUpgrade.includes(\"-iname '*.mp4'\"), 'Quattro upgrade can seed a video-only theme background')\nassert(\n  multimediaMigration.includes('omarchy-pkg-add qt6-multimedia qt6-multimedia-ffmpeg'),\n  'existing Quattro installations receive video playback dependencies'\n)\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nwhile (( $# > 0 )); do\n  case \"$1\" in\n    -i) input=$2; shift 2 ;;\n    -o) output=$2; shift 2 ;;\n    *) shift ;;\n  esac\ndone\nprintf 'thumbnail for %s\\n' \"$input\" >\"$output\"\n",
+            content: Literal(
+                "#!/bin/bash\nwhile (( $# > 0 )); do\n  case \"$1\" in\n    -i) input=$2; shift 2 ;;\n    -o) output=$2; shift 2 ;;\n    *) shift ;;\n  esac\ndone\nprintf 'thumbnail for %s\\n' \"$input\" >\"$output\"\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nif (( $# > 0 )); then\n  printf 'unexpected file hash: %s\\n' \"$*\" >>\"$MD5_FILE_CALLS\"\nfi\nexec /usr/bin/md5sum \"$@\"\n",
+            content: Literal(
+                "#!/bin/bash\nif (( $# > 0 )); then\n  printf 'unexpected file hash: %s\\n' \"$*\" >>\"$MD5_FILE_CALLS\"\nfi\nexec /usr/bin/md5sum \"$@\"\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nexit 1\n",
+            content: Literal(
+                "#!/bin/bash\nexit 1\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >>\"$THUMBNAILER_CALLS\"\nexit 1\n",
+            content: Literal(
+                "#!/bin/bash\nprintf '%s\\n' \"$*\" >>\"$THUMBNAILER_CALLS\"\nexit 1\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nexit 124\n",
+            content: Literal(
+                "#!/bin/bash\nexit 124\n",
+            ),
         },
     ],
 }

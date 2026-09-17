@@ -30,11 +30,14 @@ CshAst {
                                                 args: [
                                                     DoubleQuoted(
                                                         Parameter {
-                                                            prefix: "",
                                                             name: "BASH_SOURCE",
-                                                            suffix: Literal(
-                                                                "[0]",
+                                                            subscript: Some(
+                                                                Literal(
+                                                                    "0",
+                                                                ),
                                                             ),
+                                                            mode: Value,
+                                                            operation: None,
                                                         },
                                                     ),
                                                 ],
@@ -228,8 +231,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -244,8 +247,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "EOF",
                     ),
@@ -294,8 +297,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -310,8 +313,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "EOF",
                     ),
@@ -430,19 +433,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "layout_file",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Variable(
+                        "layout_file",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -490,8 +486,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -544,8 +540,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -661,10 +657,10 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">",
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
@@ -700,28 +696,21 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
+                Unary {
+                    operator: Regular,
+                    operand: DoubleQuoted(
+                        Concat(
+                            [
+                                Variable(
+                                    "home_dir",
+                                ),
+                                Literal(
+                                    "/.local/state/omarchy/workspace-layouts/null.lua",
+                                ),
+                            ],
                         ),
-                        DoubleQuoted(
-                            Concat(
-                                [
-                                    Variable(
-                                        "home_dir",
-                                    ),
-                                    Literal(
-                                        "/.local/state/omarchy/workspace-layouts/null.lua",
-                                    ),
-                                ],
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: And,
             right: Command(
@@ -792,8 +781,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "LUA",
                     ),
@@ -824,19 +813,25 @@ CshAst {
             delimiter: "EOF",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n\nif [[ $1 == \"activeworkspace\" && -n $HYPRCTL_BROKEN ]]; then\n  printf '{}\\n'\nelif [[ $1 == \"activeworkspace\" ]]; then\n  printf '{\"id\":3,\"tiledLayout\":\"dwindle\"}\\n'\nelse\n  printf '%s\\n' \"$*\" >>\"$HYPRCTL_LOG\"\nfi\n",
+            content: Literal(
+                "#!/bin/bash\n\nif [[ $1 == \"activeworkspace\" && -n $HYPRCTL_BROKEN ]]; then\n  printf '{}\\n'\nelif [[ $1 == \"activeworkspace\" ]]; then\n  printf '{\"id\":3,\"tiledLayout\":\"dwindle\"}\\n'\nelse\n  printf '%s\\n' \"$*\" >>\"$HYPRCTL_LOG\"\nfi\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "EOF",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n:\n",
+            content: Literal(
+                "#!/bin/bash\n:\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "LUA",
             quoted: true,
             strip_tabs: false,
-            body: "local rules = {}\n\nhl = {\n  workspace_rule = function(rule)\n    table.insert(rules, rule)\n  end,\n}\n\ndofile(os.getenv(\"OMARCHY_PATH\") .. \"/default/hypr/bootstrap.lua\")\nrequire(\"default.hypr.workspace-layouts\")\n\nassert(#rules == 1)\nassert(rules[1].workspace == \"3\")\nassert(rules[1].layout == \"scrolling\")\n",
+            content: Literal(
+                "local rules = {}\n\nhl = {\n  workspace_rule = function(rule)\n    table.insert(rules, rule)\n  end,\n}\n\ndofile(os.getenv(\"OMARCHY_PATH\") .. \"/default/hypr/bootstrap.lua\")\nrequire(\"default.hypr.workspace-layouts\")\n\nassert(#rules == 1)\nassert(rules[1].workspace == \"3\")\nassert(rules[1].layout == \"scrolling\")\n",
+            ),
         },
     ],
 }

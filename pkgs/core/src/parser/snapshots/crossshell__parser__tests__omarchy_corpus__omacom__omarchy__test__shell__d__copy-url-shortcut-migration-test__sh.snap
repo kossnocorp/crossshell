@@ -48,11 +48,14 @@ CshAst {
                                                 args: [
                                                     DoubleQuoted(
                                                         Parameter {
-                                                            prefix: "",
                                                             name: "BASH_SOURCE",
-                                                            suffix: Literal(
-                                                                "[0]",
+                                                            subscript: Some(
+                                                                Literal(
+                                                                    "0",
+                                                                ),
                                                             ),
+                                                            mode: Value,
+                                                            operation: None,
                                                         },
                                                     ),
                                                 ],
@@ -367,8 +370,8 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: DoubleQuoted(
                                         Variable(
                                             "preferences",
@@ -439,8 +442,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -455,8 +458,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -551,34 +554,24 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
+                Binary {
+                    left: Variable(
+                        "REAL_PYTHON",
+                    ),
+                    operator: PatternNotEqual,
+                    right: DoubleQuoted(
+                        Concat(
+                            [
+                                Variable(
+                                    "stub_bin",
+                                ),
+                                Literal(
+                                    "/python3",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "REAL_PYTHON",
-                        ),
-                        Literal(
-                            " != ",
-                        ),
-                        DoubleQuoted(
-                            Concat(
-                                [
-                                    Variable(
-                                        "stub_bin",
-                                    ),
-                                    Literal(
-                                        "/python3",
-                                    ),
-                                ],
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -701,17 +694,17 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: Literal(
                                         "/dev/null",
                                     ),
                                 },
                                 CshAstRedirect {
-                                    descriptor: Some(
+                                    descriptor: Number(
                                         "2",
                                     ),
-                                    operator: ">&",
+                                    operator: DuplicateOutput,
                                     target: Literal(
                                         "1",
                                     ),
@@ -837,8 +830,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -998,74 +991,64 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Binary {
-                                    left: Command(
-                                        CshAstCommand {
-                                            assignments: [],
-                                            name: Some(
-                                                Literal(
-                                                    "sha256sum",
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: Some(
+                                            Literal(
+                                                "sha256sum",
+                                            ),
+                                        ),
+                                        args: [
+                                            DoubleQuoted(
+                                                Variable(
+                                                    "preferences",
                                                 ),
                                             ),
-                                            args: [
-                                                DoubleQuoted(
-                                                    Variable(
-                                                        "preferences",
+                                        ],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: Some(
+                                            Literal(
+                                                "cut",
+                                            ),
+                                        ),
+                                        args: [
+                                            Concat(
+                                                [
+                                                    Literal(
+                                                        "-d",
                                                     ),
-                                                ),
-                                            ],
-                                        },
-                                    ),
-                                    operator: Pipe,
-                                    right: Command(
-                                        CshAstCommand {
-                                            assignments: [],
-                                            name: Some(
-                                                Literal(
-                                                    "cut",
-                                                ),
+                                                    SingleQuoted(
+                                                        " ",
+                                                    ),
+                                                ],
                                             ),
-                                            args: [
-                                                Concat(
-                                                    [
-                                                        Literal(
-                                                            "-d",
-                                                        ),
-                                                        SingleQuoted(
-                                                            " ",
-                                                        ),
-                                                    ],
-                                                ),
-                                                Literal(
-                                                    "-f1",
-                                                ),
-                                            ],
-                                        },
-                                    ),
-                                },
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == ",
+                                            Literal(
+                                                "-f1",
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
+                        Variable(
+                            "before_hash",
                         ),
-                        DoubleQuoted(
-                            Variable(
-                                "before_hash",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1117,8 +1100,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1133,8 +1116,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -1222,17 +1205,17 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
                     },
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">",
+                        operator: Output,
                         target: DoubleQuoted(
                             Variable(
                                 "prompt_stderr",
@@ -1472,8 +1455,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1591,8 +1574,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1607,8 +1590,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -1630,8 +1613,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1646,8 +1629,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -1782,17 +1765,17 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
                     },
                     CshAstRedirect {
-                        descriptor: Some(
+                        descriptor: Number(
                             "2",
                         ),
-                        operator: ">&",
+                        operator: DuplicateOutput,
                         target: Literal(
                             "1",
                         ),
@@ -1820,19 +1803,19 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -e ",
-                        ),
-                        Variable(
-                            "test_dir",
-                        ),
-                        Literal(
-                            "/gum-called ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Exists,
+                    operand: Concat(
+                        [
+                            Variable(
+                                "test_dir",
+                            ),
+                            Literal(
+                                "/gum-called",
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1891,8 +1874,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1980,8 +1963,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -2099,8 +2082,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -2128,19 +2111,19 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "preferences",
-                        ),
-                        Literal(
-                            ".omarchy-copy-url-repair.bak ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Concat(
+                        [
+                            Variable(
+                                "preferences",
+                            ),
+                            Literal(
+                                ".omarchy-copy-url-repair.bak",
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2308,12 +2291,9 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
+                And(
+                    Binary {
+                        left: CommandSubstitution {
                             commands: [
                                 Binary {
                                     left: Command(
@@ -2363,24 +2343,28 @@ CshAst {
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
+                        operator: PatternEqual,
+                        right: DoubleQuoted(
                             Variable(
                                 "repaired_hash",
                             ),
                         ),
-                        Literal(
-                            " && ! -e ",
-                        ),
-                        Variable(
-                            "preferences",
-                        ),
-                        Literal(
-                            ".omarchy-copy-url-repair.bak ",
-                        ),
-                    ],
+                    },
+                    Not(
+                        Unary {
+                            operator: Exists,
+                            operand: Concat(
+                                [
+                                    Variable(
+                                        "preferences",
+                                    ),
+                                    Literal(
+                                        ".omarchy-copy-url-repair.bak",
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
                 ),
             ),
             operator: Or,
@@ -2462,8 +2446,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "preferences",
@@ -2541,8 +2525,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -2628,8 +2612,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "preferences",
@@ -2707,8 +2691,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -2814,8 +2798,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -2830,8 +2814,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -2926,17 +2910,17 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">",
+                                        descriptor: Default,
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
                                     },
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">&",
+                                        operator: DuplicateOutput,
                                         target: Literal(
                                             "1",
                                         ),
@@ -3008,8 +2992,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -3156,8 +3140,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -3172,8 +3156,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "STUB",
                     ),
@@ -3293,17 +3277,17 @@ CshAst {
                                 ),
                                 redirects: [
                                     CshAstRedirect {
-                                        descriptor: None,
-                                        operator: ">",
+                                        descriptor: Default,
+                                        operator: Output,
                                         target: Literal(
                                             "/dev/null",
                                         ),
                                     },
                                     CshAstRedirect {
-                                        descriptor: Some(
+                                        descriptor: Number(
                                             "2",
                                         ),
-                                        operator: ">&",
+                                        operator: DuplicateOutput,
                                         target: Literal(
                                             "1",
                                         ),
@@ -3505,19 +3489,19 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "preferences",
-                        ),
-                        Literal(
-                            ".omarchy-copy-url-repair.bak ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Concat(
+                        [
+                            Variable(
+                                "preferences",
+                            ),
+                            Literal(
+                                ".omarchy-copy-url-repair.bak",
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -3704,8 +3688,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "preferences",
@@ -3809,74 +3793,64 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Binary {
-                                    left: Command(
-                                        CshAstCommand {
-                                            assignments: [],
-                                            name: Some(
-                                                Literal(
-                                                    "sha256sum",
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Binary {
+                                left: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: Some(
+                                            Literal(
+                                                "sha256sum",
+                                            ),
+                                        ),
+                                        args: [
+                                            DoubleQuoted(
+                                                Variable(
+                                                    "preferences",
                                                 ),
                                             ),
-                                            args: [
-                                                DoubleQuoted(
-                                                    Variable(
-                                                        "preferences",
+                                        ],
+                                    },
+                                ),
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: Some(
+                                            Literal(
+                                                "cut",
+                                            ),
+                                        ),
+                                        args: [
+                                            Concat(
+                                                [
+                                                    Literal(
+                                                        "-d",
                                                     ),
-                                                ),
-                                            ],
-                                        },
-                                    ),
-                                    operator: Pipe,
-                                    right: Command(
-                                        CshAstCommand {
-                                            assignments: [],
-                                            name: Some(
-                                                Literal(
-                                                    "cut",
-                                                ),
+                                                    SingleQuoted(
+                                                        " ",
+                                                    ),
+                                                ],
                                             ),
-                                            args: [
-                                                Concat(
-                                                    [
-                                                        Literal(
-                                                            "-d",
-                                                        ),
-                                                        SingleQuoted(
-                                                            " ",
-                                                        ),
-                                                    ],
-                                                ),
-                                                Literal(
-                                                    "-f1",
-                                                ),
-                                            ],
-                                        },
-                                    ),
-                                },
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " == ",
+                                            Literal(
+                                                "-f1",
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
+                        Variable(
+                            "untouched_hash",
                         ),
-                        DoubleQuoted(
-                            Variable(
-                                "untouched_hash",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -3920,37 +3894,49 @@ CshAst {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nexit 127\n",
+            content: Literal(
+                "#!/bin/bash\nexit 127\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\necho \"gum-prompt-painted\" >&2\nexit 1\n",
+            content: Literal(
+                "#!/bin/bash\necho \"gum-prompt-painted\" >&2\nexit 1\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n\"$CLOSE_BROWSER\"\ntouch \"${GUM_CALLED:?}\"\nexit 0\n",
+            content: Literal(
+                "#!/bin/bash\n\"$CLOSE_BROWSER\"\ntouch \"${GUM_CALLED:?}\"\nexit 0\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nrm -f \"$HOME/.config/chromium/SingletonLock\"\n",
+            content: Literal(
+                "#!/bin/bash\nrm -f \"$HOME/.config/chromium/SingletonLock\"\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n# Called as `python3 -c <script> <preferences> <pinned_id> <check|repair>`, and\n# the check calls report a surviving ghost through their exit status.\n\"${REAL_PYTHON}\" \"$@\"\nstatus=$?\n[[ ${5:-} == \"repair\" ]] && ln -sfn \"test-host-1234\" \"$HOME/.config/chromium/SingletonLock\"\nexit $status\n",
+            content: Literal(
+                "#!/bin/bash\n# Called as `python3 -c <script> <preferences> <pinned_id> <check|repair>`, and\n# the check calls report a surviving ghost through their exit status.\n\"${REAL_PYTHON}\" \"$@\"\nstatus=$?\n[[ ${5:-} == \"repair\" ]] && ln -sfn \"test-host-1234\" \"$HOME/.config/chromium/SingletonLock\"\nexit $status\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "STUB",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n\"${REAL_PYTHON}\" \"$@\"\nstatus=$?\n[[ ${5:-} == \"repair\" ]] && cp \"${STALE_PREFERENCES:?}\" \"${REPAIRED_PREFERENCES:?}\"\nexit $status\n",
+            content: Literal(
+                "#!/bin/bash\n\"${REAL_PYTHON}\" \"$@\"\nstatus=$?\n[[ ${5:-} == \"repair\" ]] && cp \"${STALE_PREFERENCES:?}\" \"${REPAIRED_PREFERENCES:?}\"\nexit $status\n",
+            ),
         },
     ],
 }

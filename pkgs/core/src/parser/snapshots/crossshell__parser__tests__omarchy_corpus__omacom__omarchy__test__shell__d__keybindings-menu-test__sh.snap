@@ -30,11 +30,14 @@ CshAst {
                                                 args: [
                                                     DoubleQuoted(
                                                         Parameter {
-                                                            prefix: "",
                                                             name: "BASH_SOURCE",
-                                                            suffix: Literal(
-                                                                "[0]",
+                                                            subscript: Some(
+                                                                Literal(
+                                                                    "0",
+                                                                ),
                                                             ),
+                                                            mode: Value,
+                                                            operation: None,
                                                         },
                                                     ),
                                                 ],
@@ -118,24 +121,19 @@ CshAst {
                 ),
                 operator: And,
                 right: Test(
-                    Concat(
-                        [
-                            Literal(
-                                " -n ",
-                            ),
-                            Variable(
+                    And(
+                        Unary {
+                            operator: NonemptyString,
+                            operand: Variable(
                                 "tmpdir",
                             ),
-                            Literal(
-                                " && -d ",
-                            ),
-                            Variable(
+                        },
+                        Unary {
+                            operator: Directory,
+                            operand: Variable(
                                 "tmpdir",
                             ),
-                            Literal(
-                                " ",
-                            ),
-                        ],
+                        },
                     ),
                 ),
             },
@@ -528,8 +526,8 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: DoubleQuoted(
                                         Concat(
                                             [
@@ -703,8 +701,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "BINDS",
                     ),
@@ -742,19 +740,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -n ",
-                        ),
-                        Variable(
-                            "rendered",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: NonemptyString,
+                    operand: Variable(
+                        "rendered",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -797,8 +788,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: "<<<",
+                        descriptor: Default,
+                        operator: HereString,
                         target: DoubleQuoted(
                             Variable(
                                 "rendered",
@@ -850,7 +841,51 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " $(grep -c '→ Close window$' <<<\"$rendered\") == 1 ",
+                Binary {
+                    left: Expansion(
+                        CommandSubstitution {
+                            commands: [
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "grep",
+                                                ),
+                                            ),
+                                            args: [
+                                                Literal(
+                                                    "-c",
+                                                ),
+                                                SingleQuoted(
+                                                    "→ Close window$",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Default,
+                                            operator: HereString,
+                                            target: DoubleQuoted(
+                                                Variable(
+                                                    "rendered",
+                                                ),
+                                            ),
+                                        },
+                                    ],
+                                },
+                            ],
+                            backticks: false,
+                        },
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "1",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -898,8 +933,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: "<<<",
+                        descriptor: Default,
+                        operator: HereString,
                         target: DoubleQuoted(
                             Variable(
                                 "rendered",
@@ -971,8 +1006,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: "<<<",
+                        descriptor: Default,
+                        operator: HereString,
                         target: DoubleQuoted(
                             Variable(
                                 "rendered",
@@ -1044,8 +1079,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: "<<<",
+                        descriptor: Default,
+                        operator: HereString,
                         target: DoubleQuoted(
                             Variable(
                                 "rendered",
@@ -1101,8 +1136,8 @@ CshAst {
                     ),
                     redirects: [
                         CshAstRedirect {
-                            descriptor: None,
-                            operator: "<<<",
+                            descriptor: Default,
+                            operator: HereString,
                             target: DoubleQuoted(
                                 Variable(
                                     "rendered",
@@ -1155,81 +1190,71 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Binary {
-                                    left: Redirected {
-                                        expression: Command(
-                                            CshAstCommand {
-                                                assignments: [],
-                                                name: Some(
-                                                    Literal(
-                                                        "awk",
-                                                    ),
-                                                ),
-                                                args: [
-                                                    Literal(
-                                                        "-F",
-                                                    ),
-                                                    SingleQuoted(
-                                                        "→",
-                                                    ),
-                                                    SingleQuoted(
-                                                        "{ print length($1) }",
-                                                    ),
-                                                ],
-                                            },
-                                        ),
-                                        redirects: [
-                                            CshAstRedirect {
-                                                descriptor: None,
-                                                operator: "<<<",
-                                                target: DoubleQuoted(
-                                                    Variable(
-                                                        "rendered",
-                                                    ),
-                                                ),
-                                            },
-                                        ],
-                                    },
-                                    operator: Pipe,
-                                    right: Command(
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Binary {
+                                left: Redirected {
+                                    expression: Command(
                                         CshAstCommand {
                                             assignments: [],
                                             name: Some(
                                                 Literal(
-                                                    "sort",
+                                                    "awk",
                                                 ),
                                             ),
                                             args: [
                                                 Literal(
-                                                    "-u",
+                                                    "-F",
+                                                ),
+                                                SingleQuoted(
+                                                    "→",
+                                                ),
+                                                SingleQuoted(
+                                                    "{ print length($1) }",
                                                 ),
                                             ],
                                         },
                                     ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Default,
+                                            operator: HereString,
+                                            target: DoubleQuoted(
+                                                Variable(
+                                                    "rendered",
+                                                ),
+                                            ),
+                                        },
+                                    ],
                                 },
-                            ],
-                            backticks: false,
-                        },
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: Some(
+                                            Literal(
+                                                "sort",
+                                            ),
+                                        ),
+                                        args: [
+                                            Literal(
+                                                "-u",
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " == ",
+                            "36",
                         ),
-                        DoubleQuoted(
-                            Literal(
-                                "36",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1274,7 +1299,84 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " $(awk '{ print length($0) }' <<<\"$rendered\" | sort -rn | head -1) <= 78 ",
+                Binary {
+                    left: Expansion(
+                        CommandSubstitution {
+                            commands: [
+                                Binary {
+                                    left: Binary {
+                                        left: Redirected {
+                                            expression: Command(
+                                                CshAstCommand {
+                                                    assignments: [],
+                                                    name: Some(
+                                                        Literal(
+                                                            "awk",
+                                                        ),
+                                                    ),
+                                                    args: [
+                                                        SingleQuoted(
+                                                            "{ print length($0) }",
+                                                        ),
+                                                    ],
+                                                },
+                                            ),
+                                            redirects: [
+                                                CshAstRedirect {
+                                                    descriptor: Default,
+                                                    operator: HereString,
+                                                    target: DoubleQuoted(
+                                                        Variable(
+                                                            "rendered",
+                                                        ),
+                                                    ),
+                                                },
+                                            ],
+                                        },
+                                        operator: Pipe,
+                                        right: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: Some(
+                                                    Literal(
+                                                        "sort",
+                                                    ),
+                                                ),
+                                                args: [
+                                                    Literal(
+                                                        "-rn",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                    operator: Pipe,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "head",
+                                                ),
+                                            ),
+                                            args: [
+                                                Literal(
+                                                    "-1",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                },
+                            ],
+                            backticks: false,
+                        },
+                    ),
+                    operator: LessEqual,
+                    right: Number {
+                        radix: 10,
+                        digits: "78",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -1331,8 +1433,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "BINDS",
                     ),
@@ -1370,7 +1472,127 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " $(grep -n '→ Calculator$' <<<\"$rendered\" | cut -d: -f1) <\n   $(grep -n '→ Reveal active window on top$' <<<\"$rendered\" | cut -d: -f1) ",
+                Binary {
+                    left: Expansion(
+                        CommandSubstitution {
+                            commands: [
+                                Binary {
+                                    left: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: Some(
+                                                    Literal(
+                                                        "grep",
+                                                    ),
+                                                ),
+                                                args: [
+                                                    Literal(
+                                                        "-n",
+                                                    ),
+                                                    SingleQuoted(
+                                                        "→ Calculator$",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: Default,
+                                                operator: HereString,
+                                                target: DoubleQuoted(
+                                                    Variable(
+                                                        "rendered",
+                                                    ),
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                    operator: Pipe,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "cut",
+                                                ),
+                                            ),
+                                            args: [
+                                                Literal(
+                                                    "-d:",
+                                                ),
+                                                Literal(
+                                                    "-f1",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                },
+                            ],
+                            backticks: false,
+                        },
+                    ),
+                    operator: Less,
+                    right: Expansion(
+                        CommandSubstitution {
+                            commands: [
+                                Binary {
+                                    left: Redirected {
+                                        expression: Command(
+                                            CshAstCommand {
+                                                assignments: [],
+                                                name: Some(
+                                                    Literal(
+                                                        "grep",
+                                                    ),
+                                                ),
+                                                args: [
+                                                    Literal(
+                                                        "-n",
+                                                    ),
+                                                    SingleQuoted(
+                                                        "→ Reveal active window on top$",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                        redirects: [
+                                            CshAstRedirect {
+                                                descriptor: Default,
+                                                operator: HereString,
+                                                target: DoubleQuoted(
+                                                    Variable(
+                                                        "rendered",
+                                                    ),
+                                                ),
+                                            },
+                                        ],
+                                    },
+                                    operator: Pipe,
+                                    right: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "cut",
+                                                ),
+                                            ),
+                                            args: [
+                                                Literal(
+                                                    "-d:",
+                                                ),
+                                                Literal(
+                                                    "-f1",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                },
+                            ],
+                            backticks: false,
+                        },
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1427,8 +1649,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "BINDS",
                     ),
@@ -1486,8 +1708,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: "<<<",
+                        descriptor: Default,
+                        operator: HereString,
                         target: DoubleQuoted(
                             Variable(
                                 "rendered",
@@ -1551,8 +1773,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "BINDS",
                     ),
@@ -1590,7 +1812,51 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " $(grep -c '→ Calculator$' <<<\"$rendered\") == 3 ",
+                Binary {
+                    left: Expansion(
+                        CommandSubstitution {
+                            commands: [
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "grep",
+                                                ),
+                                            ),
+                                            args: [
+                                                Literal(
+                                                    "-c",
+                                                ),
+                                                SingleQuoted(
+                                                    "→ Calculator$",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Default,
+                                            operator: HereString,
+                                            target: DoubleQuoted(
+                                                Variable(
+                                                    "rendered",
+                                                ),
+                                            ),
+                                        },
+                                    ],
+                                },
+                            ],
+                            backticks: false,
+                        },
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "3",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -1647,8 +1913,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "BINDS",
                     ),
@@ -1686,7 +1952,51 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " $(grep -c '→ Zoom in$' <<<\"$rendered\") == 2 ",
+                Binary {
+                    left: Expansion(
+                        CommandSubstitution {
+                            commands: [
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "grep",
+                                                ),
+                                            ),
+                                            args: [
+                                                Literal(
+                                                    "-c",
+                                                ),
+                                                SingleQuoted(
+                                                    "→ Zoom in$",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Default,
+                                            operator: HereString,
+                                            target: DoubleQuoted(
+                                                Variable(
+                                                    "rendered",
+                                                ),
+                                            ),
+                                        },
+                                    ],
+                                },
+                            ],
+                            backticks: false,
+                        },
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "2",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -1743,8 +2053,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "BINDS",
                     ),
@@ -1782,7 +2092,51 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " $(grep -c '→ Calculator$' <<<\"$rendered\") == 2 ",
+                Binary {
+                    left: Expansion(
+                        CommandSubstitution {
+                            commands: [
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "grep",
+                                                ),
+                                            ),
+                                            args: [
+                                                Literal(
+                                                    "-c",
+                                                ),
+                                                SingleQuoted(
+                                                    "→ Calculator$",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Default,
+                                            operator: HereString,
+                                            target: DoubleQuoted(
+                                                Variable(
+                                                    "rendered",
+                                                ),
+                                            ),
+                                        },
+                                    ],
+                                },
+                            ],
+                            backticks: false,
+                        },
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "2",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -1810,81 +2164,71 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Binary {
-                                    left: Redirected {
-                                        expression: Command(
-                                            CshAstCommand {
-                                                assignments: [],
-                                                name: Some(
-                                                    Literal(
-                                                        "awk",
-                                                    ),
-                                                ),
-                                                args: [
-                                                    Literal(
-                                                        "-F",
-                                                    ),
-                                                    SingleQuoted(
-                                                        "→",
-                                                    ),
-                                                    SingleQuoted(
-                                                        "{ print length($1) }",
-                                                    ),
-                                                ],
-                                            },
-                                        ),
-                                        redirects: [
-                                            CshAstRedirect {
-                                                descriptor: None,
-                                                operator: "<<<",
-                                                target: DoubleQuoted(
-                                                    Variable(
-                                                        "rendered",
-                                                    ),
-                                                ),
-                                            },
-                                        ],
-                                    },
-                                    operator: Pipe,
-                                    right: Command(
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Binary {
+                                left: Redirected {
+                                    expression: Command(
                                         CshAstCommand {
                                             assignments: [],
                                             name: Some(
                                                 Literal(
-                                                    "sort",
+                                                    "awk",
                                                 ),
                                             ),
                                             args: [
                                                 Literal(
-                                                    "-u",
+                                                    "-F",
+                                                ),
+                                                SingleQuoted(
+                                                    "→",
+                                                ),
+                                                SingleQuoted(
+                                                    "{ print length($1) }",
                                                 ),
                                             ],
                                         },
                                     ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Default,
+                                            operator: HereString,
+                                            target: DoubleQuoted(
+                                                Variable(
+                                                    "rendered",
+                                                ),
+                                            ),
+                                        },
+                                    ],
                                 },
-                            ],
-                            backticks: false,
-                        },
+                                operator: Pipe,
+                                right: Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: Some(
+                                            Literal(
+                                                "sort",
+                                            ),
+                                        ),
+                                        args: [
+                                            Literal(
+                                                "-u",
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " == ",
+                            "36",
                         ),
-                        DoubleQuoted(
-                            Literal(
-                                "36",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1941,8 +2285,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "BINDS",
                     ),
@@ -1980,7 +2324,51 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " $(grep -c '→ Close window$' <<<\"$rendered\") == 2 ",
+                Binary {
+                    left: Expansion(
+                        CommandSubstitution {
+                            commands: [
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "grep",
+                                                ),
+                                            ),
+                                            args: [
+                                                Literal(
+                                                    "-c",
+                                                ),
+                                                SingleQuoted(
+                                                    "→ Close window$",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Default,
+                                            operator: HereString,
+                                            target: DoubleQuoted(
+                                                Variable(
+                                                    "rendered",
+                                                ),
+                                            ),
+                                        },
+                                    ],
+                                },
+                            ],
+                            backticks: false,
+                        },
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "2",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -2037,8 +2425,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "BINDS",
                     ),
@@ -2076,7 +2464,51 @@ CshAst {
         ),
         Binary {
             left: Arithmetic(
-                " $(grep -c '→ Close window$' <<<\"$rendered\") == 2 ",
+                Binary {
+                    left: Expansion(
+                        CommandSubstitution {
+                            commands: [
+                                Redirected {
+                                    expression: Command(
+                                        CshAstCommand {
+                                            assignments: [],
+                                            name: Some(
+                                                Literal(
+                                                    "grep",
+                                                ),
+                                            ),
+                                            args: [
+                                                Literal(
+                                                    "-c",
+                                                ),
+                                                SingleQuoted(
+                                                    "→ Close window$",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    redirects: [
+                                        CshAstRedirect {
+                                            descriptor: Default,
+                                            operator: HereString,
+                                            target: DoubleQuoted(
+                                                Variable(
+                                                    "rendered",
+                                                ),
+                                            ),
+                                        },
+                                    ],
+                                },
+                            ],
+                            backticks: false,
+                        },
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "2",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -2206,11 +2638,25 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "alternative_chord_actions",
+                                        ),
+                                    ),
+                                    args: [],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         CommandSubstitution {
                             commands: [
                                 Command(
@@ -2218,54 +2664,33 @@ CshAst {
                                         assignments: [],
                                         name: Some(
                                             Literal(
-                                                "alternative_chord_actions",
+                                                "printf",
                                             ),
                                         ),
-                                        args: [],
+                                        args: [
+                                            SingleQuoted(
+                                                "%s\\n",
+                                            ),
+                                            DoubleQuoted(
+                                                Parameter {
+                                                    name: "expected_alternatives",
+                                                    subscript: Some(
+                                                        Literal(
+                                                            "@",
+                                                        ),
+                                                    ),
+                                                    mode: Value,
+                                                    operation: None,
+                                                },
+                                            ),
+                                        ],
                                     },
                                 ),
                             ],
                             backticks: false,
                         },
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            CommandSubstitution {
-                                commands: [
-                                    Command(
-                                        CshAstCommand {
-                                            assignments: [],
-                                            name: Some(
-                                                Literal(
-                                                    "printf",
-                                                ),
-                                            ),
-                                            args: [
-                                                SingleQuoted(
-                                                    "%s\\n",
-                                                ),
-                                                DoubleQuoted(
-                                                    Parameter {
-                                                        prefix: "",
-                                                        name: "expected_alternatives",
-                                                        suffix: Literal(
-                                                            "[@]",
-                                                        ),
-                                                    },
-                                                ),
-                                            ],
-                                        },
-                                    ),
-                                ],
-                                backticks: false,
-                            },
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2327,11 +2752,14 @@ CshAst {
                 [
                     DoubleQuoted(
                         Parameter {
-                            prefix: "",
                             name: "expected_alternatives",
-                            suffix: Literal(
-                                "[@]",
+                            subscript: Some(
+                                Literal(
+                                    "@",
+                                ),
                             ),
+                            mode: Value,
+                            operation: None,
                         },
                     ),
                 ],
@@ -2340,7 +2768,89 @@ CshAst {
                 commands: [
                     Binary {
                         left: Arithmetic(
-                            " $(grep -rhE '^[[:space:]]*o\\.bind\\(' \"$ROOT/default/hypr/bindings\" |\n       grep -cF \", \\\"$action\\\",\") >= 2 ",
+                            Binary {
+                                left: Expansion(
+                                    CommandSubstitution {
+                                        commands: [
+                                            Binary {
+                                                left: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: Some(
+                                                            Literal(
+                                                                "grep",
+                                                            ),
+                                                        ),
+                                                        args: [
+                                                            Literal(
+                                                                "-rhE",
+                                                            ),
+                                                            SingleQuoted(
+                                                                "^[[:space:]]*o\\.bind\\(",
+                                                            ),
+                                                            DoubleQuoted(
+                                                                Concat(
+                                                                    [
+                                                                        Variable(
+                                                                            "ROOT",
+                                                                        ),
+                                                                        Literal(
+                                                                            "/default/hypr/bindings",
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                                operator: Pipe,
+                                                right: Command(
+                                                    CshAstCommand {
+                                                        assignments: [],
+                                                        name: Some(
+                                                            Literal(
+                                                                "grep",
+                                                            ),
+                                                        ),
+                                                        args: [
+                                                            Literal(
+                                                                "-cF",
+                                                            ),
+                                                            DoubleQuoted(
+                                                                Concat(
+                                                                    [
+                                                                        Literal(
+                                                                            ", ",
+                                                                        ),
+                                                                        Escaped(
+                                                                            "\"",
+                                                                        ),
+                                                                        Variable(
+                                                                            "action",
+                                                                        ),
+                                                                        Escaped(
+                                                                            "\"",
+                                                                        ),
+                                                                        Literal(
+                                                                            ",",
+                                                                        ),
+                                                                    ],
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                            },
+                                        ],
+                                        backticks: false,
+                                    },
+                                ),
+                                operator: GreaterEqual,
+                                right: Number {
+                                    radix: 10,
+                                    digits: "2",
+                                },
+                            },
                         ),
                         operator: Or,
                         right: Command(
@@ -2392,49 +2902,792 @@ CshAst {
             delimiter: "BINDS",
             quoted: false,
             strip_tabs: false,
-            body: "$(lua_bind 64 \"SUPER + W\" \"Close window\")\n$(lua_bind 64 \"SUPER + Q\" \"Close window\")\n$(lua_bind 64 \"SUPER + F\" \"Full screen\")\n$(lua_bind 64 \"SUPER + S\" \"Toggle scratchpad\")\n$(lua_bind 64 \"SUPER + grave\" \"Toggle scratchpad\")\n$(exec_bind 73 \"SUPER SHIFT ALT + 0\" \"Move window silently to workspace 10\" \"true\")\n",
+            content: Concat(
+                [
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "lua_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + W",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Close window",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "lua_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + Q",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Close window",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "lua_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + F",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Full screen",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "lua_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + S",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Toggle scratchpad",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "lua_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + grave",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Toggle scratchpad",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "73",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER SHIFT ALT + 0",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Move window silently to workspace 10",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "true",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                ],
+            ),
         },
         CshAstHereDocument {
             delimiter: "BINDS",
             quoted: false,
             strip_tabs: false,
-            body: "$(exec_bind 68 \"SUPER CTRL + Q\" \"Calculator\" \"omacalc\")\n$(exec_bind 0 \"XF86Calculator\" \"Calculator\" \"omacalc\")\n$(exec_bind 8 \"ALT + TAB\" \"Reveal active window on top\" \"true\")\n",
+            content: Concat(
+                [
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "68",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER CTRL + Q",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Calculator",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "omacalc",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "0",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "XF86Calculator",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Calculator",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "omacalc",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "8",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "ALT + TAB",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Reveal active window on top",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "true",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                ],
+            ),
         },
         CshAstHereDocument {
             delimiter: "BINDS",
             quoted: true,
             strip_tabs: false,
-            body: "bind\n\tmodmask: 64\n\tsubmap: \n\tkey: \n\tkeycode: 49\n\tcatchall: false\n\tdescription: Toggle scratchpad\n\tdispatcher: exec\n\targ: true\n",
+            content: Literal(
+                "bind\n\tmodmask: 64\n\tsubmap: \n\tkey: \n\tkeycode: 49\n\tcatchall: false\n\tdescription: Toggle scratchpad\n\tdispatcher: exec\n\targ: true\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "BINDS",
             quoted: false,
             strip_tabs: false,
-            body: "$(exec_bind 64 \"SUPER + A\" \"Calculator\" \"omacalc\")\n$(exec_bind 77 \"SUPER SHIFT CTRL ALT + BACKSPACE\" \"Calculator\" \"omacalc\")\n$(exec_bind 64 \"SUPER + B\" \"Calculator\" \"omacalc\")\n",
+            content: Concat(
+                [
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + A",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Calculator",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "omacalc",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "77",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER SHIFT CTRL ALT + BACKSPACE",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Calculator",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "omacalc",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + B",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Calculator",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "omacalc",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                ],
+            ),
         },
         CshAstHereDocument {
             delimiter: "BINDS",
             quoted: false,
             strip_tabs: false,
-            body: "$(exec_bind 64 \"SUPER + Y\" \"Zoom in\" \"omarchy-zoom in\")\n$(exec_bind 64 \"SUPER + Z\" \"Zoom in\" \"omarchy-zoom in\")\n",
+            content: Concat(
+                [
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + Y",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Zoom in",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "omarchy-zoom in",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + Z",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Zoom in",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "omarchy-zoom in",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                ],
+            ),
         },
         CshAstHereDocument {
             delimiter: "BINDS",
             quoted: false,
             strip_tabs: false,
-            body: "$(exec_bind 73 \"SUPER SHIFT ALT + BACKSPACE\" \"Calculator\" \"omacalc\")\n$(exec_bind 69 \"SUPER SHIFT CTRL + BACKSPACE\" \"Calculator\" \"omacalc\")\n",
+            content: Concat(
+                [
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "73",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER SHIFT ALT + BACKSPACE",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Calculator",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "omacalc",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "69",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER SHIFT CTRL + BACKSPACE",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Calculator",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "omacalc",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                ],
+            ),
         },
         CshAstHereDocument {
             delimiter: "BINDS",
             quoted: false,
             strip_tabs: false,
-            body: "$(lua_bind 64 \"SUPER + W\" \"Close window\")\n$(exec_bind 64 \"SUPER + X\" \"Close window\" \"omarchy-hyprland-window-close-all\")\n",
+            content: Concat(
+                [
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "lua_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + W",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Close window",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "exec_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + X",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Close window",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "omarchy-hyprland-window-close-all",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                ],
+            ),
         },
         CshAstHereDocument {
             delimiter: "BINDS",
             quoted: false,
             strip_tabs: false,
-            body: "$(lua_bind 64 \"SUPER + Y\" \"Close window\")\n$(lua_bind 64 \"SUPER + Z\" \"Close window\")\n",
+            content: Concat(
+                [
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "lua_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + Y",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Close window",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                    CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "lua_bind",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "64",
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "SUPER + Z",
+                                            ),
+                                        ),
+                                        DoubleQuoted(
+                                            Literal(
+                                                "Close window",
+                                            ),
+                                        ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    Literal(
+                        "\n",
+                    ),
+                ],
+            ),
         },
     ],
 }

@@ -67,11 +67,14 @@ CshAst {
                                                                                 ),
                                                                                 DoubleQuoted(
                                                                                     Parameter {
-                                                                                        prefix: "",
                                                                                         name: "BASH_SOURCE",
-                                                                                        suffix: Literal(
-                                                                                            "[0]",
+                                                                                        subscript: Some(
+                                                                                            Literal(
+                                                                                                "0",
+                                                                                            ),
                                                                                         ),
+                                                                                        mode: Value,
+                                                                                        operation: None,
                                                                                     },
                                                                                 ),
                                                                             ],
@@ -170,24 +173,19 @@ CshAst {
                                     condition: CshAst {
                                         commands: [
                                             Test(
-                                                Concat(
-                                                    [
-                                                        Literal(
-                                                            " -n ",
-                                                        ),
-                                                        Variable(
+                                                And(
+                                                    Unary {
+                                                        operator: NonemptyString,
+                                                        operand: Variable(
                                                             "TMPDIR",
                                                         ),
-                                                        Literal(
-                                                            " && -d ",
-                                                        ),
-                                                        Variable(
+                                                    },
+                                                    Unary {
+                                                        operator: Directory,
+                                                        operand: Variable(
                                                             "TMPDIR",
                                                         ),
-                                                        Literal(
-                                                            " ",
-                                                        ),
-                                                    ],
+                                                    },
                                                 ),
                                             ),
                                         ],
@@ -369,19 +367,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "manifest_path",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Variable(
+                        "manifest_path",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -463,8 +454,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: Literal(
                         "/dev/null",
                     ),
@@ -490,19 +481,19 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "test_home",
-                        ),
-                        Literal(
-                            "/.config/BraveSoftware/Brave-Origin/NativeMessagingHosts/com.omarchy.ytdlp.json ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Concat(
+                        [
+                            Variable(
+                                "test_home",
+                            ),
+                            Literal(
+                                "/.config/BraveSoftware/Brave-Origin/NativeMessagingHosts/com.omarchy.ytdlp.json",
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -600,49 +591,39 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
+                Binary {
+                    left: Variable(
+                        "parse_result",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
+                        Concat(
+                            [
+                                Literal(
+                                    "https://example.test/watch?v=",
+                                ),
+                                Escaped(
+                                    "\"",
+                                ),
+                                Literal(
+                                    "quoted",
+                                ),
+                                Escaped(
+                                    "\"",
+                                ),
+                                Literal(
+                                    "&name=a",
+                                ),
+                                Escaped(
+                                    "\\",
+                                ),
+                                Literal(
+                                    "b",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "parse_result",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Concat(
-                                [
-                                    Literal(
-                                        "https://example.test/watch?v=",
-                                    ),
-                                    Escaped(
-                                        "\"",
-                                    ),
-                                    Literal(
-                                        "quoted",
-                                    ),
-                                    Escaped(
-                                        "\"",
-                                    ),
-                                    Literal(
-                                        "&name=a",
-                                    ),
-                                    Escaped(
-                                        "\\",
-                                    ),
-                                    Literal(
-                                        "b",
-                                    ),
-                                ],
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -787,18 +768,16 @@ CshAst {
                                         operator: Set,
                                         value: DoubleQuoted(
                                             Parameter {
-                                                prefix: "",
                                                 name: "download_dir",
-                                                suffix: Concat(
-                                                    [
-                                                        Literal(
-                                                            ":-",
-                                                        ),
-                                                        Variable(
-                                                            "TMPDIR",
-                                                        ),
-                                                    ],
-                                                ),
+                                                subscript: None,
+                                                mode: Value,
+                                                operation: Default {
+                                                    operator: Use,
+                                                    test_empty: true,
+                                                    word: Variable(
+                                                        "TMPDIR",
+                                                    ),
+                                                },
                                             },
                                         ),
                                     },
@@ -940,8 +919,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "good_file",
@@ -968,8 +947,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1103,27 +1082,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
+                Binary {
+                    left: Variable(
+                        "resolved",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Variable(
-                            "resolved",
+                            "expected",
                         ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Variable(
-                                "expected",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1455,8 +1424,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "newline_target",
@@ -1483,8 +1452,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -1687,27 +1656,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "root_resolved",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "/etc/passwd",
                         ),
-                        Variable(
-                            "root_resolved",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "/etc/passwd",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1789,27 +1748,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "title",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "clip [id]",
                         ),
-                        Variable(
-                            "title",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "clip [id]",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1889,27 +1838,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "decoded_title",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "My Great Clip",
                         ),
-                        Variable(
-                            "decoded_title",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "My Great Clip",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1989,27 +1928,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "forged_title",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "Clip",
                         ),
-                        Variable(
-                            "forged_title",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "Clip",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2208,27 +2137,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
+                Binary {
+                    left: Variable(
+                        "dash_title",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Literal(
-                            " ",
+                            "Video",
                         ),
-                        Variable(
-                            "dash_title",
-                        ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                "Video",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2309,8 +2228,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "parse_script",
@@ -2318,8 +2237,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "EOF",
                     ),
@@ -2439,27 +2358,17 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
+                Binary {
+                    left: Variable(
+                        "poisoned",
+                    ),
+                    operator: PatternEqual,
+                    right: DoubleQuoted(
                         Variable(
-                            "poisoned",
+                            "expected",
                         ),
-                        Literal(
-                            " == ",
-                        ),
-                        DoubleQuoted(
-                            Variable(
-                                "expected",
-                            ),
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -2639,8 +2548,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "fake_file",
@@ -2711,8 +2620,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -2727,8 +2636,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "EOF",
                     ),
@@ -2750,8 +2659,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -2766,8 +2675,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "EOF",
                     ),
@@ -2810,8 +2719,8 @@ CshAst {
                         ),
                         redirects: [
                             CshAstRedirect {
-                                descriptor: None,
-                                operator: ">",
+                                descriptor: Default,
+                                operator: Output,
                                 target: DoubleQuoted(
                                     Concat(
                                         [
@@ -2954,17 +2863,17 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: Literal(
                         "/dev/null",
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: Some(
+                    descriptor: Number(
                         "2",
                     ),
-                    operator: ">&",
+                    operator: DuplicateOutput,
                     target: Literal(
                         "1",
                     ),
@@ -2973,7 +2882,46 @@ CshAst {
         },
         Binary {
             left: Arithmetic(
-                "$(grep -c -- '--no-exec-before-download' \"$ytdlp_argv\") == 2",
+                Binary {
+                    left: Expansion(
+                        CommandSubstitution {
+                            commands: [
+                                Command(
+                                    CshAstCommand {
+                                        assignments: [],
+                                        name: Some(
+                                            Literal(
+                                                "grep",
+                                            ),
+                                        ),
+                                        args: [
+                                            Literal(
+                                                "-c",
+                                            ),
+                                            Literal(
+                                                "--",
+                                            ),
+                                            SingleQuoted(
+                                                "--no-exec-before-download",
+                                            ),
+                                            DoubleQuoted(
+                                                Variable(
+                                                    "ytdlp_argv",
+                                                ),
+                                            ),
+                                        ],
+                                    },
+                                ),
+                            ],
+                            backticks: false,
+                        },
+                    ),
+                    operator: Equal,
+                    right: Number {
+                        radix: 10,
+                        digits: "2",
+                    },
+                },
             ),
             operator: Or,
             right: Command(
@@ -3577,8 +3525,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "notify_argv",
@@ -3601,8 +3549,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "ytdlp_argv",
@@ -3705,17 +3653,17 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: Literal(
                         "/dev/null",
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: Some(
+                    descriptor: Number(
                         "2",
                     ),
-                    operator: ">&",
+                    operator: DuplicateOutput,
                     target: Literal(
                         "1",
                     ),
@@ -3817,19 +3765,25 @@ CshAst {
             delimiter: "EOF",
             quoted: true,
             strip_tabs: false,
-            body: "source \"$1\"\nfilepath=\"\"\nwhile IFS= read -r line; do\n  case $line in\n  OMARCHY_FILE*)\n    resolved=$(resolve_download_file \"${line#OMARCHY_FILE$'\\t'}\") || continue\n    filepath=$resolved\n    ;;\n  esac\ndone\nprintf '%s' \"$filepath\"\n",
+            content: Literal(
+                "source \"$1\"\nfilepath=\"\"\nwhile IFS= read -r line; do\n  case $line in\n  OMARCHY_FILE*)\n    resolved=$(resolve_download_file \"${line#OMARCHY_FILE$'\\t'}\") || continue\n    filepath=$resolved\n    ;;\n  esac\ndone\nprintf '%s' \"$filepath\"\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "EOF",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >>\"$YTDLP_ARGV_LOG\"\nfor arg in \"$@\"; do\n  if [[ $arg == \"--no-simulate\" ]]; then\n    printf 'OMARCHY_FILE\\t%s\\n' \"$YTDLP_FAKE_FILE\"\n    [[ -n ${YTDLP_SKIP_TITLE:-} ]] || printf 'OMARCHY_TITLE\\t%s\\n' '\"My Great Clip\"'\n    exit 0\n  fi\ndone\nexit 0\n",
+            content: Literal(
+                "#!/bin/bash\nprintf '%s\\n' \"$*\" >>\"$YTDLP_ARGV_LOG\"\nfor arg in \"$@\"; do\n  if [[ $arg == \"--no-simulate\" ]]; then\n    printf 'OMARCHY_FILE\\t%s\\n' \"$YTDLP_FAKE_FILE\"\n    [[ -n ${YTDLP_SKIP_TITLE:-} ]] || printf 'OMARCHY_TITLE\\t%s\\n' '\"My Great Clip\"'\n    exit 0\n  fi\ndone\nexit 0\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "EOF",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\nprintf '%s\\n' \"$*\" >>\"$NOTIFY_ARGV_LOG\"\n",
+            content: Literal(
+                "#!/bin/bash\nprintf '%s\\n' \"$*\" >>\"$NOTIFY_ARGV_LOG\"\n",
+            ),
         },
     ],
 }

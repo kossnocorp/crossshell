@@ -180,8 +180,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -196,8 +196,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "SH",
                     ),
@@ -236,8 +236,8 @@ CshAst {
                         ),
                         redirects: [
                             CshAstRedirect {
-                                descriptor: None,
-                                operator: ">",
+                                descriptor: Default,
+                                operator: Output,
                                 target: DoubleQuoted(
                                     Concat(
                                         [
@@ -255,8 +255,8 @@ CshAst {
                                 ),
                             },
                             CshAstRedirect {
-                                descriptor: None,
-                                operator: "<<",
+                                descriptor: Default,
+                                operator: HereDocument,
                                 target: Literal(
                                     "SH",
                                 ),
@@ -339,8 +339,8 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: DoubleQuoted(
                                         Variable(
                                             "call_log",
@@ -506,8 +506,8 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: DoubleQuoted(
                                         Variable(
                                             "expected_log",
@@ -515,8 +515,8 @@ CshAst {
                                     ),
                                 },
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: "<<",
+                                    descriptor: Default,
+                                    operator: HereDocument,
                                     target: Literal(
                                         "EOF",
                                     ),
@@ -698,8 +698,8 @@ CshAst {
                         ),
                         redirects: [
                             CshAstRedirect {
-                                descriptor: None,
-                                operator: ">",
+                                descriptor: Default,
+                                operator: Output,
                                 target: DoubleQuoted(
                                     Variable(
                                         "call_log",
@@ -812,7 +812,48 @@ CshAst {
                                 condition: CshAst {
                                     commands: [
                                         Arithmetic(
-                                            " $(wc -l <\"$call_log\") != 1 ",
+                                            Binary {
+                                                left: Expansion(
+                                                    CommandSubstitution {
+                                                        commands: [
+                                                            Redirected {
+                                                                expression: Command(
+                                                                    CshAstCommand {
+                                                                        assignments: [],
+                                                                        name: Some(
+                                                                            Literal(
+                                                                                "wc",
+                                                                            ),
+                                                                        ),
+                                                                        args: [
+                                                                            Literal(
+                                                                                "-l",
+                                                                            ),
+                                                                        ],
+                                                                    },
+                                                                ),
+                                                                redirects: [
+                                                                    CshAstRedirect {
+                                                                        descriptor: Default,
+                                                                        operator: Input,
+                                                                        target: DoubleQuoted(
+                                                                            Variable(
+                                                                                "call_log",
+                                                                            ),
+                                                                        ),
+                                                                    },
+                                                                ],
+                                                            },
+                                                        ],
+                                                        backticks: false,
+                                                    },
+                                                ),
+                                                operator: NotEqual,
+                                                right: Number {
+                                                    radix: 10,
+                                                    digits: "1",
+                                                },
+                                            },
                                         ),
                                     ],
                                 },
@@ -881,19 +922,35 @@ CshAst {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n\nprintf 'systemd-run %s\\n' \"$*\" >>\"$CALL_LOG\"\n[[ ${FAIL_SYSTEMD_RUN:-false} == \"true\" ]] && exit 1\nexit 0\n",
+            content: Literal(
+                "#!/bin/bash\n\nprintf 'systemd-run %s\\n' \"$*\" >>\"$CALL_LOG\"\n[[ ${FAIL_SYSTEMD_RUN:-false} == \"true\" ]] && exit 1\nexit 0\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "SH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n\nprintf '%s %s\\n' \"$(basename \"$0\")\" \"$*\" >>\"$CALL_LOG\"\n",
+            content: Literal(
+                "#!/bin/bash\n\nprintf '%s %s\\n' \"$(basename \"$0\")\" \"$*\" >>\"$CALL_LOG\"\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "EOF",
             quoted: false,
             strip_tabs: false,
-            body: "systemd-run --user --collect --quiet --on-active=2s --timer-property=AccuracySec=100ms systemctl $systemctl_action --no-wall\nomarchy-state clear re*-required\nomarchy-hyprland-window-close-all \nsleep 1\n",
+            content: Concat(
+                [
+                    Literal(
+                        "systemd-run --user --collect --quiet --on-active=2s --timer-property=AccuracySec=100ms systemctl ",
+                    ),
+                    Variable(
+                        "systemctl_action",
+                    ),
+                    Literal(
+                        " --no-wall\nomarchy-state clear re*-required\nomarchy-hyprland-window-close-all \nsleep 1\n",
+                    ),
+                ],
+            ),
         },
     ],
 }

@@ -329,8 +329,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "fake_hyprctl",
@@ -338,8 +338,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "BASH",
                     ),
@@ -431,10 +431,10 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: Some(
+                    descriptor: Number(
                         "2",
                     ),
-                    operator: ">",
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -479,19 +479,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "state_file",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Variable(
+                        "state_file",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -578,8 +571,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -632,8 +625,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -678,24 +671,23 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "state_dir",
+                                ),
+                                Literal(
+                                    "/",
+                                ),
+                                Variable(
+                                    "dead_signature",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "state_dir",
-                        ),
-                        Literal(
-                            "/",
-                        ),
-                        Variable(
-                            "dead_signature",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -719,18 +711,20 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -s ",
+                Not(
+                    Unary {
+                        operator: NonemptyFile,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "test_tmp",
+                                ),
+                                Literal(
+                                    "/pause-stderr",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "test_tmp",
-                        ),
-                        Literal(
-                            "/pause-stderr ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -814,8 +808,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Variable(
                             "hyprctl_log",
@@ -887,18 +881,13 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
-                        ),
-                        Variable(
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Variable(
                             "state_file",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -950,8 +939,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1004,8 +993,8 @@ CshAst {
                 ),
                 redirects: [
                     CshAstRedirect {
-                        descriptor: None,
-                        operator: ">",
+                        descriptor: Default,
+                        operator: Output,
                         target: Literal(
                             "/dev/null",
                         ),
@@ -1297,7 +1286,9 @@ CshAst {
             delimiter: "BASH",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n\nprintf '%s\\t%s\\n' \"$XDG_RUNTIME_DIR\" \"$*\" >>\"$FAKE_HYPRCTL_LOG\"\n\ncase \"$*\" in\n  *'--instance dead-signature '*)\n    printf \"Couldn't connect to %s/hypr/dead-signature/.socket.sock. (4)\\n\" \"$XDG_RUNTIME_DIR\"\n    exit 4\n    ;;\n  *'getoption misc.disable_autoreload'*)\n    printf '{\"option\":\"misc.disable_autoreload\",\"bool\":%s,\"set\":true}\\n' \"${FAKE_DISABLE_AUTORELOAD:-false}\"\n    ;;\n  *'getoption debug.suppress_errors'*)\n    printf '{\"option\":\"debug.suppress_errors\",\"bool\":%s,\"set\":true}\\n' \"${FAKE_SUPPRESS_ERRORS:-false}\"\n    ;;\n  *)\n    printf 'ok\\n'\n    ;;\nesac\n",
+            content: Literal(
+                "#!/bin/bash\n\nprintf '%s\\t%s\\n' \"$XDG_RUNTIME_DIR\" \"$*\" >>\"$FAKE_HYPRCTL_LOG\"\n\ncase \"$*\" in\n  *'--instance dead-signature '*)\n    printf \"Couldn't connect to %s/hypr/dead-signature/.socket.sock. (4)\\n\" \"$XDG_RUNTIME_DIR\"\n    exit 4\n    ;;\n  *'getoption misc.disable_autoreload'*)\n    printf '{\"option\":\"misc.disable_autoreload\",\"bool\":%s,\"set\":true}\\n' \"${FAKE_DISABLE_AUTORELOAD:-false}\"\n    ;;\n  *'getoption debug.suppress_errors'*)\n    printf '{\"option\":\"debug.suppress_errors\",\"bool\":%s,\"set\":true}\\n' \"${FAKE_SUPPRESS_ERRORS:-false}\"\n    ;;\n  *)\n    printf 'ok\\n'\n    ;;\nesac\n",
+            ),
         },
     ],
 }

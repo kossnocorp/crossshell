@@ -30,11 +30,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_MKINITCPIO_HOOKS_CONF",
-                                suffix: Literal(
-                                    ":-/etc/mkinitcpio.conf.d/omarchy_hooks.conf",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/etc/mkinitcpio.conf.d/omarchy_hooks.conf",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -51,11 +56,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_MKINITCPIO_NVIDIA_CONF",
-                                suffix: Literal(
-                                    ":-/etc/mkinitcpio.conf.d/nvidia.conf",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/etc/mkinitcpio.conf.d/nvidia.conf",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -72,11 +82,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_KMS_REBUILD_MARKER",
-                                suffix: Literal(
-                                    ":-/var/lib/omarchy/migrations/1786605598",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/var/lib/omarchy/migrations/1786605598",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -120,24 +135,19 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
+                And(
+                    Unary {
+                        operator: Regular,
+                        operand: Variable(
                             "hooks_conf",
                         ),
-                        Literal(
-                            " && -f ",
-                        ),
-                        Variable(
+                    },
+                    Unary {
+                        operator: Regular,
+                        operand: Variable(
                             "nvidia_conf",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -159,18 +169,13 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -e ",
-                        ),
-                        Variable(
+                Not(
+                    Unary {
+                        operator: Exists,
+                        operand: Variable(
                             "rebuild_marker",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -258,33 +263,27 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        Variable(
-                            "hooks",
-                        ),
-                        Literal(
-                            " != ",
-                        ),
-                        Glob(
-                            Star,
-                        ),
-                        DoubleQuoted(
-                            Literal(
-                                " kms ",
+                Binary {
+                    left: Variable(
+                        "hooks",
+                    ),
+                    operator: PatternNotEqual,
+                    right: Concat(
+                        [
+                            Glob(
+                                Star,
                             ),
-                        ),
-                        Glob(
-                            Star,
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                            DoubleQuoted(
+                                Literal(
+                                    " kms ",
+                                ),
+                            ),
+                            Glob(
+                                Star,
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(

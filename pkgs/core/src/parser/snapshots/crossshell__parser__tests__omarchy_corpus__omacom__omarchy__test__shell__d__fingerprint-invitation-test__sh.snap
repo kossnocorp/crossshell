@@ -54,9 +54,12 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Literal(
-                                    " -f /etc/pam.d/omarchy-lock-fingerprint ",
-                                ),
+                                Unary {
+                                    operator: Regular,
+                                    operand: Literal(
+                                        "/etc/pam.d/omarchy-lock-fingerprint",
+                                    ),
+                                },
                             ),
                         ],
                     },
@@ -378,8 +381,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -394,8 +397,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "EOF",
                     ),
@@ -444,8 +447,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -460,8 +463,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "EOF",
                     ),
@@ -510,8 +513,8 @@ CshAst {
             ),
             redirects: [
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: ">",
+                    descriptor: Default,
+                    operator: Output,
                     target: DoubleQuoted(
                         Concat(
                             [
@@ -526,8 +529,8 @@ CshAst {
                     ),
                 },
                 CshAstRedirect {
-                    descriptor: None,
-                    operator: "<<",
+                    descriptor: Default,
+                    operator: HereDocument,
                     target: Literal(
                         "EOF",
                     ),
@@ -683,18 +686,20 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -f ",
+                Not(
+                    Unary {
+                        operator: Regular,
+                        operand: Concat(
+                            [
+                                Variable(
+                                    "test_home",
+                                ),
+                                Literal(
+                                    "/.local/state/omarchy/done/fingerprint-setup-invitation",
+                                ),
+                            ],
                         ),
-                        Variable(
-                            "test_home",
-                        ),
-                        Literal(
-                            "/.local/state/omarchy/done/fingerprint-setup-invitation ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -718,18 +723,13 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ! -s ",
-                        ),
-                        Variable(
+                Not(
+                    Unary {
+                        operator: NonemptyFile,
+                        operand: Variable(
                             "log_file",
                         ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
+                    },
                 ),
             ),
             operator: Or,
@@ -781,19 +781,19 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "test_home",
-                        ),
-                        Literal(
-                            "/.local/state/omarchy/done/fingerprint-setup-invitation ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Concat(
+                        [
+                            Variable(
+                                "test_home",
+                            ),
+                            Literal(
+                                "/.local/state/omarchy/done/fingerprint-setup-invitation",
+                            ),
+                        ],
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -816,19 +816,12 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " -f ",
-                        ),
-                        Variable(
-                            "hook_path",
-                        ),
-                        Literal(
-                            " ",
-                        ),
-                    ],
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Variable(
+                        "hook_path",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -851,44 +844,40 @@ CshAst {
         },
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "grep",
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "grep",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "-c",
+                                        ),
+                                        SingleQuoted(
+                                            "^notification$",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "log_file",
                                             ),
                                         ),
-                                        args: [
-                                            Literal(
-                                                "-c",
-                                            ),
-                                            SingleQuoted(
-                                                "^notification$",
-                                            ),
-                                            DoubleQuoted(
-                                                Variable(
-                                                    "log_file",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " -eq 1 ",
-                        ),
-                    ],
-                ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: Equal,
+                    right: Literal(
+                        "1",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1067,44 +1056,40 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Concat(
-                    [
-                        Literal(
-                            " ",
-                        ),
-                        CommandSubstitution {
-                            commands: [
-                                Command(
-                                    CshAstCommand {
-                                        assignments: [],
-                                        name: Some(
-                                            Literal(
-                                                "grep",
+                Binary {
+                    left: CommandSubstitution {
+                        commands: [
+                            Command(
+                                CshAstCommand {
+                                    assignments: [],
+                                    name: Some(
+                                        Literal(
+                                            "grep",
+                                        ),
+                                    ),
+                                    args: [
+                                        Literal(
+                                            "-c",
+                                        ),
+                                        SingleQuoted(
+                                            "^notification$",
+                                        ),
+                                        DoubleQuoted(
+                                            Variable(
+                                                "log_file",
                                             ),
                                         ),
-                                        args: [
-                                            Literal(
-                                                "-c",
-                                            ),
-                                            SingleQuoted(
-                                                "^notification$",
-                                            ),
-                                            DoubleQuoted(
-                                                Variable(
-                                                    "log_file",
-                                                ),
-                                            ),
-                                        ],
-                                    },
-                                ),
-                            ],
-                            backticks: false,
-                        },
-                        Literal(
-                            " -eq 1 ",
-                        ),
-                    ],
-                ),
+                                    ],
+                                },
+                            ),
+                        ],
+                        backticks: false,
+                    },
+                    operator: Equal,
+                    right: Literal(
+                        "1",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -1148,19 +1133,25 @@ CshAst {
             delimiter: "EOF",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\n[[ -f $TEST_HW_MARKER ]]\n",
+            content: Literal(
+                "#!/bin/bash\n[[ -f $TEST_HW_MARKER ]]\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "EOF",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\necho notification >>\"$TEST_LOG\"\nexec_args=()\nwhile (($# > 0)); do\n  if [[ $1 == \"--exec\" ]]; then shift; exec_args=(\"$@\"); break; fi\n  shift\ndone\n((${#exec_args[@]})) && echo \"exec:${exec_args[*]}\" >>\"$TEST_LOG\"\n",
+            content: Literal(
+                "#!/bin/bash\necho notification >>\"$TEST_LOG\"\nexec_args=()\nwhile (($# > 0)); do\n  if [[ $1 == \"--exec\" ]]; then shift; exec_args=(\"$@\"); break; fi\n  shift\ndone\n((${#exec_args[@]})) && echo \"exec:${exec_args[*]}\" >>\"$TEST_LOG\"\n",
+            ),
         },
         CshAstHereDocument {
             delimiter: "EOF",
             quoted: true,
             strip_tabs: false,
-            body: "#!/bin/bash\necho \"systemd-run:$*\" >>\"$TEST_LOG\"\n",
+            content: Literal(
+                "#!/bin/bash\necho \"systemd-run:$*\" >>\"$TEST_LOG\"\n",
+            ),
         },
     ],
 }

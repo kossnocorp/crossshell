@@ -30,11 +30,16 @@ CshAst {
                         operator: Set,
                         value: DoubleQuoted(
                             Parameter {
-                                prefix: "",
                                 name: "OMARCHY_PATH",
-                                suffix: Literal(
-                                    ":-/usr/share/omarchy",
-                                ),
+                                subscript: None,
+                                mode: Value,
+                                operation: Default {
+                                    operator: Use,
+                                    test_empty: true,
+                                    word: Literal(
+                                        "/usr/share/omarchy",
+                                    ),
+                                },
                             },
                         ),
                     },
@@ -64,18 +69,13 @@ CshAst {
                     condition: CshAst {
                         commands: [
                             Test(
-                                Concat(
-                                    [
-                                        Literal(
-                                            " ! -f ",
-                                        ),
-                                        Variable(
+                                Not(
+                                    Unary {
+                                        operator: Regular,
+                                        operand: Variable(
                                             "snapper_config_script",
                                         ),
-                                        Literal(
-                                            " ",
-                                        ),
-                                    ],
+                                    },
                                 ),
                             ),
                         ],
@@ -123,7 +123,16 @@ CshAst {
                                     condition: CshAst {
                                         commands: [
                                             Arithmetic(
-                                                " EUID == 0 ",
+                                                Binary {
+                                                    left: Variable(
+                                                        "EUID",
+                                                    ),
+                                                    operator: Equal,
+                                                    right: Number {
+                                                        radix: 10,
+                                                        digits: "0",
+                                                    },
+                                                },
                                             ),
                                         ],
                                     },
@@ -205,17 +214,17 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: Literal(
                                         "/dev/null",
                                     ),
                                 },
                                 CshAstRedirect {
-                                    descriptor: Some(
+                                    descriptor: Number(
                                         "2",
                                     ),
-                                    operator: ">&",
+                                    operator: DuplicateOutput,
                                     target: Literal(
                                         "1",
                                     ),
@@ -257,17 +266,17 @@ CshAst {
                             ),
                             redirects: [
                                 CshAstRedirect {
-                                    descriptor: None,
-                                    operator: ">",
+                                    descriptor: Default,
+                                    operator: Output,
                                     target: Literal(
                                         "/dev/null",
                                     ),
                                 },
                                 CshAstRedirect {
-                                    descriptor: Some(
+                                    descriptor: Number(
                                         "2",
                                     ),
-                                    operator: ">&",
+                                    operator: DuplicateOutput,
                                     target: Literal(
                                         "1",
                                     ),
@@ -295,9 +304,12 @@ CshAst {
         ),
         Binary {
             left: Test(
-                Literal(
-                    " -f /etc/snapper/configs/root ",
-                ),
+                Unary {
+                    operator: Regular,
+                    operand: Literal(
+                        "/etc/snapper/configs/root",
+                    ),
+                },
             ),
             operator: Or,
             right: Command(
@@ -452,7 +464,9 @@ CshAst {
         },
         Binary {
             left: Arithmetic(
-                " needs_repair ",
+                Variable(
+                    "needs_repair",
+                ),
             ),
             operator: Or,
             right: Command(
