@@ -85,9 +85,10 @@ fn arithmetic_precedence_associativity_and_expansions() {
         panic!()
     };
     assert_eq!(&source[ast.spans[commands[0].0].clone()], "printf 5");
-    let CshAstExpression::ArithmeticFor { clauses, .. } = &ast[ast.commands[1]] else {
+    let CshAstExpression::ArithmeticFor(expression) = &ast[ast.commands[1]] else {
         panic!()
     };
+    let clauses = &expression.clauses;
     assert!(matches!(
         clauses.condition.as_ref().unwrap().kind,
         K::Binary {
@@ -146,9 +147,10 @@ fn arithmetic_radices_ternary_subscripts_and_empty_clauses() {
     };
     assert!(matches!(&then_value.kind, K::Number { radix: 16, digits } if digits == "ff"));
     assert!(matches!(&else_value.kind, K::Number { radix: 8, digits } if digits == "010"));
-    let CshAstExpression::ArithmeticFor { clauses, .. } = &ast[ast.commands[1]] else {
+    let CshAstExpression::ArithmeticFor(expression) = &ast[ast.commands[1]] else {
         panic!()
     };
+    let clauses = &expression.clauses;
     assert_eq!(
         clauses,
         &CshAstArithmeticFor {
@@ -181,7 +183,7 @@ fn arithmetic_substitutions_use_shell_grammar_and_retain_grouping() {
     let CshAstWord::CommandSubstitution { commands, .. } = &**word else {
         panic!()
     };
-    assert!(matches!(ast[commands[0]], CshAstExpression::Case { .. }));
+    assert!(matches!(ast[commands[0]], CshAstExpression::Case(_)));
     assert!(matches!(
         ast[ast.commands[1]],
         CshAstExpression::Subshell(_)
@@ -508,9 +510,10 @@ fn heredoc_continuations_precede_delimiter_matching() {
 fn redirects_are_typed_ordered_and_spanned() {
     let source = "echo λ 2>&1 >out {fd}<&- &>>log";
     let ast = CshParser::parse(source).unwrap();
-    let CshAstExpression::Redirected { redirects, .. } = &ast[ast.commands[0]] else {
+    let CshAstExpression::Redirected(redirected) = &ast[ast.commands[0]] else {
         panic!()
     };
+    let redirects = &redirected.redirects;
     assert_eq!(
         redirects.iter().map(|r| r.operator).collect::<Vec<_>>(),
         vec![

@@ -11,11 +11,13 @@ pub enum CshError<'source_code> {
         span: Range<usize>,
         expected: &'static str,
     },
+
     UnclosedQuote {
         quote: char,
         opening_span: Range<usize>,
         end_span: Range<usize>,
     },
+
     IncompleteEscape {
         span: Range<usize>,
     },

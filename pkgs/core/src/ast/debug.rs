@@ -79,10 +79,10 @@ impl Debug for Node<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let ast = self.0;
         match &ast[self.1] {
-            CshAstExpression::Function { name, body } => f
+            CshAstExpression::Function(function) => f
                 .debug_struct("Function")
-                .field("name", name)
-                .field("body", &Node(ast, *body))
+                .field("name", &function.name)
+                .field("body", &Node(ast, function.body))
                 .finish(),
             CshAstExpression::Test(condition) => f
                 .debug_tuple("Test")
@@ -92,85 +92,88 @@ impl Debug for Node<'_> {
                 .debug_tuple("Arithmetic")
                 .field(&Arithmetic(ast, expression))
                 .finish(),
-            CshAstExpression::ArithmeticFor { clauses, body } => f
+            CshAstExpression::ArithmeticFor(expression) => f
                 .debug_struct("ArithmeticFor")
-                .field("init", &clauses.init.as_ref().map(|e| Arithmetic(ast, e)))
+                .field(
+                    "init",
+                    &expression.clauses.init.as_ref().map(|e| Arithmetic(ast, e)),
+                )
                 .field(
                     "condition",
-                    &clauses.condition.as_ref().map(|e| Arithmetic(ast, e)),
+                    &expression
+                        .clauses
+                        .condition
+                        .as_ref()
+                        .map(|e| Arithmetic(ast, e)),
                 )
                 .field(
                     "update",
-                    &clauses.update.as_ref().map(|e| Arithmetic(ast, e)),
+                    &expression
+                        .clauses
+                        .update
+                        .as_ref()
+                        .map(|e| Arithmetic(ast, e)),
                 )
-                .field("body", &List(ast, body))
+                .field("body", &List(ast, &expression.body))
                 .finish(),
             CshAstExpression::Command(command) => f
                 .debug_tuple("Command")
                 .field(&Command(ast, command))
                 .finish(),
-            CshAstExpression::Binary {
-                left,
-                operator,
-                right,
-            } => f
+            CshAstExpression::Binary(binary) => f
                 .debug_struct("Binary")
-                .field("left", &Node(ast, *left))
-                .field("operator", operator)
-                .field("right", &Node(ast, *right))
+                .field("left", &Node(ast, binary.left))
+                .field("operator", &binary.operator)
+                .field("right", &Node(ast, binary.right))
                 .finish(),
-            CshAstExpression::Background(id) => {
-                f.debug_tuple("Background").field(&Node(ast, *id)).finish()
-            }
-            CshAstExpression::Negated(id) => {
-                f.debug_tuple("Negated").field(&Node(ast, *id)).finish()
-            }
-            CshAstExpression::Subshell(list) => {
-                f.debug_tuple("Subshell").field(&List(ast, list)).finish()
-            }
-            CshAstExpression::Group(list) => {
-                f.debug_tuple("Group").field(&List(ast, list)).finish()
-            }
-            CshAstExpression::If {
-                branches,
-                otherwise,
-            } => f
+            CshAstExpression::Background(background) => f
+                .debug_tuple("Background")
+                .field(&Node(ast, background.expression))
+                .finish(),
+            CshAstExpression::Negated(negated) => f
+                .debug_tuple("Negated")
+                .field(&Node(ast, negated.expression))
+                .finish(),
+            CshAstExpression::Subshell(subshell) => f
+                .debug_tuple("Subshell")
+                .field(&List(ast, &subshell.body))
+                .finish(),
+            CshAstExpression::Group(group) => f
+                .debug_tuple("Group")
+                .field(&List(ast, &group.body))
+                .finish(),
+            CshAstExpression::If(expression) => f
                 .debug_struct("If")
-                .field("branches", &Branches(ast, branches))
-                .field("otherwise", &otherwise.as_ref().map(|list| List(ast, list)))
+                .field("branches", &Branches(ast, &expression.branches))
+                .field(
+                    "otherwise",
+                    &expression.otherwise.as_ref().map(|list| List(ast, list)),
+                )
                 .finish(),
-            CshAstExpression::For {
-                variable,
-                words,
-                body,
-            } => f
+            CshAstExpression::For(expression) => f
                 .debug_struct("For")
-                .field("variable", variable)
-                .field("words", &words.as_ref().map(|words| Words(ast, words)))
-                .field("body", &List(ast, body))
+                .field("variable", &expression.variable)
+                .field(
+                    "words",
+                    &expression.words.as_ref().map(|words| Words(ast, words)),
+                )
+                .field("body", &List(ast, &expression.body))
                 .finish(),
-            CshAstExpression::Loop {
-                until,
-                condition,
-                body,
-            } => f
+            CshAstExpression::Loop(expression) => f
                 .debug_struct("Loop")
-                .field("until", until)
-                .field("condition", &List(ast, condition))
-                .field("body", &List(ast, body))
+                .field("until", &expression.until)
+                .field("condition", &List(ast, &expression.condition))
+                .field("body", &List(ast, &expression.body))
                 .finish(),
-            CshAstExpression::Case { word, arms } => f
+            CshAstExpression::Case(expression) => f
                 .debug_struct("Case")
-                .field("word", &Word(ast, word))
-                .field("arms", &Arms(ast, arms))
+                .field("word", &Word(ast, &expression.word))
+                .field("arms", &Arms(ast, &expression.arms))
                 .finish(),
-            CshAstExpression::Redirected {
-                expression,
-                redirects,
-            } => f
+            CshAstExpression::Redirected(redirected) => f
                 .debug_struct("Redirected")
-                .field("expression", &Node(ast, *expression))
-                .field("redirects", &Redirects(ast, redirects))
+                .field("expression", &Node(ast, redirected.expression))
+                .field("redirects", &Redirects(ast, &redirected.redirects))
                 .finish(),
         }
     }

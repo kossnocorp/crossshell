@@ -640,16 +640,11 @@ local scalar+=value"#,
         else {
             panic!("expected substitution");
         };
-        let CshAstExpression::Binary {
-            left,
-            operator,
-            right,
-        } = &ast[commands[0]]
-        else {
+        let CshAstExpression::Binary(binary) = &ast[commands[0]] else {
             panic!("expected pipeline");
         };
-        assert_eq!(*operator, CshAstOperator::Pipe);
-        let CshAstExpression::Command(grep) = &ast[*left] else {
+        assert_eq!(binary.operator, CshAstOperator::Pipe);
+        let CshAstExpression::Command(grep) = &ast[binary.left] else {
             panic!("expected grep");
         };
         assert_eq!(
@@ -661,7 +656,7 @@ local scalar+=value"#,
                 CshAstWord::Literal(".sh".into()),
             ])
         );
-        let CshAstExpression::Command(head) = &ast[*right] else {
+        let CshAstExpression::Command(head) = &ast[binary.right] else {
             panic!("expected head");
         };
         assert_eq!(head.name, Some(CshAstWord::Literal("head".into())));
@@ -1033,19 +1028,16 @@ local scalar+=value"#,
         let ast = CshParser::parse(
             "exec {fd_1}>out {input}<&0 {fd_1}>&-; {input}<&-; echo {fd} '{fd}' \\{fd\\} {fd} >out; { echo ok; } {log}>>out",
         ).unwrap();
-        let CshAstExpression::Redirected {
-            expression,
-            redirects,
-        } = &ast[ast.commands[0]]
-        else {
+        let CshAstExpression::Redirected(redirected) = &ast[ast.commands[0]] else {
             panic!("expected redirected exec");
         };
-        let CshAstExpression::Command(command) = &ast[*expression] else {
+        let CshAstExpression::Command(command) = &ast[redirected.expression] else {
             panic!("expected exec command");
         };
         assert!(command.args.is_empty());
         assert_eq!(
-            redirects
+            redirected
+                .redirects
                 .iter()
                 .map(|r| (r.descriptor.clone(), r.operator))
                 .collect::<Vec<_>>(),
@@ -1064,37 +1056,35 @@ local scalar+=value"#,
                 )
             ]
         );
-        let CshAstExpression::Redirected {
-            expression,
-            redirects,
-        } = &ast[ast.commands[1]]
-        else {
+        let CshAstExpression::Redirected(redirected) = &ast[ast.commands[1]] else {
             panic!("expected redirect-only command");
         };
         assert_eq!(
-            redirects[0].descriptor,
+            redirected.redirects[0].descriptor,
             CshAstDescriptor::Variable("input".into())
         );
-        assert!(matches!(&ast[*expression], CshAstExpression::Command(c) if c.name.is_none()));
-        let CshAstExpression::Redirected {
-            expression,
-            redirects,
-        } = &ast[ast.commands[2]]
-        else {
+        assert!(
+            matches!(&ast[redirected.expression], CshAstExpression::Command(c) if c.name.is_none())
+        );
+        let CshAstExpression::Redirected(redirected) = &ast[ast.commands[2]] else {
             panic!("expected redirected echo");
         };
-        assert_eq!(redirects[0].descriptor, CshAstDescriptor::Default);
-        assert!(matches!(&ast[*expression], CshAstExpression::Command(c) if c.args.len() == 4));
-        let CshAstExpression::Redirected {
-            expression,
-            redirects,
-        } = &ast[ast.commands[3]]
-        else {
+        assert_eq!(
+            redirected.redirects[0].descriptor,
+            CshAstDescriptor::Default
+        );
+        assert!(
+            matches!(&ast[redirected.expression], CshAstExpression::Command(c) if c.args.len() == 4)
+        );
+        let CshAstExpression::Redirected(redirected) = &ast[ast.commands[3]] else {
             panic!("expected redirected group");
         };
-        assert!(matches!(&ast[*expression], CshAstExpression::Group(_)));
+        assert!(matches!(
+            &ast[redirected.expression],
+            CshAstExpression::Group(_)
+        ));
         assert_eq!(
-            redirects[0].descriptor,
+            redirected.redirects[0].descriptor,
             CshAstDescriptor::Variable("log".into())
         );
     }
@@ -1799,20 +1789,15 @@ b # comment"#).unwrap();
         assert_eq!(ast.nodes.len(), 511);
         let mut id = ast.commands[0];
         for expected in (1..256).rev() {
-            let CshAstExpression::Binary {
-                left,
-                operator,
-                right,
-            } = &ast[id]
-            else {
+            let CshAstExpression::Binary(binary) = &ast[id] else {
                 panic!("expected a pipeline node");
             };
-            assert_eq!(*operator, CshAstOperator::Pipe);
-            let CshAstExpression::Command(command) = &ast[*right] else {
+            assert_eq!(binary.operator, CshAstOperator::Pipe);
+            let CshAstExpression::Command(command) = &ast[binary.right] else {
                 panic!("expected a command");
             };
             assert_eq!(command.args, [CshAstWord::Literal(expected.to_string())]);
-            id = *left;
+            id = binary.left;
         }
         let CshAstExpression::Command(command) = &ast[id] else {
             panic!("expected the first command");
@@ -1869,19 +1854,18 @@ b # comment"#).unwrap();
     fn keeps_keywords_descriptors_and_word_fragments_distinct() {
         let ast =
             CshParser::parse("ifconfig 'if' a#b 2file 2>out <(pwd) pre\"héllo\"'🌍'").unwrap();
-        let CshAstExpression::Redirected {
-            expression,
-            redirects,
-        } = &ast[ast.commands[0]]
-        else {
+        let CshAstExpression::Redirected(redirected) = &ast[ast.commands[0]] else {
             panic!("expected redirect");
         };
         assert_eq!(
-            redirects[0].descriptor,
+            redirected.redirects[0].descriptor,
             CshAstDescriptor::Number("2".into())
         );
-        assert_eq!(redirects[0].target, CshAstWord::Literal("out".into()));
-        let CshAstExpression::Command(command) = &ast[*expression] else {
+        assert_eq!(
+            redirected.redirects[0].target,
+            CshAstWord::Literal("out".into())
+        );
+        let CshAstExpression::Command(command) = &ast[redirected.expression] else {
             panic!("expected command");
         };
         assert_eq!(command.name, Some(CshAstWord::Literal("ifconfig".into())));

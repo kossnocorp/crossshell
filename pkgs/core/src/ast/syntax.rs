@@ -1,6 +1,8 @@
 use super::CshAstWord;
 use std::ops::Range;
 
+/// Arithmetic expression:
+///     (( 1 + 3 ))
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CshAstArithmetic {
     pub span: Range<usize>,
@@ -94,6 +96,8 @@ pub struct CshAstArithmeticFor {
     pub update: Option<CshAstArithmetic>,
 }
 
+/// Conditional test:
+///     [[ -n "$name" ]]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CshAstCondition {
     pub span: Range<usize>,

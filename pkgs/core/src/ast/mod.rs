@@ -1,4 +1,5 @@
 mod debug;
+
 mod syntax;
 pub use syntax::*;
 
@@ -29,50 +30,203 @@ impl std::ops::Index<CshAstNodeId> for CshAst {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CshAstExpression {
+    /// Command:
+    ///     printf '%s\n' hello
     Command(CshAstCommand),
-    Function {
-        name: String,
-        body: CshAstNodeId,
-    },
-    /// Conditional operators and precedence, with quote-aware word operands.
+
+    /// Function definition:
+    ///     greet() {
+    ///         echo hello
+    ///     }
+    Function(CshAstFunction),
+
+    /// Conditional test:
+    ///     [[ -n "$name" ]]
     Test(CshAstCondition),
-    /// Arithmetic syntax is retained without evaluating it.
+
+    /// Arithmetic expression:
+    ///     (( 1 + 3 ))
+    ///     (( 2 * 5 ))
     Arithmetic(CshAstArithmetic),
-    ArithmeticFor {
-        clauses: CshAstArithmeticFor,
-        body: CshAstList,
-    },
-    Binary {
-        left: CshAstNodeId,
-        operator: CshAstOperator,
-        right: CshAstNodeId,
-    },
-    Background(CshAstNodeId),
-    Subshell(CshAstList),
-    Group(CshAstList),
-    Negated(CshAstNodeId),
-    If {
-        branches: Vec<CshAstBranch>,
-        otherwise: Option<CshAstList>,
-    },
-    For {
-        variable: String,
-        words: Option<Vec<CshAstWord>>,
-        body: CshAstList,
-    },
-    Loop {
-        until: bool,
-        condition: CshAstList,
-        body: CshAstList,
-    },
-    Case {
-        word: CshAstWord,
-        arms: Vec<CshAstCaseArm>,
-    },
-    Redirected {
-        expression: CshAstNodeId,
-        redirects: Vec<CshAstRedirect>,
-    },
+
+    /// Arithmetic `for` loop:
+    ///     for ((i = 0; i < 3; i++)); do
+    ///         echo "$i"
+    ///     done
+    ArithmeticFor(CshAstArithmeticForExpression),
+
+    /// Commands combined with a pipeline or logical operator:
+    ///     printf '%s\n' hello | grep hello
+    Binary(CshAstBinary),
+
+    /// Command running in the background:
+    ///     sleep 1 &
+    Background(CshAstBackground),
+
+    /// Commands running in a subshell:
+    ///     (
+    ///         cd /tmp
+    ///         pwd
+    ///     )
+    Subshell(CshAstSubshell),
+
+    /// Grouped list of commands:
+    ///     {
+    ///         echo one
+    ///         echo two
+    ///     }
+    Group(CshAstGroup),
+
+    /// Negated command:
+    ///     ! test -f missing.txt
+    Negated(CshAstNegated),
+
+    /// Conditional branches:
+    ///     if test -f file; then
+    ///         echo yes
+    ///     else
+    ///         echo no
+    ///     fi
+    If(CshAstIf),
+
+    /// Word-based `for` loop:
+    ///     for file in *.txt; do
+    ///         echo "$file"
+    ///     done
+    For(CshAstFor),
+
+    /// `while` or `until` loop:
+    ///     while test "$n" -lt 3; do
+    ///         echo "$n"
+    ///     done
+    Loop(CshAstLoop),
+
+    /// Pattern-matched branches:
+    ///     case "$answer" in
+    ///         y) echo yes ;;
+    ///         n) echo no ;;
+    ///     esac
+    Case(CshAstCase),
+
+    /// Command with input or output redirection:
+    ///     cat < input.txt > output.txt
+    Redirected(CshAstRedirected),
+}
+
+/// Function definition:
+///     greet() {
+///         echo hello
+///     }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstFunction {
+    pub name: String,
+    pub body: CshAstNodeId,
+}
+
+/// Arithmetic `for` loop:
+///     for ((i = 0; i < 3; i++)); do
+///         echo "$i"
+///     done
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstArithmeticForExpression {
+    pub clauses: CshAstArithmeticFor,
+    pub body: CshAstList,
+}
+
+/// Commands combined with a pipeline or logical operator:
+///     printf '%s\n' hello | grep hello
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstBinary {
+    pub left: CshAstNodeId,
+    pub operator: CshAstOperator,
+    pub right: CshAstNodeId,
+}
+
+/// Conditional branches:
+///     if test -f file; then
+///         echo yes
+///     else
+///         echo no
+///     fi
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstIf {
+    pub branches: Vec<CshAstBranch>,
+    pub otherwise: Option<CshAstList>,
+}
+
+/// Word-based `for` loop:
+///     for file in *.txt; do
+///         echo "$file"
+///     done
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstFor {
+    pub variable: String,
+    pub words: Option<Vec<CshAstWord>>,
+    pub body: CshAstList,
+}
+
+/// `while` or `until` loop:
+///     while test "$n" -lt 3; do
+///         echo "$n"
+///     done
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstLoop {
+    pub until: bool,
+    pub condition: CshAstList,
+    pub body: CshAstList,
+}
+
+/// Pattern-matched branches:
+///     case "$answer" in
+///         y) echo yes ;;
+///         n) echo no ;;
+///     esac
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstCase {
+    pub word: CshAstWord,
+    pub arms: Vec<CshAstCaseArm>,
+}
+
+/// Command with input or output redirection:
+///     cat < input.txt > output.txt
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstRedirected {
+    pub expression: CshAstNodeId,
+    pub redirects: Vec<CshAstRedirect>,
+}
+
+/// Command running in the background:
+///     sleep 1 &
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstBackground {
+    pub expression: CshAstNodeId,
+}
+
+/// Commands running in a subshell:
+///     (
+///         cd /tmp
+///         pwd
+///     )
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstSubshell {
+    pub body: CshAstList,
+}
+
+/// Grouped list of commands:
+///     {
+///         echo one
+///         echo two
+///     }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstGroup {
+    pub body: CshAstList,
+}
+
+/// Negated command:
+///     ! test -f missing.txt
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstNegated {
+    pub expression: CshAstNodeId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -119,6 +273,8 @@ pub enum CshAstOperator {
     Or,
 }
 
+/// Command:
+///     printf '%s\n' hello
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CshAstCommand {
     pub assignments: Vec<CshAstAssignment>,

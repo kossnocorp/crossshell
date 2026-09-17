@@ -320,10 +320,10 @@ impl<'a> Cursor<'a> {
 
     fn alloc(&mut self, expression: CshAstExpression) -> CshAstNodeId {
         let start = match &expression {
-            CshAstExpression::Binary { left, .. } => self.spans[left.0].start,
-            CshAstExpression::Background(id)
-            | CshAstExpression::Negated(id)
-            | CshAstExpression::Redirected { expression: id, .. } => self.spans[id.0].start,
+            CshAstExpression::Binary(binary) => self.spans[binary.left.0].start,
+            CshAstExpression::Background(background) => self.spans[background.expression.0].start,
+            CshAstExpression::Negated(negated) => self.spans[negated.expression.0].start,
+            CshAstExpression::Redirected(redirected) => self.spans[redirected.expression.0].start,
             _ => self.pos,
         };
         self.alloc_at(expression, start)
@@ -392,7 +392,9 @@ impl<'a> Cursor<'a> {
             self.comment();
             if self.byte() == Some(b'&') && !matches!(self.peek(1), Some(b'&' | b'>')) {
                 self.pos += 1;
-                expression = self.alloc(CshAstExpression::Background(expression));
+                expression = self.alloc(CshAstExpression::Background(CshAstBackground {
+                    expression,
+                }));
                 commands.push(expression);
                 continue;
             }
@@ -428,11 +430,11 @@ impl<'a> Cursor<'a> {
             self.pos += 2;
             self.continuation()?;
             let right = self.pipeline()?;
-            left = self.alloc(CshAstExpression::Binary {
+            left = self.alloc(CshAstExpression::Binary(CshAstBinary {
                 left,
                 operator,
                 right,
-            });
+            }));
         }
         Ok(left)
     }
@@ -455,14 +457,17 @@ impl<'a> Cursor<'a> {
             };
             self.continuation()?;
             let right = self.command()?;
-            left = self.alloc(CshAstExpression::Binary {
+            left = self.alloc(CshAstExpression::Binary(CshAstBinary {
                 left,
                 operator,
                 right,
-            });
+            }));
         }
         Ok(if negated {
-            self.alloc_at(CshAstExpression::Negated(left), start)
+            self.alloc_at(
+                CshAstExpression::Negated(CshAstNegated { expression: left }),
+                start,
+            )
         } else {
             left
         })
@@ -477,7 +482,7 @@ impl<'a> Cursor<'a> {
                 return Err(self.expected("a function body"));
             }
             let body = self.command()?;
-            CshAstExpression::Function { name, body }
+            CshAstExpression::Function(CshAstFunction { name, body })
         } else if self.byte() == Some(b'[') && self.peek(1) == Some(b'[') {
             CshAstExpression::Test(self.condition()?)
         } else if self.byte() == Some(b'(') && self.peek(1) == Some(b'(') {
@@ -505,20 +510,20 @@ impl<'a> Cursor<'a> {
                     self.pos = start + 1;
                     let body = self.list(Stop::Subshell, true)?;
                     self.require_close_paren()?;
-                    CshAstExpression::Subshell(body)
+                    CshAstExpression::Subshell(CshAstSubshell { body })
                 }
             }
         } else if self.eat(b'(') {
             let body = self.list(Stop::Subshell, true)?;
             self.require_close_paren()?;
-            CshAstExpression::Subshell(body)
+            CshAstExpression::Subshell(CshAstSubshell { body })
         } else {
             match self.keyword() {
                 Some(Keyword::OpenBrace) => {
                     self.pos += 1;
                     let body = self.list(Stop::Group, true)?;
                     self.require_keyword(Keyword::CloseBrace)?;
-                    CshAstExpression::Group(body)
+                    CshAstExpression::Group(CshAstGroup { body })
                 }
                 Some(Keyword::If) => {
                     self.pos += 2;
@@ -538,11 +543,11 @@ impl<'a> Cursor<'a> {
                     self.require_keyword(Keyword::Do)?;
                     let body = self.list(Stop::Done, true)?;
                     self.require_keyword(Keyword::Done)?;
-                    CshAstExpression::Loop {
+                    CshAstExpression::Loop(CshAstLoop {
                         until: keyword == Keyword::Until,
                         condition,
                         body,
-                    }
+                    })
                 }
                 None | Some(Keyword::In | Keyword::Bang) => return self.simple(),
                 _ => return Err(self.expected("a command")),
@@ -635,10 +640,10 @@ impl<'a> Cursor<'a> {
             None
         };
         self.require_keyword(Keyword::Fi)?;
-        Ok(CshAstExpression::If {
+        Ok(CshAstExpression::If(CshAstIf {
             branches,
             otherwise,
-        })
+        }))
     }
 
     fn for_loop(&mut self) -> Parsed<'a, CshAstExpression> {
@@ -651,7 +656,9 @@ impl<'a> Cursor<'a> {
             self.require_keyword(Keyword::Do)?;
             let body = self.list(Stop::Done, true)?;
             self.require_keyword(Keyword::Done)?;
-            return Ok(CshAstExpression::ArithmeticFor { clauses, body });
+            return Ok(CshAstExpression::ArithmeticFor(
+                CshAstArithmeticForExpression { clauses, body },
+            ));
         }
         let variable = self
             .delimiter_word()?
@@ -678,11 +685,11 @@ impl<'a> Cursor<'a> {
         self.require_keyword(Keyword::Do)?;
         let body = self.list(Stop::Done, true)?;
         self.require_keyword(Keyword::Done)?;
-        Ok(CshAstExpression::For {
+        Ok(CshAstExpression::For(CshAstFor {
             variable,
             words,
             body,
-        })
+        }))
     }
 
     fn case(&mut self) -> Parsed<'a, CshAstExpression> {
@@ -720,7 +727,7 @@ impl<'a> Cursor<'a> {
             });
             self.continuation()?;
         }
-        Ok(CshAstExpression::Case { word, arms })
+        Ok(CshAstExpression::Case(CshAstCase { word, arms }))
     }
 
     fn simple(&mut self) -> Parsed<'a, CshAstNodeId> {
@@ -780,10 +787,10 @@ impl<'a> Cursor<'a> {
         if redirects.is_empty() {
             expression
         } else {
-            self.alloc(CshAstExpression::Redirected {
+            self.alloc(CshAstExpression::Redirected(CshAstRedirected {
                 expression,
                 redirects,
-            })
+            }))
         }
     }
 
