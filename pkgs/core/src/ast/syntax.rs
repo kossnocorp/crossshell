@@ -1,44 +1,45 @@
 use super::CshAstWord;
+use std::borrow::Cow;
 use std::ops::Range;
 
 /// Arithmetic expression:
 ///     (( 1 + 3 ))
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstArithmetic {
+pub struct CshAstArithmetic<'a> {
     pub span: Range<usize>,
-    pub kind: CshAstArithmeticKind,
+    pub kind: CshAstArithmeticKind<'a>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CshAstArithmeticKind {
+pub enum CshAstArithmeticKind<'a> {
     /// Preserve explicit parentheses, including when expansions inject operators.
-    Group(Box<CshAstArithmetic>),
+    Group(Box<CshAstArithmetic<'a>>),
     /// Digits are retained to avoid host-dependent integer conversion at parse time.
     Number {
         radix: u32,
-        digits: String,
+        digits: Cow<'a, str>,
     },
-    Variable(String),
+    Variable(Cow<'a, str>),
     /// Shell expansion may yield arithmetic tokens, not just a numeric value.
     /// Expand these before evaluating the resulting arithmetic expression.
-    Expansion(Box<CshAstWord>),
+    Expansion(Box<CshAstWord<'a>>),
     Subscript {
-        array: Box<CshAstArithmetic>,
-        index: Box<CshAstArithmetic>,
+        array: Box<CshAstArithmetic<'a>>,
+        index: Box<CshAstArithmetic<'a>>,
     },
     Unary {
         operator: CshAstArithmeticUnary,
-        operand: Box<CshAstArithmetic>,
+        operand: Box<CshAstArithmetic<'a>>,
     },
     Binary {
-        left: Box<CshAstArithmetic>,
+        left: Box<CshAstArithmetic<'a>>,
         operator: CshAstArithmeticBinary,
-        right: Box<CshAstArithmetic>,
+        right: Box<CshAstArithmetic<'a>>,
     },
     Conditional {
-        condition: Box<CshAstArithmetic>,
-        then_value: Box<CshAstArithmetic>,
-        else_value: Box<CshAstArithmetic>,
+        condition: Box<CshAstArithmetic<'a>>,
+        then_value: Box<CshAstArithmetic<'a>>,
+        else_value: Box<CshAstArithmetic<'a>>,
     },
 }
 
@@ -90,35 +91,35 @@ pub enum CshAstArithmeticBinary {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstArithmeticFor {
-    pub init: Option<CshAstArithmetic>,
-    pub condition: Option<CshAstArithmetic>,
-    pub update: Option<CshAstArithmetic>,
+pub struct CshAstArithmeticFor<'a> {
+    pub init: Option<CshAstArithmetic<'a>>,
+    pub condition: Option<CshAstArithmetic<'a>>,
+    pub update: Option<CshAstArithmetic<'a>>,
 }
 
 /// Conditional test:
 ///     [[ -n "$name" ]]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstCondition {
+pub struct CshAstCondition<'a> {
     pub span: Range<usize>,
-    pub kind: CshAstConditionKind,
+    pub kind: CshAstConditionKind<'a>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CshAstConditionKind {
-    Word(CshAstWord),
+pub enum CshAstConditionKind<'a> {
+    Word(CshAstWord<'a>),
     Unary {
         operator: CshAstTestUnary,
-        operand: CshAstWord,
+        operand: CshAstWord<'a>,
     },
     Binary {
-        left: CshAstWord,
+        left: CshAstWord<'a>,
         operator: CshAstTestBinary,
-        right: CshAstWord,
+        right: CshAstWord<'a>,
     },
-    Not(Box<CshAstCondition>),
-    And(Box<CshAstCondition>, Box<CshAstCondition>),
-    Or(Box<CshAstCondition>, Box<CshAstCondition>),
+    Not(Box<CshAstCondition<'a>>),
+    And(Box<CshAstCondition<'a>>, Box<CshAstCondition<'a>>),
+    Or(Box<CshAstCondition<'a>>, Box<CshAstCondition<'a>>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -168,11 +169,11 @@ pub enum CshAstTestBinary {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstParameter {
-    pub name: String,
-    pub subscript: Option<CshAstWord>,
+pub struct CshAstParameter<'a> {
+    pub name: &'a str,
+    pub subscript: Option<CshAstWord<'a>>,
     pub mode: CshAstParameterMode,
-    pub operation: CshAstParameterOperation,
+    pub operation: CshAstParameterOperation<'a>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -185,31 +186,31 @@ pub enum CshAstParameterMode {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CshAstParameterOperation {
+pub enum CshAstParameterOperation<'a> {
     None,
     Default {
         operator: CshAstDefaultOperator,
         test_empty: bool,
-        word: CshAstWord,
+        word: CshAstWord<'a>,
     },
     Slice {
-        offset: CshAstArithmetic,
-        length: Option<CshAstArithmetic>,
+        offset: CshAstArithmetic<'a>,
+        length: Option<CshAstArithmetic<'a>>,
     },
     Trim {
         suffix: bool,
         longest: bool,
-        pattern: CshAstWord,
+        pattern: CshAstWord<'a>,
     },
     Replace {
         anchor: CshAstReplaceAnchor,
-        pattern: CshAstWord,
-        replacement: CshAstWord,
+        pattern: CshAstWord<'a>,
+        replacement: CshAstWord<'a>,
     },
     Case {
         upper: bool,
         all: bool,
-        pattern: CshAstWord,
+        pattern: CshAstWord<'a>,
     },
     Transform(CshAstParameterTransform),
 }
@@ -243,32 +244,32 @@ pub enum CshAstParameterTransform {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstBraceSequence {
-    pub start: String,
-    pub end: String,
-    pub step: Option<String>,
+pub struct CshAstBraceSequence<'a> {
+    pub start: &'a str,
+    pub end: &'a str,
+    pub step: Option<&'a str>,
     pub alphabetic: bool,
     pub padding: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CshAstTilde {
+pub enum CshAstTilde<'a> {
     Home,
-    User(String),
+    User(&'a str),
     WorkingDirectory,
     PreviousDirectory,
     DirectoryStack {
-        index: String,
+        index: &'a str,
         reverse: bool,
         explicit_sign: bool,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CshAstDescriptor {
+pub enum CshAstDescriptor<'a> {
     Default,
-    Number(String),
-    Variable(String),
+    Number(&'a str),
+    Variable(&'a str),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

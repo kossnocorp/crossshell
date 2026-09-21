@@ -6,7 +6,7 @@ static ALLOCATOR: divan::AllocProfiler = divan::AllocProfiler::system();
 
 static SOURCE: OnceLock<String> = OnceLock::new();
 
-fn parse(source: &str) -> Result<CshAst, CshParserError<'_>> {
+fn parse(source: &str) -> Result<CshAst<'_>, CshParserError<'_>> {
     CshParser::parse_with_options(
         source,
         CshParserOptions {

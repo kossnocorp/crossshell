@@ -1,7 +1,7 @@
 use super::*;
 
 impl<'a> Cursor<'a> {
-    pub(super) fn assignment(&mut self) -> Parsed<'a, Option<CshAstAssignment>> {
+    pub(super) fn assignment(&mut self) -> Parsed<'a, Option<CshAstAssignment<'a>>> {
         if !matches!(self.byte(), Some(b'a'..=b'z' | b'A'..=b'Z' | b'_')) {
             return Ok(None);
         }
@@ -15,7 +15,7 @@ impl<'a> Cursor<'a> {
             (Some(b'+'), Some(b'=')) => (CshAstAssignmentOperator::Append, 2),
             _ => return Ok(None),
         };
-        let name = self.source[self.pos..self.pos + len].to_owned();
+        let name = &self.source[self.pos..self.pos + len];
         self.pos += len + width;
         let value = self.assignment_value()?;
         Ok(Some(CshAstAssignment {
@@ -25,17 +25,17 @@ impl<'a> Cursor<'a> {
         }))
     }
 
-    fn assignment_value(&mut self) -> Parsed<'a, CshAstWord> {
+    fn assignment_value(&mut self) -> Parsed<'a, CshAstWord<'a>> {
         if self.byte() == Some(b'(') {
             self.array_word()
         } else {
             Ok(self
                 .assignment_word()?
-                .unwrap_or_else(|| CshAstWord::Literal(String::new())))
+                .unwrap_or_else(|| CshAstWord::Literal("".into())))
         }
     }
 
-    pub(super) fn word(&mut self) -> Parsed<'a, Option<CshAstWord>> {
+    pub(super) fn word(&mut self) -> Parsed<'a, Option<CshAstWord<'a>>> {
         if self.byte() == Some(b'#') {
             return Ok(None);
         }
@@ -44,11 +44,11 @@ impl<'a> Cursor<'a> {
 
     // The value starts inside an existing assignment word: a leading `#` is
     // literal here, whereas it starts a comment at a command-word boundary.
-    pub(super) fn assignment_word(&mut self) -> Parsed<'a, Option<CshAstWord>> {
+    pub(super) fn assignment_word(&mut self) -> Parsed<'a, Option<CshAstWord<'a>>> {
         self.shell_word(true)
     }
 
-    fn shell_word(&mut self, assignment: bool) -> Parsed<'a, Option<CshAstWord>> {
+    fn shell_word(&mut self, assignment: bool) -> Parsed<'a, Option<CshAstWord<'a>>> {
         let start = self.pos;
         let mut parts = Vec::new();
         loop {
@@ -96,7 +96,7 @@ impl<'a> Cursor<'a> {
         Ok((self.pos != start).then(|| CshAstWord::concat(parts)))
     }
 
-    pub(super) fn array_word(&mut self) -> Parsed<'a, CshAstWord> {
+    pub(super) fn array_word(&mut self) -> Parsed<'a, CshAstWord<'a>> {
         if self.depth >= 128 {
             return Err(self.expected("less deeply nested shell syntax"));
         }
@@ -173,7 +173,7 @@ impl<'a> Cursor<'a> {
         None
     }
 
-    pub(super) fn word_part(&mut self, quoted: bool, end: usize) -> Parsed<'a, CshAstWord> {
+    pub(super) fn word_part(&mut self, quoted: bool, end: usize) -> Parsed<'a, CshAstWord<'a>> {
         if self.depth >= 128 {
             return Err(self.expected("less deeply nested shell syntax"));
         }
@@ -183,14 +183,10 @@ impl<'a> Cursor<'a> {
         result
     }
 
-    fn word_part_inner(&mut self, quoted: bool, end: usize) -> Parsed<'a, CshAstWord> {
+    fn word_part_inner(&mut self, quoted: bool, end: usize) -> Parsed<'a, CshAstWord<'a>> {
         use CshAstWord as W;
         match self.byte() {
-            Some(b'\'') if !quoted => {
-                let mut text = String::new();
-                self.single(&mut text)?;
-                Ok(W::SingleQuoted(text))
-            }
+            Some(b'\'') if !quoted => Ok(W::SingleQuoted(self.single_text()?)),
             Some(b'"') if !quoted => {
                 let opening = self.pos;
                 self.pos += 1;
@@ -204,11 +200,7 @@ impl<'a> Cursor<'a> {
                 self.pos += 1;
                 Ok(W::DoubleQuoted(Box::new(W::concat(parts))))
             }
-            Some(b'\\') => {
-                let mut text = String::new();
-                self.escape(&mut text, quoted)?;
-                Ok(W::Escaped(text))
-            }
+            Some(b'\\') => Ok(W::Escaped(self.escape_text(quoted)?)),
             Some(b'$') if !quoted && self.peek(1) == Some(b'\'') => {
                 let opening = self.pos + 1;
                 self.pos += 2;
@@ -221,7 +213,7 @@ impl<'a> Cursor<'a> {
                         _ => self.pos += 1,
                     }
                 }
-                let text = self.source[start..self.pos].to_owned();
+                let text = &self.source[start..self.pos];
                 self.pos += 1;
                 Ok(W::AnsiCQuoted(text))
             }
@@ -235,9 +227,8 @@ impl<'a> Cursor<'a> {
             Some(b'$') => self.word_expansion(quoted),
             Some(b'{') if !quoted => self.brace_word(),
             Some(b',' | b'}' | b':') if !quoted => {
-                let c = self.byte().unwrap() as char;
                 self.pos += 1;
-                Ok(W::Literal(c.to_string()))
+                Ok(W::Literal(self.source[self.pos - 1..self.pos].into()))
             }
             Some(b'`') => self.command_word(true, None),
             Some(b'<' | b'>') if !quoted && self.peek(1) == Some(b'(') => {
@@ -287,14 +278,14 @@ impl<'a> Cursor<'a> {
                         }
                     }
                 }
-                let text = self.source[start..self.pos].to_owned();
+                let text = self.source[start..self.pos].into();
                 Ok(W::Literal(text))
             }
         }
     }
 
     /// Expansion operands allow spaces and shell punctuation as literal text.
-    fn expansion_operand(&mut self, end: usize) -> Parsed<'a, CshAstWord> {
+    fn expansion_operand(&mut self, end: usize) -> Parsed<'a, CshAstWord<'a>> {
         let mut parts = Vec::new();
         while self.pos < end {
             if matches!(self.byte(), Some(b'$' | b'`' | b'\'' | b'"' | b'\\')) {
@@ -306,13 +297,13 @@ impl<'a> Cursor<'a> {
                 {
                     self.pos += 1;
                 }
-                parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
+                parts.push(CshAstWord::Literal(self.source[start..self.pos].into()));
             }
         }
         Ok(CshAstWord::concat(parts))
     }
 
-    fn word_expansion(&mut self, quoted: bool) -> Parsed<'a, CshAstWord> {
+    fn word_expansion(&mut self, quoted: bool) -> Parsed<'a, CshAstWord<'a>> {
         use CshAstWord as W;
         match self.peek(1) {
             Some(b'(') if self.peek(2) != Some(b'(') => self.command_word(false, None),
@@ -331,20 +322,20 @@ impl<'a> Cursor<'a> {
                 ) {
                     self.pos += 1;
                 }
-                Ok(W::Variable(self.source[start..self.pos].to_owned()))
+                Ok(W::Variable(&self.source[start..self.pos]))
             }
             Some(b'0'..=b'9' | b'@' | b'*' | b'#' | b'?' | b'-' | b'$' | b'!') => {
                 self.pos += 2;
-                Ok(W::Variable(self.source[self.pos - 1..self.pos].to_owned()))
+                Ok(W::Variable(&self.source[self.pos - 1..self.pos]))
             }
             _ => {
                 self.pos += 1;
-                Ok(W::Literal("$".to_owned()))
+                Ok(W::Literal("$".into()))
             }
         }
     }
 
-    fn command_word(&mut self, backticks: bool, process: Option<u8>) -> Parsed<'a, CshAstWord> {
+    fn command_word(&mut self, backticks: bool, process: Option<u8>) -> Parsed<'a, CshAstWord<'a>> {
         self.pos += if backticks { 1 } else { 2 };
         let outer_pending = std::mem::take(&mut self.pending_here_documents);
         let outer_backtick = self.backtick;
@@ -371,7 +362,7 @@ impl<'a> Cursor<'a> {
         self.backtick = outer_backtick;
         Ok(if let Some(operator) = process {
             CshAstWord::ProcessSubstitution {
-                operator: (operator as char).to_string(),
+                operator: if operator == b'<' { "<" } else { ">" },
                 commands,
             }
         } else {

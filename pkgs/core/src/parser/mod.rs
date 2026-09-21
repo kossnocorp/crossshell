@@ -3,6 +3,8 @@ use crate::prelude::internal::*;
 mod error;
 pub use error::*;
 #[cfg(test)]
+mod borrowing_tests;
+#[cfg(test)]
 mod comment_tests;
 mod cursor;
 #[cfg(test)]
@@ -17,23 +19,41 @@ pub struct CshParserOptions {
 }
 
 impl CshParser {
-    /// Parses Cross Shell source into an owned, arena-backed AST.
+    /// Parses Cross Shell source into an arena-backed AST borrowing the source.
     ///
-    /// Expression IDs index `CshAst::nodes`; the AST does not borrow the source.
+    /// Expression IDs index `CshAst::nodes`. Keep the source alive while using the AST.
     /// Diagnostics borrow the source and use UTF-8 byte offsets. Recursive
     /// command-list nesting is limited to 128 levels; operator chains are iterative.
+    ///
+    /// ```
+    /// use crossshell::CshParser;
+    /// let source = String::from("echo hello");
+    /// let ast = CshParser::parse(&source).unwrap();
+    /// assert_eq!(ast.source, source);
+    /// ```
+    ///
+    /// The source must outlive the tree:
+    ///
+    /// ```compile_fail,E0597
+    /// use crossshell::CshParser;
+    /// let ast = {
+    ///     let source = String::from("echo hello");
+    ///     CshParser::parse(&source).unwrap()
+    /// };
+    /// println!("{ast:?}");
+    /// ```
     pub fn parse<'source_code>(
         source_code: &'source_code str,
-    ) -> Result<CshAst, CshParserError<'source_code>> {
+    ) -> Result<CshAst<'source_code>, CshParserError<'source_code>> {
         Self::parse_with_options(source_code, CshParserOptions::default())
     }
 
-    /// Parses with explicit options. Retained comments own their text and use
+    /// Parses with explicit options. Retained comments borrow their text and use
     /// UTF-8 byte ranges in the original source, like expression spans.
     pub fn parse_with_options<'source_code>(
         source_code: &'source_code str,
         options: CshParserOptions,
-    ) -> Result<CshAst, CshParserError<'source_code>> {
+    ) -> Result<CshAst<'source_code>, CshParserError<'source_code>> {
         cursor::Cursor::parse(source_code, options).map_err(|error| CshParserError {
             errors: vec![error],
         })
@@ -177,13 +197,13 @@ local scalar+=value"#,
             matches!(&elements[0], CshAstWord::KeyedElement { key, .. } if matches!(&**key, CshAstWord::DoubleQuoted(_)))
         );
         assert!(
-            matches!(&elements[1], CshAstWord::KeyedElement { key, operator: CshAstAssignmentOperator::Append, .. } if **key == CshAstWord::Variable("key".into()))
+            matches!(&elements[1], CshAstWord::KeyedElement { key, operator: CshAstAssignmentOperator::Append, .. } if **key == CshAstWord::Variable("key"))
         );
         assert!(
             matches!(&elements[2], CshAstWord::KeyedElement { key, .. } if matches!(&**key, CshAstWord::CommandSubstitution { .. }))
         );
         assert!(
-            matches!(&elements[3], CshAstWord::KeyedElement { value, .. } if **value == CshAstWord::Literal(String::new()))
+            matches!(&elements[3], CshAstWord::KeyedElement { value, .. } if **value == CshAstWord::Literal("".into()))
         );
         assert!(matches!(
             &elements[4],
@@ -526,11 +546,11 @@ local scalar+=value"#,
         assert_eq!(
             &command.args[..5],
             &[
-                CshAstWord::SingleQuoted("*.?".into()),
+                CshAstWord::SingleQuoted("*.?"),
                 CshAstWord::DoubleQuoted(Box::new(CshAstWord::Literal("[a-z]*".into()))),
-                CshAstWord::Escaped("*".into()),
-                CshAstWord::Escaped("?".into()),
-                CshAstWord::Escaped("[".into()),
+                CshAstWord::Escaped("*"),
+                CshAstWord::Escaped("?"),
+                CshAstWord::Escaped("["),
             ]
         );
         let CshAstExpression::Test(condition) = &ast[ast.commands[1]] else {
@@ -626,11 +646,11 @@ local scalar+=value"#,
         };
         assert_eq!(
             command.args[1],
-            CshAstWord::DoubleQuoted(Box::new(CshAstWord::Variable("ROOT".into())))
+            CshAstWord::DoubleQuoted(Box::new(CshAstWord::Variable("ROOT")))
         );
-        assert_eq!(literal, &CshAstWord::SingleQuoted("${literal}".into()));
+        assert_eq!(literal, &CshAstWord::SingleQuoted("${literal}"));
         assert!(
-            matches!(&right.kind, CshAstConditionKind::Binary { left: CshAstWord::Variable(name), .. } if name == "name")
+            matches!(&right.kind, CshAstConditionKind::Binary { left: CshAstWord::Variable(name), .. } if *name == "name")
         );
         for source in [
             "[[ $(echo |) == x ]]",
@@ -643,12 +663,10 @@ local scalar+=value"#,
 
     #[test]
     fn structures_migration_assignment() {
-        let ast = {
-            let source = String::from(
-                r#"migration=$(grep -l "dell-xps13-sidecar-amps" "$ROOT"/migrations/*.sh | head -1)"#,
-            );
-            CshParser::parse(&source).unwrap()
-        };
+        let source = String::from(
+            r#"migration=$(grep -l "dell-xps13-sidecar-amps" "$ROOT"/migrations/*.sh | head -1)"#,
+        );
+        let ast = CshParser::parse(&source).unwrap();
         let CshAstExpression::Command(assignment) = &ast[ast.commands[0]] else {
             panic!("expected assignment");
         };
@@ -667,7 +685,7 @@ local scalar+=value"#,
         assert_eq!(
             grep.args[2],
             CshAstWord::Concat(vec![
-                CshAstWord::DoubleQuoted(Box::new(CshAstWord::Variable("ROOT".into()))),
+                CshAstWord::DoubleQuoted(Box::new(CshAstWord::Variable("ROOT"))),
                 CshAstWord::Literal("/migrations/".into()),
                 CshAstWord::Glob(CshAstGlob::Star),
                 CshAstWord::Literal(".sh".into()),
@@ -936,15 +954,15 @@ local scalar+=value"#,
                 .collect::<Vec<_>>(),
             vec![
                 &CshAstWord::Literal("#tag".into()),
-                &CshAstWord::Literal(String::new()),
-                &CshAstWord::SingleQuoted(String::new()),
+                &CshAstWord::Literal("".into()),
+                &CshAstWord::SingleQuoted(""),
             ]
         );
         assert_eq!(
             command.args,
             vec![
-                CshAstWord::DoubleQuoted(Box::new(CshAstWord::Literal(String::new()))),
-                CshAstWord::SingleQuoted(String::new()),
+                CshAstWord::DoubleQuoted(Box::new(CshAstWord::Literal("".into()))),
+                CshAstWord::SingleQuoted(""),
             ]
         );
     }
@@ -1060,15 +1078,15 @@ local scalar+=value"#,
                 .collect::<Vec<_>>(),
             vec![
                 (
-                    CshAstDescriptor::Variable("fd_1".into()),
+                    CshAstDescriptor::Variable("fd_1"),
                     CshAstRedirectOperator::Output
                 ),
                 (
-                    CshAstDescriptor::Variable("input".into()),
+                    CshAstDescriptor::Variable("input"),
                     CshAstRedirectOperator::DuplicateInput
                 ),
                 (
-                    CshAstDescriptor::Variable("fd_1".into()),
+                    CshAstDescriptor::Variable("fd_1"),
                     CshAstRedirectOperator::CloseOutput
                 )
             ]
@@ -1078,7 +1096,7 @@ local scalar+=value"#,
         };
         assert_eq!(
             redirected.redirects[0].descriptor,
-            CshAstDescriptor::Variable("input".into())
+            CshAstDescriptor::Variable("input")
         );
         assert!(
             matches!(&ast[redirected.expression], CshAstExpression::Command(c) if c.name.is_none())
@@ -1102,7 +1120,7 @@ local scalar+=value"#,
         ));
         assert_eq!(
             redirected.redirects[0].descriptor,
-            CshAstDescriptor::Variable("log".into())
+            CshAstDescriptor::Variable("log")
         );
     }
 
@@ -1795,14 +1813,12 @@ b # comment"#).unwrap();
     }
 
     #[test]
-    fn arena_links_survive_growth_and_source_drop() {
-        let ast = {
-            let source = (0..256)
-                .map(|i| format!("echo {i}"))
-                .collect::<Vec<_>>()
-                .join(" | ");
-            CshParser::parse(&source).unwrap()
-        };
+    fn arena_links_survive_growth() {
+        let source = (0..256)
+            .map(|i| format!("echo {i}"))
+            .collect::<Vec<_>>()
+            .join(" | ");
+        let ast = CshParser::parse(&source).unwrap();
         assert_eq!(ast.nodes.len(), 511);
         let mut id = ast.commands[0];
         for expected in (1..256).rev() {
@@ -1813,7 +1829,10 @@ b # comment"#).unwrap();
             let CshAstExpression::Command(command) = &ast[binary.right] else {
                 panic!("expected a command");
             };
-            assert_eq!(command.args, [CshAstWord::Literal(expected.to_string())]);
+            assert_eq!(
+                command.args,
+                [CshAstWord::Literal(expected.to_string().into())]
+            );
             id = binary.left;
         }
         let CshAstExpression::Command(command) = &ast[id] else {
@@ -1876,7 +1895,7 @@ b # comment"#).unwrap();
         };
         assert_eq!(
             redirected.redirects[0].descriptor,
-            CshAstDescriptor::Number("2".into())
+            CshAstDescriptor::Number("2")
         );
         assert_eq!(
             redirected.redirects[0].target,
@@ -1889,7 +1908,7 @@ b # comment"#).unwrap();
         assert_eq!(
             &command.args[..3],
             &[
-                CshAstWord::SingleQuoted("if".into()),
+                CshAstWord::SingleQuoted("if"),
                 CshAstWord::Literal("a#b".into()),
                 CshAstWord::Literal("2file".into())
             ]
@@ -1903,7 +1922,7 @@ b # comment"#).unwrap();
             CshAstWord::Concat(vec![
                 CshAstWord::Literal("pre".into()),
                 CshAstWord::DoubleQuoted(Box::new(CshAstWord::Literal("héllo".into()))),
-                CshAstWord::SingleQuoted("🌍".into())
+                CshAstWord::SingleQuoted("🌍"),
             ])
         );
     }
@@ -2121,7 +2140,7 @@ b # comment"#).unwrap();
             panic!("expected array");
         };
         assert_eq!(elements.len(), 3);
-        assert_eq!(elements[0], CshAstWord::SingleQuoted("one two".into()));
+        assert_eq!(elements[0], CshAstWord::SingleQuoted("one two"));
         assert!(matches!(
             &elements[1],
             CshAstWord::CommandSubstitution { .. }
@@ -2175,7 +2194,11 @@ b # comment"#).unwrap();
         let mut parsed = Vec::new();
         let mut failures = Vec::new();
         let mut names = std::collections::BTreeSet::new();
-        for path in &paths {
+        let sources: Vec<_> = paths
+            .iter()
+            .map(|path| std::fs::read_to_string(path).unwrap())
+            .collect();
+        for (path, source) in paths.iter().zip(&sources) {
             let relative = path.strip_prefix(&vendor).unwrap().to_str().unwrap();
             let name = format!(
                 "omarchy_corpus__{}",
@@ -2185,12 +2208,11 @@ b # comment"#).unwrap();
                 names.insert(name.clone()),
                 "Snapshot name collision: {relative}"
             );
-            let source = std::fs::read_to_string(path).unwrap();
-            match CshParser::parse(&source) {
+            match CshParser::parse(source) {
                 Ok(ast) => parsed.push((name, relative, ast)),
                 Err(error) => {
                     let mut report = Vec::new();
-                    CshErrorReport::new(&source, relative, &error.errors, false)
+                    CshErrorReport::new(source, relative, &error.errors, false)
                         .write(&mut report)
                         .unwrap();
                     failures.push(String::from_utf8(report).unwrap());
@@ -2213,12 +2235,15 @@ b # comment"#).unwrap();
 
     #[test]
     fn parses_npm_scripts_corpus() {
-        let scripts = include_str!("../../test/smoke/data/top-npm-scripts.jsonl").lines();
+        let scripts: Vec<serde_json::Value> =
+            include_str!("../../test/smoke/data/top-npm-scripts.jsonl")
+                .lines()
+                .map(|record| serde_json::from_str(record).unwrap())
+                .collect();
         let mut asts = std::collections::BTreeMap::new();
         let mut rejections = std::collections::BTreeMap::new();
         let mut accepted = 0;
-        for (index, record) in scripts.enumerate() {
-            let record: serde_json::Value = serde_json::from_str(record).unwrap();
+        for (index, record) in scripts.iter().enumerate() {
             let script = record["script"].as_str().unwrap();
             let result = CshParser::parse(script);
             if let Some(reason) = record["rejection"].as_str() {

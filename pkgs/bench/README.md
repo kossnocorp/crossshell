@@ -13,7 +13,7 @@ Build artifacts live in the ignored `dist/` directory.
 
 Both binaries read the entire input into memory and validate a parse before
 benchmarking. The measured functions return native AST results: Go's
-`(*syntax.File, error)` and Rust's `Result<CshAst, CshParserError>`.
+`(*syntax.File, error)` and Rust's `Result<CshAst<'source>, CshParserError<'source>>`.
 Both retain comments. File I/O and validation are excluded from measurements;
 the shell input is parsed, never executed.
 
@@ -23,6 +23,9 @@ the shell input is parsed, never executed.
   constructs a fresh in-memory reader; neither parser copies the whole source
   as benchmark preparation inside the timed loop. This deliberately replaces
   upstream mvdan's parser/reader reuse to match crossshell's stateless API.
+- Rust's AST borrows text from the preloaded source, allocating owned strings
+  when fragments need joining or normalization. The source stays alive for the
+  entire benchmark; copying it into an independently owned AST is not timed.
 - Both run a sequential parse loop with one worker. Go uses `GOMAXPROCS(1)`;
   Divan uses one thread. Go's garbage collector stays enabled.
 - Both target at least one second of measured work in one invocation. Go's

@@ -1,30 +1,33 @@
 mod debug;
+use std::borrow::Cow;
 
 mod syntax;
 pub use syntax::*;
 
-/// An owned syntax tree. Expression links are stable indices into `nodes`.
+/// A syntax tree borrowing its source. Expression links are stable indices into `nodes`.
 /// Moving the tree or growing the arena never invalidates a node ID.
 #[derive(Clone, PartialEq, Eq)]
-pub struct CshAst {
+pub struct CshAst<'a> {
+    /// Original source; text fragments borrow this same caller-owned buffer.
+    pub source: &'a str,
     pub commands: CshAstList,
-    pub nodes: Vec<CshAstExpression>,
+    pub nodes: Vec<CshAstExpression<'a>>,
     /// UTF-8 source byte ranges, indexed by the corresponding expression ID.
     pub spans: Vec<std::ops::Range<usize>>,
-    pub here_documents: Vec<CshAstHereDocument>,
+    pub here_documents: Vec<CshAstHereDocument<'a>>,
     /// Comments from all nesting levels, in source order, when requested by the parser.
     /// These are syntax metadata, not executable expressions. Use their spans to
     /// relate them to expressions, including comments before closing delimiters.
-    pub comments: Vec<CshAstComment>,
+    pub comments: Vec<CshAstComment<'a>>,
 }
 
 /// A shell comment, including shebangs and empty comments.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstComment {
+pub struct CshAstComment<'a> {
     /// UTF-8 source byte range including `#`, excluding the terminating newline.
     pub span: std::ops::Range<usize>,
-    /// Owned text after `#`, without the terminating newline. Whitespace is preserved.
-    pub text: String,
+    /// Source text after `#`, without the terminating newline. Whitespace is preserved.
+    pub text: &'a str,
 }
 
 /// An expression index in the owning `CshAst::nodes` arena.
@@ -33,8 +36,8 @@ pub struct CshAstNodeId(pub usize);
 
 pub type CshAstList = Vec<CshAstNodeId>;
 
-impl std::ops::Index<CshAstNodeId> for CshAst {
-    type Output = CshAstExpression;
+impl<'a> std::ops::Index<CshAstNodeId> for CshAst<'a> {
+    type Output = CshAstExpression<'a>;
 
     fn index(&self, id: CshAstNodeId) -> &Self::Output {
         &self.nodes[id.0]
@@ -42,31 +45,31 @@ impl std::ops::Index<CshAstNodeId> for CshAst {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CshAstExpression {
+pub enum CshAstExpression<'a> {
     /// Command:
     ///     printf '%s\n' hello
-    Command(CshAstCommand),
+    Command(CshAstCommand<'a>),
 
     /// Function definition:
     ///     greet() {
     ///         echo hello
     ///     }
-    Function(CshAstFunction),
+    Function(CshAstFunction<'a>),
 
     /// Conditional test:
     ///     [[ -n "$name" ]]
-    Test(CshAstCondition),
+    Test(CshAstCondition<'a>),
 
     /// Arithmetic expression:
     ///     (( 1 + 3 ))
     ///     (( 2 * 5 ))
-    Arithmetic(CshAstArithmetic),
+    Arithmetic(CshAstArithmetic<'a>),
 
     /// Arithmetic `for` loop:
     ///     for ((i = 0; i < 3; i++)); do
     ///         echo "$i"
     ///     done
-    ArithmeticFor(CshAstArithmeticForExpression),
+    ArithmeticFor(CshAstArithmeticForExpression<'a>),
 
     /// Commands combined with a pipeline or logical operator:
     ///     printf '%s\n' hello | grep hello
@@ -106,7 +109,7 @@ pub enum CshAstExpression {
     ///     for file in *.txt; do
     ///         echo "$file"
     ///     done
-    For(CshAstFor),
+    For(CshAstFor<'a>),
 
     /// `while` or `until` loop:
     ///     while test "$n" -lt 3; do
@@ -119,11 +122,11 @@ pub enum CshAstExpression {
     ///         y) echo yes ;;
     ///         n) echo no ;;
     ///     esac
-    Case(CshAstCase),
+    Case(CshAstCase<'a>),
 
     /// Command with input or output redirection:
     ///     cat < input.txt > output.txt
-    Redirected(CshAstRedirected),
+    Redirected(CshAstRedirected<'a>),
 }
 
 /// Function definition:
@@ -131,8 +134,8 @@ pub enum CshAstExpression {
 ///         echo hello
 ///     }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstFunction {
-    pub name: String,
+pub struct CshAstFunction<'a> {
+    pub name: &'a str,
     pub body: CshAstNodeId,
 }
 
@@ -141,8 +144,8 @@ pub struct CshAstFunction {
 ///         echo "$i"
 ///     done
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstArithmeticForExpression {
-    pub clauses: CshAstArithmeticFor,
+pub struct CshAstArithmeticForExpression<'a> {
+    pub clauses: CshAstArithmeticFor<'a>,
     pub body: CshAstList,
 }
 
@@ -172,9 +175,9 @@ pub struct CshAstIf {
 ///         echo "$file"
 ///     done
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstFor {
-    pub variable: String,
-    pub words: Option<Vec<CshAstWord>>,
+pub struct CshAstFor<'a> {
+    pub variable: Cow<'a, str>,
+    pub words: Option<Vec<CshAstWord<'a>>>,
     pub body: CshAstList,
 }
 
@@ -195,17 +198,17 @@ pub struct CshAstLoop {
 ///         n) echo no ;;
 ///     esac
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstCase {
-    pub word: CshAstWord,
-    pub arms: Vec<CshAstCaseArm>,
+pub struct CshAstCase<'a> {
+    pub word: CshAstWord<'a>,
+    pub arms: Vec<CshAstCaseArm<'a>>,
 }
 
 /// Command with input or output redirection:
 ///     cat < input.txt > output.txt
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstRedirected {
+pub struct CshAstRedirected<'a> {
     pub expression: CshAstNodeId,
-    pub redirects: Vec<CshAstRedirect>,
+    pub redirects: Vec<CshAstRedirect<'a>>,
 }
 
 /// Command running in the background:
@@ -249,32 +252,32 @@ pub struct CshAstBranch {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstCaseArm {
-    pub patterns: Vec<CshAstWord>,
+pub struct CshAstCaseArm<'a> {
+    pub patterns: Vec<CshAstWord<'a>>,
     pub body: CshAstList,
-    pub terminator: String,
+    pub terminator: &'a str,
 }
 
 #[derive(Clone, PartialEq, Eq)]
-pub struct CshAstRedirect {
+pub struct CshAstRedirect<'a> {
     /// Default, numbered, or variable-allocated descriptor (`{name}`).
-    pub descriptor: CshAstDescriptor,
+    pub descriptor: CshAstDescriptor<'a>,
     pub operator: CshAstRedirectOperator,
-    pub target: CshAstWord,
+    pub target: CshAstWord<'a>,
     pub span: std::ops::Range<usize>,
     /// Index into the owning AST's here-document arena.
     pub here_document: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstHereDocument {
-    pub delimiter: String,
+pub struct CshAstHereDocument<'a> {
+    pub delimiter: Cow<'a, str>,
     pub quoted: bool,
     pub strip_tabs: bool,
-    pub body: String,
+    pub body: Cow<'a, str>,
     /// Expanded with here-document rules, not ordinary shell-word rules.
     /// Quoted delimiters always produce a literal body.
-    pub content: CshAstWord,
+    pub content: CshAstWord<'a>,
     pub span: std::ops::Range<usize>,
 }
 
@@ -289,17 +292,17 @@ pub enum CshAstOperator {
 /// Command:
 ///     printf '%s\n' hello
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstCommand {
-    pub assignments: Vec<CshAstAssignment>,
-    pub name: Option<CshAstWord>,
-    pub args: Vec<CshAstWord>,
+pub struct CshAstCommand<'a> {
+    pub assignments: Vec<CshAstAssignment<'a>>,
+    pub name: Option<CshAstWord<'a>>,
+    pub args: Vec<CshAstWord<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CshAstAssignment {
-    pub name: String,
+pub struct CshAstAssignment<'a> {
+    pub name: &'a str,
     pub operator: CshAstAssignmentOperator,
-    pub value: CshAstWord,
+    pub value: CshAstWord<'a>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -311,52 +314,55 @@ pub enum CshAstAssignmentOperator {
 /// One shell word. Concatenated fragments remain a single argument; quoting and
 /// escaping are preserved so an evaluator can decide splitting and globbing.
 /// Substitution command IDs refer to the owning `CshAst::nodes` arena.
+/// Text borrows the input wherever possible. Literals use `Cow` because merging
+/// fragments (for example after removing here-document continuations) can
+/// produce text that is not a contiguous slice of the source.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CshAstWord {
-    Literal(String),
-    SingleQuoted(String),
+pub enum CshAstWord<'a> {
+    Literal(Cow<'a, str>),
+    SingleQuoted(&'a str),
     /// ANSI-C quoted content, before interpreting backslash escapes.
-    AnsiCQuoted(String),
-    DoubleQuoted(Box<CshAstWord>),
-    LocaleQuoted(Box<CshAstWord>),
-    Escaped(String),
-    Variable(String),
+    AnsiCQuoted(&'a str),
+    DoubleQuoted(Box<CshAstWord<'a>>),
+    LocaleQuoted(Box<CshAstWord<'a>>),
+    Escaped(&'a str),
+    Variable(&'a str),
     /// Parameter selection, subscript, and a typed operation with expansion operands.
-    Parameter(Box<CshAstParameter>),
+    Parameter(Box<CshAstParameter<'a>>),
     CommandSubstitution {
         commands: CshAstList,
         backticks: bool,
     },
     ProcessSubstitution {
-        operator: String,
+        operator: &'a str,
         commands: CshAstList,
     },
-    ArithmeticExpansion(Box<CshAstArithmetic>),
-    BraceAlternatives(Vec<CshAstWord>),
-    BraceSequence(CshAstBraceSequence),
+    ArithmeticExpansion(Box<CshAstArithmetic<'a>>),
+    BraceAlternatives(Vec<CshAstWord<'a>>),
+    BraceSequence(CshAstBraceSequence<'a>),
     /// An unquoted tilde prefix. Eligibility is checked after brace expansion:
     /// start of a resulting word, or an unquoted colon in an assignment value.
-    Tilde(CshAstTilde),
-    Concat(Vec<CshAstWord>),
-    Array(Vec<CshAstWord>),
+    Tilde(CshAstTilde<'a>),
+    Concat(Vec<CshAstWord<'a>>),
+    Array(Vec<CshAstWord<'a>>),
     /// An assignment argument of a declaration builtin, retaining argument order.
-    Assignment(Box<CshAstAssignment>),
+    Assignment(Box<CshAstAssignment<'a>>),
     /// A keyed entry inside a compound array assignment, not a glob pattern.
     KeyedElement {
-        key: Box<CshAstWord>,
+        key: Box<CshAstWord<'a>>,
         operator: CshAstAssignmentOperator,
-        value: Box<CshAstWord>,
+        value: Box<CshAstWord<'a>>,
     },
     /// Unquoted glob syntax (quoted wildcard characters remain literals).
-    Glob(CshAstGlob),
+    Glob(CshAstGlob<'a>),
     ExtendedGlob {
         operator: char,
-        alternatives: Vec<CshAstWord>,
+        alternatives: Vec<CshAstWord<'a>>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CshAstGlob {
+pub enum CshAstGlob<'a> {
     /// `*`: zero or more characters; pathname matching does not cross `/`.
     Star,
     /// `**`: double-star syntax. Recursive pathname matching depends on the
@@ -366,34 +372,33 @@ pub enum CshAstGlob {
     QuestionMark,
     CharacterClass {
         negated: bool,
-        items: Vec<CshAstGlobClassItem>,
+        items: Vec<CshAstGlobClassItem<'a>>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CshAstGlobClassItem {
+pub enum CshAstGlobClassItem<'a> {
     Character(char),
     Range { start: char, end: char },
-    NamedClass(String),
-    CollatingSymbol(String),
-    EquivalenceClass(String),
+    NamedClass(&'a str),
+    CollatingSymbol(&'a str),
+    EquivalenceClass(&'a str),
 }
 
-impl CshAstWord {
+impl CshAstWord<'_> {
     pub(crate) fn concat(mut parts: Vec<Self>) -> Self {
-        let mut merged = Vec::new();
-        for part in parts.drain(..) {
-            if let Self::Literal(text) = &part
-                && let Some(Self::Literal(previous)) = merged.last_mut()
-            {
-                previous.push_str(text);
+        // Merge in place: most words have one fragment, so allocating a second
+        // vector here would cost an allocation for every ordinary word.
+        parts.dedup_by(|next, previous| {
+            if let (Self::Literal(text), Self::Literal(previous)) = (next, previous) {
+                previous.to_mut().push_str(text);
+                true
             } else {
-                merged.push(part);
+                false
             }
-        }
-        parts = merged;
+        });
         match parts.len() {
-            0 => Self::Literal(String::new()),
+            0 => Self::Literal("".into()),
             1 => parts.pop().unwrap(),
             _ => Self::Concat(parts),
         }

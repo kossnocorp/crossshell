@@ -1,7 +1,7 @@
 use super::*;
 
 impl<'a> Cursor<'a> {
-    pub(super) fn parameter(&mut self, quoted: bool) -> Parsed<'a, CshAstWord> {
+    pub(super) fn parameter(&mut self, quoted: bool) -> Parsed<'a, CshAstWord<'a>> {
         use CshAstParameterMode as M;
         use CshAstParameterOperation as O;
         self.pos += 2;
@@ -48,13 +48,13 @@ impl<'a> Cursor<'a> {
         if self.pos == start {
             return Err(self.expected("a parameter name"));
         }
-        let name = self.source[start..self.pos].to_owned();
+        let name = &self.source[start..self.pos];
         if name.as_bytes()[0].is_ascii_digit() && !name.bytes().all(|b| b.is_ascii_digit()) {
             return Err(self.expected("a positional parameter number"));
         }
         let subscript = if self.eat(b'[') {
             let word = self.parameter_operand(b']', false, false)?;
-            if word == CshAstWord::Literal(String::new()) {
+            if word == CshAstWord::Literal("".into()) {
                 return Err(self.expected("a parameter subscript"));
             }
             if !self.eat(b']') {
@@ -139,7 +139,7 @@ impl<'a> Cursor<'a> {
                 let replacement = if self.eat(b'/') {
                     self.parameter_operand(b'}', false, false)?
                 } else {
-                    CshAstWord::Literal(String::new())
+                    CshAstWord::Literal("".into())
                 };
                 O::Replace {
                     anchor,
@@ -200,7 +200,7 @@ impl<'a> Cursor<'a> {
         stop: u8,
         pattern: bool,
         quoted: bool,
-    ) -> Parsed<'a, CshAstWord> {
+    ) -> Parsed<'a, CshAstWord<'a>> {
         let mut parts = Vec::new();
         let mut brackets = 0;
         while let Some(b) = self.byte() {
@@ -235,8 +235,10 @@ impl<'a> Cursor<'a> {
                 let c = self.rest().chars().next().unwrap();
                 self.pos += c.len_utf8();
                 match parts.last_mut() {
-                    Some(CshAstWord::Literal(text)) => text.push(c),
-                    _ => parts.push(CshAstWord::Literal(c.to_string())),
+                    Some(CshAstWord::Literal(text)) => text.to_mut().push(c),
+                    _ => parts.push(CshAstWord::Literal(
+                        self.source[self.pos - c.len_utf8()..self.pos].into(),
+                    )),
                 }
             }
         }

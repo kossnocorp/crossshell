@@ -1,7 +1,7 @@
 use super::*;
 
 impl<'a> Cursor<'a> {
-    pub(super) fn condition(&mut self) -> Parsed<'a, CshAstCondition> {
+    pub(super) fn condition(&mut self) -> Parsed<'a, CshAstCondition<'a>> {
         self.pos += 2;
         let condition = self.condition_bp(0)?;
         self.arithmetic_space();
@@ -12,7 +12,7 @@ impl<'a> Cursor<'a> {
         Ok(condition)
     }
 
-    fn condition_bp(&mut self, min: u8) -> Parsed<'a, CshAstCondition> {
+    fn condition_bp(&mut self, min: u8) -> Parsed<'a, CshAstCondition<'a>> {
         if self.depth >= 128 {
             return Err(self.expected("less deeply nested conditions"));
         }
@@ -22,7 +22,7 @@ impl<'a> Cursor<'a> {
         result
     }
 
-    fn condition_inner(&mut self, min: u8) -> Parsed<'a, CshAstCondition> {
+    fn condition_inner(&mut self, min: u8) -> Parsed<'a, CshAstCondition<'a>> {
         use CshAstConditionKind as K;
         self.arithmetic_space();
         let start = self.pos;
@@ -149,7 +149,7 @@ impl<'a> Cursor<'a> {
         Some(op)
     }
 
-    fn condition_word(&mut self, regex: bool) -> Parsed<'a, CshAstWord> {
+    fn condition_word(&mut self, regex: bool) -> Parsed<'a, CshAstWord<'a>> {
         self.arithmetic_space();
         if self.condition_end() {
             return Err(self.expected("a conditional operand"));
@@ -183,8 +183,10 @@ impl<'a> Cursor<'a> {
                 let c = self.rest().chars().next().unwrap();
                 self.pos += c.len_utf8();
                 match parts.last_mut() {
-                    Some(CshAstWord::Literal(text)) => text.push(c),
-                    _ => parts.push(CshAstWord::Literal(c.to_string())),
+                    Some(CshAstWord::Literal(text)) => text.to_mut().push(c),
+                    _ => parts.push(CshAstWord::Literal(
+                        self.source[self.pos - c.len_utf8()..self.pos].into(),
+                    )),
                 }
             }
         }

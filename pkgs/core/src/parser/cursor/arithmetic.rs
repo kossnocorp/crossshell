@@ -11,11 +11,11 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    pub(super) fn arithmetic_expression(&mut self, end: usize) -> Parsed<'a, CshAstArithmetic> {
+    pub(super) fn arithmetic_expression(&mut self, end: usize) -> Parsed<'a, CshAstArithmetic<'a>> {
         self.arithmetic_bp(end, 0)
     }
 
-    fn arithmetic_bp(&mut self, end: usize, min: u8) -> Parsed<'a, CshAstArithmetic> {
+    fn arithmetic_bp(&mut self, end: usize, min: u8) -> Parsed<'a, CshAstArithmetic<'a>> {
         if self.depth >= 128 {
             return Err(self.expected("less deeply nested arithmetic"));
         }
@@ -25,7 +25,7 @@ impl<'a> Cursor<'a> {
         result
     }
 
-    fn arithmetic_bp_inner(&mut self, end: usize, min: u8) -> Parsed<'a, CshAstArithmetic> {
+    fn arithmetic_bp_inner(&mut self, end: usize, min: u8) -> Parsed<'a, CshAstArithmetic<'a>> {
         use CshAstArithmeticKind as K;
         use CshAstArithmeticUnary as U;
         self.arithmetic_space();
@@ -76,7 +76,7 @@ impl<'a> Cursor<'a> {
                         {
                             self.pos += 1;
                         }
-                        parts.push(CshAstWord::Literal(self.source[from..self.pos].to_owned()));
+                        parts.push(CshAstWord::Literal(self.source[from..self.pos].into()));
                     }
                     _ => break,
                 }
@@ -86,7 +86,7 @@ impl<'a> Cursor<'a> {
             }
             match CshAstWord::concat(parts) {
                 CshAstWord::Literal(text) if text.as_bytes()[0].is_ascii_digit() => {
-                    let (radix, digits) = arithmetic_number(&text)
+                    let (radix, digits) = arithmetic_number(text)
                         .ok_or_else(|| self.expected("a valid base-2 through base-64 integer"))?;
                     K::Number { radix, digits }
                 }
@@ -219,7 +219,7 @@ impl<'a> Cursor<'a> {
         Ok(left)
     }
 
-    pub(super) fn arithmetic_command(&mut self) -> Parsed<'a, CshAstArithmetic> {
+    pub(super) fn arithmetic_command(&mut self) -> Parsed<'a, CshAstArithmetic<'a>> {
         self.pos += 2;
         self.arithmetic_space();
         let expression = if self.rest().starts_with("))") {
@@ -239,9 +239,9 @@ impl<'a> Cursor<'a> {
         Ok(expression)
     }
 
-    pub(super) fn arithmetic_for(&mut self) -> Parsed<'a, CshAstArithmeticFor> {
+    pub(super) fn arithmetic_for(&mut self) -> Parsed<'a, CshAstArithmeticFor<'a>> {
         self.pos += 2;
-        let mut clause = |delimiter| -> Parsed<'a, Option<CshAstArithmetic>> {
+        let mut clause = |delimiter| -> Parsed<'a, Option<CshAstArithmetic<'a>>> {
             self.arithmetic_space();
             let value = if self.byte() == Some(delimiter) {
                 None
@@ -278,15 +278,15 @@ fn arithmetic_lvalue(value: &CshAstArithmetic) -> bool {
     )
 }
 
-fn arithmetic_number(text: &str) -> Option<(u32, String)> {
+fn arithmetic_number(text: Cow<'_, str>) -> Option<(u32, Cow<'_, str>)> {
     let (radix, digits) = if let Some((base, digits)) = text.split_once('#') {
         (base.parse().ok()?, digits)
     } else if text.starts_with("0x") || text.starts_with("0X") {
         (16, &text[2..])
     } else if text.len() > 1 && text.starts_with('0') {
-        (8, text)
+        (8, text.as_ref())
     } else {
-        (10, text)
+        (10, text.as_ref())
     };
     if !(2..=64).contains(&radix) || digits.is_empty() {
         return None;
@@ -304,7 +304,15 @@ fn arithmetic_number(text: &str) -> Option<(u32, String)> {
             return None;
         }
     }
-    Some((radix, digits.to_owned()))
+    let offset = text.len() - digits.len();
+    let digits = match text {
+        Cow::Borrowed(text) => Cow::Borrowed(&text[offset..]),
+        Cow::Owned(mut text) => {
+            text.drain(..offset);
+            Cow::Owned(text)
+        }
+    };
+    Some((radix, digits))
 }
 
 fn arithmetic_operator(source: &str) -> Option<(&'static str, CshAstArithmeticBinary, u8, bool)> {

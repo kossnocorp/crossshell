@@ -1,4 +1,5 @@
 use crate::prelude::internal::*;
+use std::borrow::Cow;
 mod arithmetic;
 mod brace;
 mod condition;
@@ -8,6 +9,15 @@ mod parameter;
 mod word;
 
 type Parsed<'a, T> = Result<T, CshError<'a>>;
+
+/// Borrow a single fragment; allocate only when normalization joins fragments.
+fn append_text<'a>(text: &mut Cow<'a, str>, fragment: &'a str) {
+    if text.is_empty() {
+        *text = Cow::Borrowed(fragment);
+    } else if !fragment.is_empty() {
+        text.to_mut().push_str(fragment);
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Keyword {
@@ -102,18 +112,18 @@ const WORD_CLASS: [u8; 256] = {
 pub(super) struct Cursor<'a> {
     source: &'a str,
     pos: usize,
-    nodes: Vec<CshAstExpression>,
+    nodes: Vec<CshAstExpression<'a>>,
     spans: Vec<Range<usize>>,
     depth: usize,
-    here_documents: Vec<CshAstHereDocument>,
+    here_documents: Vec<CshAstHereDocument<'a>>,
     pending_here_documents: Vec<usize>,
     backtick: bool,
     keep_comments: bool,
-    comments: Vec<CshAstComment>,
+    comments: Vec<CshAstComment<'a>>,
 }
 
 impl<'a> Cursor<'a> {
-    pub(super) fn parse(source: &'a str, options: CshParserOptions) -> Parsed<'a, CshAst> {
+    pub(super) fn parse(source: &'a str, options: CshParserOptions) -> Parsed<'a, CshAst<'a>> {
         let mut cursor = Self {
             source,
             pos: 0,
@@ -134,6 +144,7 @@ impl<'a> Cursor<'a> {
             return Err(cursor.expected("end of file"));
         }
         Ok(CshAst {
+            source,
             commands,
             nodes: cursor.nodes,
             spans: cursor.spans,
@@ -251,7 +262,7 @@ impl<'a> Cursor<'a> {
             if self.keep_comments {
                 self.comments.push(CshAstComment {
                     span: start..self.pos,
-                    text: self.source[start + 1..self.pos].to_owned(),
+                    text: &self.source[start + 1..self.pos],
                 });
             }
         }
@@ -278,8 +289,7 @@ impl<'a> Cursor<'a> {
             let body_end;
             loop {
                 let line_start = self.pos;
-                let mut raw = String::new();
-                let mut logical = String::new();
+                let mut logical = Cow::Borrowed("");
                 loop {
                     let rest = &self.source[self.pos..];
                     if rest.is_empty() {
@@ -292,18 +302,17 @@ impl<'a> Cursor<'a> {
                     }
                     let newline = len < rest.len();
                     self.pos += len + usize::from(newline);
-                    raw.push_str(line);
-                    if newline {
-                        raw.push('\n');
-                    }
                     let continued = !doc.quoted
                         && newline
                         && line.bytes().rev().take_while(|b| *b == b'\\').count() % 2 == 1;
-                    logical.push_str(if continued {
-                        &line[..line.len() - 1]
-                    } else {
-                        line
-                    });
+                    append_text(
+                        &mut logical,
+                        if continued {
+                            &line[..line.len() - 1]
+                        } else {
+                            line
+                        },
+                    );
                     if !continued {
                         break;
                     }
@@ -312,12 +321,25 @@ impl<'a> Cursor<'a> {
                     body_end = line_start;
                     break;
                 }
-                doc.body.push_str(&raw);
             }
             let after = self.pos;
             let quoted = doc.quoted;
             let strip_tabs = doc.strip_tabs;
             doc.span = body_start..body_end;
+            let body = &self.source[body_start..body_end];
+            doc.body = if strip_tabs
+                && body
+                    .split_inclusive('\n')
+                    .any(|line| line.starts_with('\t'))
+            {
+                Cow::Owned(
+                    body.split_inclusive('\n')
+                        .map(|line| line.trim_start_matches('\t'))
+                        .collect(),
+                )
+            } else {
+                Cow::Borrowed(body)
+            };
             let content = if quoted {
                 CshAstWord::Literal(doc.body.clone())
             } else {
@@ -330,7 +352,7 @@ impl<'a> Cursor<'a> {
         Ok(true)
     }
 
-    fn alloc(&mut self, expression: CshAstExpression) -> CshAstNodeId {
+    fn alloc(&mut self, expression: CshAstExpression<'a>) -> CshAstNodeId {
         let start = match &expression {
             CshAstExpression::Binary(binary) => self.spans[binary.left.0].start,
             CshAstExpression::Background(background) => self.spans[background.expression.0].start,
@@ -341,7 +363,7 @@ impl<'a> Cursor<'a> {
         self.alloc_at(expression, start)
     }
 
-    fn alloc_at(&mut self, expression: CshAstExpression, start: usize) -> CshAstNodeId {
+    fn alloc_at(&mut self, expression: CshAstExpression<'a>, start: usize) -> CshAstNodeId {
         let id = CshAstNodeId(self.nodes.len());
         self.nodes.push(expression);
         self.spans.push(start..self.pos);
@@ -579,7 +601,7 @@ impl<'a> Cursor<'a> {
         Ok(self.redirected(id, redirects))
     }
 
-    fn function_header(&mut self) -> Parsed<'a, Option<String>> {
+    fn function_header(&mut self) -> Parsed<'a, Option<&'a str>> {
         let explicit = matches!(
             &self.source.as_bytes()[self.pos..],
             [b'f', b'u', b'n', b'c', b't', b'i', b'o', b'n']
@@ -627,7 +649,7 @@ impl<'a> Cursor<'a> {
         } else {
             return Ok(None);
         }
-        Ok(Some(self.source[start..end].to_owned()))
+        Ok(Some(&self.source[start..end]))
     }
 
     fn arithmetic_delimiters(&mut self) -> Parsed<'a, ()> {
@@ -637,7 +659,7 @@ impl<'a> Cursor<'a> {
         Ok(())
     }
 
-    fn conditional(&mut self) -> Parsed<'a, CshAstExpression> {
+    fn conditional(&mut self) -> Parsed<'a, CshAstExpression<'a>> {
         let mut branches = Vec::new();
         loop {
             let condition = self.list(Stop::Then, true)?;
@@ -660,7 +682,7 @@ impl<'a> Cursor<'a> {
         }))
     }
 
-    fn for_loop(&mut self) -> Parsed<'a, CshAstExpression> {
+    fn for_loop(&mut self) -> Parsed<'a, CshAstExpression<'a>> {
         self.space();
         if self.byte() == Some(b'(') && self.peek(1) == Some(b'(') {
             let clauses = self.arithmetic_for()?;
@@ -706,7 +728,7 @@ impl<'a> Cursor<'a> {
         }))
     }
 
-    fn case(&mut self) -> Parsed<'a, CshAstExpression> {
+    fn case(&mut self) -> Parsed<'a, CshAstExpression<'a>> {
         self.space();
         let word = self.required_word()?;
         self.space();
@@ -733,7 +755,6 @@ impl<'a> Cursor<'a> {
                 _ => "",
             };
             self.pos += terminator.len();
-            let terminator = terminator.to_owned();
             arms.push(CshAstCaseArm {
                 patterns,
                 body,
@@ -761,7 +782,7 @@ impl<'a> Cursor<'a> {
                 has_item = true;
                 continue;
             }
-            let declaration = matches!(&command.name, Some(CshAstWord::Literal(name)) if matches!(name.as_str(), "declare" | "typeset" | "local" | "export" | "readonly"));
+            let declaration = matches!(&command.name, Some(CshAstWord::Literal(name)) if matches!(name.as_ref(), "declare" | "typeset" | "local" | "export" | "readonly"));
             if (!has_name || declaration)
                 && let Some(assignment) = self.assignment()?
             {
@@ -796,7 +817,7 @@ impl<'a> Cursor<'a> {
     fn redirected(
         &mut self,
         expression: CshAstNodeId,
-        redirects: Vec<CshAstRedirect>,
+        redirects: Vec<CshAstRedirect<'a>>,
     ) -> CshAstNodeId {
         if redirects.is_empty() {
             expression
@@ -808,7 +829,7 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    fn redirect(&mut self) -> Parsed<'a, Option<CshAstRedirect>> {
+    fn redirect(&mut self) -> Parsed<'a, Option<CshAstRedirect<'a>>> {
         if !matches!(self.byte(), Some(b'0'..=b'9' | b'<' | b'>' | b'&' | b'{')) {
             return Ok(None);
         }
@@ -857,9 +878,9 @@ impl<'a> Cursor<'a> {
         let descriptor = if prefix == 0 {
             CshAstDescriptor::Default
         } else if self.source.as_bytes()[start] == b'{' {
-            CshAstDescriptor::Variable(self.source[start + 1..start + prefix - 1].to_owned())
+            CshAstDescriptor::Variable(&self.source[start + 1..start + prefix - 1])
         } else {
-            CshAstDescriptor::Number(self.source[start..start + prefix].to_owned())
+            CshAstDescriptor::Number(&self.source[start..start + prefix])
         };
         self.space();
         let delimiter_start = self.pos;
@@ -885,8 +906,8 @@ impl<'a> Cursor<'a> {
                     .replace("\\\n", "")
                     .contains(['\'', '"', '\\']),
                 strip_tabs: operator == "<<-",
-                body: String::new(),
-                content: CshAstWord::Literal(String::new()),
+                body: "".into(),
+                content: CshAstWord::Literal("".into()),
                 span: self.pos..self.pos,
             });
             self.pending_here_documents.push(id);
@@ -921,16 +942,16 @@ impl<'a> Cursor<'a> {
         }))
     }
 
-    fn required_word(&mut self) -> Parsed<'a, CshAstWord> {
+    fn required_word(&mut self) -> Parsed<'a, CshAstWord<'a>> {
         self.word()?.ok_or_else(|| self.expected("a word"))
     }
 
-    fn delimiter_word(&mut self) -> Parsed<'a, Option<String>> {
+    fn delimiter_word(&mut self) -> Parsed<'a, Option<Cow<'a, str>>> {
         if self.byte() == Some(b'#') {
             return Ok(None);
         }
         let start = self.pos;
-        let mut text = String::new();
+        let mut text = Cow::Borrowed("");
         loop {
             match self.byte() {
                 Some(b'(') if text.ends_with('=') => {
@@ -943,7 +964,7 @@ impl<'a> Cursor<'a> {
                         }
                         self.required_word()?;
                     }
-                    text.push_str(&self.source[start..self.pos]);
+                    append_text(&mut text, &self.source[start..self.pos]);
                 }
                 None | Some(b' ' | b'\t' | b'\r' | b'\n' | b';' | b'|' | b'&' | b'(' | b')') => {
                     break;
@@ -964,7 +985,7 @@ impl<'a> Cursor<'a> {
                     let start = self.pos;
                     self.pos += 2;
                     self.balanced(b')')?;
-                    text.push_str(&self.source[start..self.pos]);
+                    append_text(&mut text, &self.source[start..self.pos]);
                 }
                 _ => {
                     let start = self.pos;
@@ -986,7 +1007,7 @@ impl<'a> Cursor<'a> {
                     if start == self.pos {
                         break;
                     }
-                    text.push_str(&self.source[start..self.pos]);
+                    append_text(&mut text, &self.source[start..self.pos]);
                 }
             }
         }
@@ -1001,20 +1022,25 @@ impl<'a> Cursor<'a> {
         }
     }
 
-    fn single(&mut self, text: &mut String) -> Parsed<'a, ()> {
+    fn single(&mut self, text: &mut Cow<'a, str>) -> Parsed<'a, ()> {
+        append_text(text, self.single_text()?);
+        Ok(())
+    }
+
+    fn single_text(&mut self) -> Parsed<'a, &'a str> {
         let opening = self.pos;
         self.pos += 1;
         if let Some(len) = self.rest().find('\'') {
-            text.push_str(&self.source[self.pos..self.pos + len]);
+            let text = &self.source[self.pos..self.pos + len];
             self.pos += len + 1;
-            Ok(())
+            Ok(text)
         } else {
             self.pos = self.source.len();
             Err(self.unclosed('\'', opening))
         }
     }
 
-    fn double(&mut self, text: &mut String) -> Parsed<'a, ()> {
+    fn double(&mut self, text: &mut Cow<'a, str>) -> Parsed<'a, ()> {
         let opening = self.pos;
         self.pos += 1;
         loop {
@@ -1034,13 +1060,18 @@ impl<'a> Cursor<'a> {
                         }
                         self.pos += 1;
                     }
-                    text.push_str(&self.source[start..self.pos]);
+                    append_text(text, &self.source[start..self.pos]);
                 }
             }
         }
     }
 
-    fn escape(&mut self, text: &mut String, double: bool) -> Parsed<'a, ()> {
+    fn escape(&mut self, text: &mut Cow<'a, str>, double: bool) -> Parsed<'a, ()> {
+        append_text(text, self.escape_text(double)?);
+        Ok(())
+    }
+
+    fn escape_text(&mut self, double: bool) -> Parsed<'a, &'a str> {
         let start = self.pos;
         self.pos += 1;
         let Some(c) = self.rest().chars().next() else {
@@ -1049,16 +1080,16 @@ impl<'a> Cursor<'a> {
             });
         };
         self.pos += c.len_utf8();
-        if c != '\n' {
-            if double && !matches!(c, '$' | '`' | '"' | '\\') {
-                text.push('\\');
-            }
-            text.push(c);
-        }
-        Ok(())
+        Ok(if c == '\n' {
+            ""
+        } else if double && !matches!(c, '$' | '`' | '"' | '\\') {
+            &self.source[start..self.pos]
+        } else {
+            &self.source[start + 1..self.pos]
+        })
     }
 
-    fn expansion(&mut self, text: &mut String) -> Parsed<'a, ()> {
+    fn expansion(&mut self, text: &mut Cow<'a, str>) -> Parsed<'a, ()> {
         let start = self.pos;
         match (self.byte(), self.peek(1)) {
             (Some(b'$'), Some(b'(')) if self.peek(2) == Some(b'(') => {
@@ -1087,11 +1118,11 @@ impl<'a> Cursor<'a> {
             }
             _ => self.pos += 1, // A bare dollar sign, including $name.
         }
-        text.push_str(&self.source[start..self.pos]);
+        append_text(text, &self.source[start..self.pos]);
         Ok(())
     }
 
-    fn substitution(&mut self, text: &mut String) -> Parsed<'a, ()> {
+    fn substitution(&mut self, text: &mut Cow<'a, str>) -> Parsed<'a, ()> {
         let start = self.pos;
         self.pos += 2;
         // Validate nested shell syntax with the same parser. Expansion text is
@@ -1108,7 +1139,7 @@ impl<'a> Cursor<'a> {
         self.spans.truncate(checkpoint);
         self.here_documents.truncate(document_checkpoint);
         self.pending_here_documents = outer_pending;
-        text.push_str(&self.source[start..self.pos]);
+        append_text(text, &self.source[start..self.pos]);
         Ok(())
     }
 

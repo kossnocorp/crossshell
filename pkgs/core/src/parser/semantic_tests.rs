@@ -1,13 +1,13 @@
 use super::*;
 
-fn command(ast: &CshAst, index: usize) -> &CshAstCommand {
+fn command<'a>(ast: &'a CshAst<'a>, index: usize) -> &'a CshAstCommand<'a> {
     let CshAstExpression::Command(command) = &ast[ast.commands[index]] else {
         panic!("expected command")
     };
     command
 }
 
-fn parameter(word: &CshAstWord) -> &CshAstParameter {
+fn parameter<'a>(word: &'a CshAstWord<'a>) -> &'a CshAstParameter<'a> {
     match word {
         CshAstWord::Parameter(p) => p,
         CshAstWord::DoubleQuoted(w) => parameter(w),
@@ -291,7 +291,7 @@ fn parameter_operators_are_typed_and_quote_sensitive() {
         }
     ));
     assert!(
-        matches!(&parameter(&args[7]).operation, O::Replace { anchor: CshAstReplaceAnchor::All, replacement: CshAstWord::SingleQuoted(s), .. } if s == "b")
+        matches!(&parameter(&args[7]).operation, O::Replace { anchor: CshAstReplaceAnchor::All, replacement: CshAstWord::SingleQuoted(s), .. } if *s == "b")
     );
     assert!(matches!(
         &parameter(&args[8]).operation,
@@ -350,7 +350,7 @@ fn parameter_operators_are_typed_and_quote_sensitive() {
         matches!(&parameter(word).operation, O::Default { word: CshAstWord::Literal(s), .. } if s == "'hi'")
     );
     assert!(
-        matches!(&parameter(&args[1]).operation, O::Trim { pattern: CshAstWord::SingleQuoted(s), .. } if s == "f")
+        matches!(&parameter(&args[1]).operation, O::Trim { pattern: CshAstWord::SingleQuoted(s), .. } if *s == "f")
     );
     assert!(matches!(
         &parameter(&args[2]).operation,
@@ -383,7 +383,7 @@ fn brace_sequences_alternatives_and_tilde_eligibility() {
     assert_eq!(alternatives.len(), 3);
     assert!(matches!(alternatives[1], CshAstWord::BraceAlternatives(_)));
     assert!(
-        matches!(&c.args[1], CshAstWord::BraceSequence(s) if s.start == "01" && s.end == "05" && s.padding == 2 && s.step.as_deref() == Some("2"))
+        matches!(&c.args[1], CshAstWord::BraceSequence(s) if s.start == "01" && s.end == "05" && s.padding == 2 && s.step == Some("2"))
     );
     assert!(matches!(&c.args[2], CshAstWord::BraceSequence(s) if s.alphabetic));
     assert!(matches!(&c.args[3], CshAstWord::SingleQuoted(_)));
@@ -394,15 +394,12 @@ fn brace_sequences_alternatives_and_tilde_eligibility() {
     assert_eq!(
         c.args[10],
         CshAstWord::Tilde(CshAstTilde::DirectoryStack {
-            index: "3".into(),
+            index: "3",
             reverse: true,
             explicit_sign: true,
         })
     );
-    assert_eq!(
-        c.args[11],
-        CshAstWord::Tilde(CshAstTilde::User("alice".into()))
-    );
+    assert_eq!(c.args[11], CshAstWord::Tilde(CshAstTilde::User("alice")));
     assert!(!matches!(c.args[12], CshAstWord::Tilde(_)));
     assert_eq!(c.args[13], CshAstWord::Literal("x~".into()));
     let ast =
@@ -430,12 +427,12 @@ fn brace_sequences_alternatives_and_tilde_eligibility() {
 fn ansi_quotes_in_parameter_defaults_are_active_inside_double_quotes() {
     let ast = CshParser::parse(r#"echo "${x:-$'hi\n'}""#).unwrap();
     assert!(matches!(&parameter(&command(&ast, 0).args[0]).operation,
-        CshAstParameterOperation::Default { word: CshAstWord::AnsiCQuoted(s), .. } if s == "hi\\n"));
+        CshAstParameterOperation::Default { word: CshAstWord::AnsiCQuoted(s), .. } if *s == "hi\\n"));
     let ast = CshParser::parse(r#"echo "${x:-\}}" "${x:-\q}""#).unwrap();
     assert!(matches!(&parameter(&command(&ast, 0).args[0]).operation,
-        CshAstParameterOperation::Default { word: CshAstWord::Escaped(s), .. } if s == "}"));
+        CshAstParameterOperation::Default { word: CshAstWord::Escaped(s), .. } if *s == "}"));
     assert!(matches!(&parameter(&command(&ast, 0).args[1]).operation,
-        CshAstParameterOperation::Default { word: CshAstWord::Escaped(s), .. } if s == "\\q"));
+        CshAstParameterOperation::Default { word: CshAstWord::Escaped(s), .. } if *s == "\\q"));
 }
 
 #[test]
@@ -449,11 +446,11 @@ fn heredocs_have_a_distinct_expansion_grammar_and_arena_links() {
     assert_eq!(
         parts
             .iter()
-            .filter(|p| matches!(p, CshAstWord::Variable(n) if n == "name"))
+            .filter(|p| matches!(p, CshAstWord::Variable(n) if *n == "name"))
             .count(),
         2
     );
-    assert!(parts.contains(&CshAstWord::Escaped("$".into())));
+    assert!(parts.contains(&CshAstWord::Escaped("$")));
     assert!(
         !parts
             .iter()
@@ -494,7 +491,7 @@ fn heredoc_continuations_precede_delimiter_matching() {
     assert_eq!(
         ast.here_documents[0].content,
         CshAstWord::Concat(vec![
-            CshAstWord::Variable("name".into()),
+            CshAstWord::Variable("name"),
             CshAstWord::Literal("\n".into())
         ])
     );
@@ -523,14 +520,8 @@ fn redirects_are_typed_ordered_and_spanned() {
             CshAstRedirectOperator::AppendAndError
         ]
     );
-    assert_eq!(
-        redirects[0].descriptor,
-        CshAstDescriptor::Number("2".into())
-    );
-    assert_eq!(
-        redirects[2].descriptor,
-        CshAstDescriptor::Variable("fd".into())
-    );
+    assert_eq!(redirects[0].descriptor, CshAstDescriptor::Number("2"));
+    assert_eq!(redirects[2].descriptor, CshAstDescriptor::Variable("fd"));
     assert_eq!(&source[redirects[2].span.clone()], "{fd}<&-");
     assert_eq!(&source[ast.spans[ast.commands[0].0].clone()], source);
 }

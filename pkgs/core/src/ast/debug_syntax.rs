@@ -1,10 +1,10 @@
 use super::*;
 
-pub(super) struct Arithmetic<'a>(pub &'a CshAst, pub &'a CshAstArithmetic);
-pub(super) struct Condition<'a>(pub &'a CshAst, pub &'a CshAstCondition);
-pub(super) struct ParameterOperation<'a>(pub &'a CshAst, pub &'a CshAstParameterOperation);
-pub(super) struct Documents<'a>(pub &'a CshAst);
-struct Document<'a>(&'a CshAst, &'a CshAstHereDocument);
+pub(super) struct Arithmetic<'a>(pub &'a CshAst<'a>, pub &'a CshAstArithmetic<'a>);
+pub(super) struct Condition<'a>(pub &'a CshAst<'a>, pub &'a CshAstCondition<'a>);
+pub(super) struct ParameterOperation<'a>(pub &'a CshAst<'a>, pub &'a CshAstParameterOperation<'a>);
+pub(super) struct Documents<'a>(pub &'a CshAst<'a>);
+struct Document<'a>(&'a CshAst<'a>, &'a CshAstHereDocument<'a>);
 
 impl Debug for Arithmetic<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -1,7 +1,7 @@
 use super::*;
 
 impl<'a> Cursor<'a> {
-    pub(super) fn brace_word(&mut self) -> Parsed<'a, CshAstWord> {
+    pub(super) fn brace_word(&mut self) -> Parsed<'a, CshAstWord<'a>> {
         let start = self.pos;
         self.pos += 1;
         let mut alternatives = Vec::new();
@@ -50,7 +50,7 @@ impl<'a> Cursor<'a> {
         Ok(CshAstWord::concat(literal))
     }
 
-    pub(super) fn tilde(&mut self, stop: Option<u8>) -> Option<CshAstWord> {
+    pub(super) fn tilde(&mut self, stop: Option<u8>) -> Option<CshAstWord<'a>> {
         if self.byte() != Some(b'~') {
             return None;
         }
@@ -82,19 +82,19 @@ impl<'a> Cursor<'a> {
                 .all(|b| b.is_ascii_digit()) =>
             {
                 T::DirectoryStack {
-                    index: user.trim_start_matches(['+', '-']).into(),
+                    index: user.trim_start_matches(['+', '-']),
                     reverse: user.starts_with('-'),
                     explicit_sign: user.starts_with(['+', '-']),
                 }
             }
-            _ => T::User(user.into()),
+            _ => T::User(user),
         };
         self.pos = end;
         Some(CshAstWord::Tilde(kind))
     }
 }
 
-fn brace_sequence(text: &str) -> Option<CshAstBraceSequence> {
+fn brace_sequence(text: &str) -> Option<CshAstBraceSequence<'_>> {
     let pieces: Vec<_> = text.split("..").collect();
     if !(2..=3).contains(&pieces.len()) {
         return None;
@@ -125,9 +125,9 @@ fn brace_sequence(text: &str) -> Option<CshAstBraceSequence> {
         0
     };
     Some(CshAstBraceSequence {
-        start: pieces[0].into(),
-        end: pieces[1].into(),
-        step: pieces.get(2).map(|s| (*s).into()),
+        start: pieces[0],
+        end: pieces[1],
+        step: pieces.get(2).copied(),
         alphabetic,
         padding,
     })

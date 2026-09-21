@@ -1,7 +1,11 @@
 use super::*;
 
 impl<'a> Cursor<'a> {
-    pub(super) fn heredoc_word(&mut self, end: usize, strip_tabs: bool) -> Parsed<'a, CshAstWord> {
+    pub(super) fn heredoc_word(
+        &mut self,
+        end: usize,
+        strip_tabs: bool,
+    ) -> Parsed<'a, CshAstWord<'a>> {
         let mut parts = Vec::new();
         let mut line_start = true;
         while self.pos < end {
@@ -23,7 +27,7 @@ impl<'a> Cursor<'a> {
                     if b == b'\n' {
                         line_start = true;
                     } else {
-                        parts.push(CshAstWord::Escaped((b as char).to_string()));
+                        parts.push(CshAstWord::Escaped(&self.source[self.pos - 1..self.pos]));
                     }
                 }
                 _ => {
@@ -31,8 +35,10 @@ impl<'a> Cursor<'a> {
                     self.pos += c.len_utf8();
                     line_start = c == '\n';
                     match parts.last_mut() {
-                        Some(CshAstWord::Literal(text)) => text.push(c),
-                        _ => parts.push(CshAstWord::Literal(c.to_string())),
+                        Some(CshAstWord::Literal(text)) => text.to_mut().push(c),
+                        _ => parts.push(CshAstWord::Literal(
+                            self.source[self.pos - c.len_utf8()..self.pos].into(),
+                        )),
                     }
                 }
             }

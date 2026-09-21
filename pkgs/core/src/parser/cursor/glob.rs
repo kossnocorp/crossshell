@@ -1,7 +1,7 @@
 use super::*;
 
 impl<'a> Cursor<'a> {
-    pub(super) fn extended_glob(&mut self) -> Parsed<'a, CshAstWord> {
+    pub(super) fn extended_glob(&mut self) -> Parsed<'a, CshAstWord<'a>> {
         let operator = self.byte().unwrap() as char;
         self.pos += 2;
         let mut alternatives = Vec::new();
@@ -46,7 +46,7 @@ impl<'a> Cursor<'a> {
                             break;
                         }
                     }
-                    parts.push(CshAstWord::Literal(self.source[start..self.pos].to_owned()));
+                    parts.push(CshAstWord::Literal(self.source[start..self.pos].into()));
                 }
             }
         }
@@ -56,7 +56,7 @@ impl<'a> Cursor<'a> {
         })
     }
 
-    pub(super) fn glob_class(&mut self, end: usize) -> Parsed<'a, CshAstWord> {
+    pub(super) fn glob_class(&mut self, end: usize) -> Parsed<'a, CshAstWord<'a>> {
         use CshAstGlobClassItem as I;
         let opening = self.pos;
         self.pos += 1;
@@ -95,7 +95,7 @@ impl<'a> Cursor<'a> {
                     .windows(2)
                     .position(|w| w == [marker, b']']);
                 if let Some(len) = closing {
-                    let name = self.source[start..start + len].to_owned();
+                    let name = &self.source[start..start + len];
                     items.push(match marker {
                         b':' => I::NamedClass(name),
                         b'.' => I::CollatingSymbol(name),

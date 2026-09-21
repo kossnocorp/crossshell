@@ -5,13 +5,13 @@ use std::fmt::{self, Debug};
 mod syntax;
 use syntax::*;
 
-struct List<'a>(&'a CshAst, &'a [CshAstNodeId]);
-struct Nodes<'a>(&'a CshAst, &'a [CshAstNodeId]);
-struct Node<'a>(&'a CshAst, CshAstNodeId);
-struct Branch<'a>(&'a CshAst, &'a CshAstBranch);
-struct Arm<'a>(&'a CshAst, &'a CshAstCaseArm);
+struct List<'a>(&'a CshAst<'a>, &'a [CshAstNodeId]);
+struct Nodes<'a>(&'a CshAst<'a>, &'a [CshAstNodeId]);
+struct Node<'a>(&'a CshAst<'a>, CshAstNodeId);
+struct Branch<'a>(&'a CshAst<'a>, &'a CshAstBranch);
+struct Arm<'a>(&'a CshAst<'a>, &'a CshAstCaseArm<'a>);
 
-impl Debug for CshAst {
+impl Debug for CshAst<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug = f.debug_struct("CshAst");
         debug.field("commands", &Nodes(self, &self.commands));
@@ -41,7 +41,7 @@ impl Debug for Nodes<'_> {
     }
 }
 
-struct Branches<'a>(&'a CshAst, &'a [CshAstBranch]);
+struct Branches<'a>(&'a CshAst<'a>, &'a [CshAstBranch]);
 impl Debug for Branches<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list()
@@ -50,7 +50,7 @@ impl Debug for Branches<'_> {
     }
 }
 
-struct Arms<'a>(&'a CshAst, &'a [CshAstCaseArm]);
+struct Arms<'a>(&'a CshAst<'a>, &'a [CshAstCaseArm<'a>]);
 impl Debug for Arms<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list()
@@ -182,13 +182,13 @@ impl Debug for Node<'_> {
     }
 }
 
-struct Word<'a>(&'a CshAst, &'a CshAstWord);
-struct Words<'a>(&'a CshAst, &'a [CshAstWord]);
-struct Command<'a>(&'a CshAst, &'a CshAstCommand);
-struct Assignment<'a>(&'a CshAst, &'a CshAstAssignment);
-struct Assignments<'a>(&'a CshAst, &'a [CshAstAssignment]);
-struct Redirect<'a>(&'a CshAst, &'a CshAstRedirect);
-struct Redirects<'a>(&'a CshAst, &'a [CshAstRedirect]);
+struct Word<'a>(&'a CshAst<'a>, &'a CshAstWord<'a>);
+struct Words<'a>(&'a CshAst<'a>, &'a [CshAstWord<'a>]);
+struct Command<'a>(&'a CshAst<'a>, &'a CshAstCommand<'a>);
+struct Assignment<'a>(&'a CshAst<'a>, &'a CshAstAssignment<'a>);
+struct Assignments<'a>(&'a CshAst<'a>, &'a [CshAstAssignment<'a>]);
+struct Redirect<'a>(&'a CshAst<'a>, &'a CshAstRedirect<'a>);
+struct Redirects<'a>(&'a CshAst<'a>, &'a [CshAstRedirect<'a>]);
 
 impl Debug for Word<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -325,7 +325,7 @@ impl Debug for Redirect<'_> {
     }
 }
 
-impl Debug for CshAstRedirect {
+impl Debug for CshAstRedirect<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut debug = f.debug_struct("CshAstRedirect");
         debug

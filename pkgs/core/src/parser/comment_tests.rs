@@ -1,6 +1,6 @@
 use super::*;
 
-fn check(source: &str, expected: &[&str]) -> CshAst {
+fn check<'a>(source: &'a str, expected: &[&str]) -> CshAst<'a> {
     let mut ast = CshParser::parse_with_options(
         source,
         CshParserOptions {
@@ -11,7 +11,7 @@ fn check(source: &str, expected: &[&str]) -> CshAst {
     assert_eq!(
         ast.comments
             .iter()
-            .map(|comment| comment.text.as_str())
+            .map(|comment| comment.text)
             .collect::<Vec<_>>(),
         expected,
     );
@@ -89,11 +89,10 @@ fn speculative_arithmetic_does_not_duplicate_comments() {
 }
 
 #[test]
-fn retained_comments_are_owned_and_visible_in_debug_output() {
-    let ast = {
-        let source = String::from("# owned");
-        check(&source, &[" owned"])
-    };
-    assert_eq!(ast.comments[0].text, " owned");
+fn retained_comments_borrow_source_and_are_visible_in_debug_output() {
+    let source = String::from("# borrowed");
+    let ast = check(&source, &[" borrowed"]);
+    assert_eq!(ast.comments[0].text.as_ptr(), source[1..].as_ptr());
+    assert_eq!(ast.source.as_ptr(), source.as_ptr());
     assert!(format!("{ast:?}").contains("comments"));
 }
