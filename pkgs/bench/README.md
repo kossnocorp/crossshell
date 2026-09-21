@@ -8,33 +8,50 @@ Run from the repository root (requires Go and Rust):
 ```
 
 Or run `mise run bench` from this directory for the default fixture.
-The script builds both binaries, then runs them sequentially on the same file.
+The script builds all three binaries, then runs them sequentially on the same file:
+Go mvdan/sh, Rust crossshell, and Rust [Brush](https://brush.sh/).
 Build artifacts live in the ignored `dist/` directory.
 
-Both binaries read the entire input into memory and validate a parse before
+All binaries read the entire input into memory and validate a parse before
 benchmarking. The measured functions return native AST results: Go's
-`(*syntax.File, error)` and Rust's `Result<CshAst<'source>, CshParserError<'source>>`.
-Both retain comments. File I/O and validation are excluded from measurements;
+`(*syntax.File, error)`, crossshell's `Result<CshAst<'source>, CshParserError<'source>>`,
+and Brush's `Result<brush_parser::ast::Program, brush_parser::ParseError>`.
+Go and crossshell retain comments; Brush discards them. File I/O and validation are excluded from measurements;
 the shell input is parsed, never executed.
 
 ## Matched workload
 
-- Each parse constructs fresh parser state and returns a native AST. Go also
-  constructs a fresh in-memory reader; neither parser copies the whole source
+- Each parse constructs fresh parser state and returns a native AST. Go and Brush also
+  construct fresh in-memory readers; none copies the whole source
   as benchmark preparation inside the timed loop. This deliberately replaces
   upstream mvdan's parser/reader reuse to match crossshell's stateless API.
-- Rust's AST borrows text from the preloaded source, allocating owned strings
+- Crossshell's AST borrows text from the preloaded source, allocating owned strings
   when fragments need joining or normalization. The source stays alive for the
   entire benchmark; copying it into an independently owned AST is not timed.
-- Both run a sequential parse loop with one worker. Go uses `GOMAXPROCS(1)`;
+- All run a sequential parse loop with one worker. Go uses `GOMAXPROCS(1)`;
   Divan uses one thread. Go's garbage collector stays enabled.
-- Both target at least one second of measured work in one invocation. Go's
+- All target at least one second of measured work in one invocation. Go's
   `testing.Benchmark` calibrates a batch; Divan takes samples of 1,000 parses
   until the one-second minimum is reached, excluding external harness time
   from that minimum. Batching amortizes clock reads in both harnesses.
-- Both consume the returned AST and include cleanup work in the timed loop.
+- All consume the returned AST and include cleanup work in the timed loop.
   Rust explicitly drops the AST inside the Divan closure, rather than letting
   Divan defer returned-value destruction outside timing.
+
+## Brush workload
+
+`brush-parser` is pinned to **0.4.0**, using its default **PEG** implementation
+and default Bash-compatible options (including extended globbing). Each parse
+calls `Parser::new(source.as_bytes(), options).parse_program()`: tokenization
+and AST construction are both timed. This reader API bypasses Brush's cached
+`tokenize_str` convenience function. Both Rust binaries use the same Divan
+allocator, sampling settings, and explicit in-loop AST destruction.
+
+Brush's native program AST owns its text and represents shell words as raw
+strings, deferring word/expansion parsing to separate APIs. It also discards
+comments and provides no comment-retention option. These results compare the
+native parse APIs, not identical AST detail or ownership contracts; the Brush
+measurement does not include a separate recursive word/expansion parsing pass.
 
 ## Reading the output
 
@@ -43,7 +60,7 @@ Divan's **samples** column counts timing samples, each of which can contain
 multiple parses. Compare Go's **Mean ns/parse** with Divan's **mean** time,
 converting Divan's displayed units as needed (1 µs = 1,000 ns). Divan also
 shows fastest, slowest, and median sample timings. Throughput uses decimal
-bytes in both binaries (1 MB = 1,000,000 bytes).
+bytes in all three binaries (1 MB = 1,000,000 bytes).
 
 Rust uses Divan's `AllocProfiler` instead of a custom counting allocator.
 Its `alloc`, `grow`, `shrink`, and `dealloc` rows describe separate operations

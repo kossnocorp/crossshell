@@ -16,11 +16,13 @@ fi
 
 cd -- "$bench_dir"
 mkdir -p dist
-cargo build --release --locked --manifest-path Cargo.toml --bin parser-rust --target-dir dist/rust
+cargo build --release --locked --manifest-path Cargo.toml --bins --target-dir dist/rust
 go build -mod=readonly -o dist/parser-go .
 
 printf 'Input: %s\n\n' "$input"
-printf 'Fresh parser per parse; comments retained; one worker; 1 s measurement target.\n'
+printf 'Fresh parser per parse; one worker; 1 s measurement target.\n'
+printf 'Comments retained by Go/crossshell; discarded by Brush. Native AST detail differs.\n'
 printf 'Compare Go Mean ns/parse with Rust mean (check the displayed time units).\n\n'
 ./dist/parser-go "$input"
 ./dist/rust/release/parser-rust "$input"
+./dist/rust/release/parser-brush "$input"
