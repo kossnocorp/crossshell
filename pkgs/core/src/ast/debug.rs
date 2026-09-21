@@ -18,6 +18,9 @@ impl Debug for CshAst {
         if !self.here_documents.is_empty() {
             debug.field("here_documents", &Documents(self));
         }
+        if !self.comments.is_empty() {
+            debug.field("comments", &self.comments);
+        }
         debug.finish()
     }
 }

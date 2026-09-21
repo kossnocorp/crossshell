@@ -12,6 +12,19 @@ pub struct CshAst {
     /// UTF-8 source byte ranges, indexed by the corresponding expression ID.
     pub spans: Vec<std::ops::Range<usize>>,
     pub here_documents: Vec<CshAstHereDocument>,
+    /// Comments from all nesting levels, in source order, when requested by the parser.
+    /// These are syntax metadata, not executable expressions. Use their spans to
+    /// relate them to expressions, including comments before closing delimiters.
+    pub comments: Vec<CshAstComment>,
+}
+
+/// A shell comment, including shebangs and empty comments.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CshAstComment {
+    /// UTF-8 source byte range including `#`, excluding the terminating newline.
+    pub span: std::ops::Range<usize>,
+    /// Owned text after `#`, without the terminating newline. Whitespace is preserved.
+    pub text: String,
 }
 
 /// An expression index in the owning `CshAst::nodes` arena.

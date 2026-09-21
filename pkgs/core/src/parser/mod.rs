@@ -2,11 +2,19 @@ use crate::prelude::internal::*;
 
 mod error;
 pub use error::*;
+#[cfg(test)]
+mod comment_tests;
 mod cursor;
 #[cfg(test)]
 mod semantic_tests;
 
 pub struct CshParser;
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct CshParserOptions {
+    /// Retain shell comments in `CshAst::comments`. Disabled by default.
+    pub keep_comments: bool,
+}
 
 impl CshParser {
     /// Parses Cross Shell source into an owned, arena-backed AST.
@@ -17,7 +25,16 @@ impl CshParser {
     pub fn parse<'source_code>(
         source_code: &'source_code str,
     ) -> Result<CshAst, CshParserError<'source_code>> {
-        cursor::Cursor::parse(source_code).map_err(|error| CshParserError {
+        Self::parse_with_options(source_code, CshParserOptions::default())
+    }
+
+    /// Parses with explicit options. Retained comments own their text and use
+    /// UTF-8 byte ranges in the original source, like expression spans.
+    pub fn parse_with_options<'source_code>(
+        source_code: &'source_code str,
+        options: CshParserOptions,
+    ) -> Result<CshAst, CshParserError<'source_code>> {
+        cursor::Cursor::parse(source_code, options).map_err(|error| CshParserError {
             errors: vec![error],
         })
     }

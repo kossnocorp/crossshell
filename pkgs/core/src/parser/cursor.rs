@@ -108,10 +108,12 @@ pub(super) struct Cursor<'a> {
     here_documents: Vec<CshAstHereDocument>,
     pending_here_documents: Vec<usize>,
     backtick: bool,
+    keep_comments: bool,
+    comments: Vec<CshAstComment>,
 }
 
 impl<'a> Cursor<'a> {
-    pub(super) fn parse(source: &'a str) -> Parsed<'a, CshAst> {
+    pub(super) fn parse(source: &'a str, options: CshParserOptions) -> Parsed<'a, CshAst> {
         let mut cursor = Self {
             source,
             pos: 0,
@@ -121,6 +123,8 @@ impl<'a> Cursor<'a> {
             here_documents: Vec::new(),
             pending_here_documents: Vec::new(),
             backtick: false,
+            keep_comments: options.keep_comments,
+            comments: Vec::new(),
         };
         let commands = cursor.list(Stop::Eof, false)?;
         if !cursor.pending_here_documents.is_empty() {
@@ -134,6 +138,7 @@ impl<'a> Cursor<'a> {
             nodes: cursor.nodes,
             spans: cursor.spans,
             here_documents: cursor.here_documents,
+            comments: cursor.comments,
         })
     }
 
@@ -241,7 +246,14 @@ impl<'a> Cursor<'a> {
 
     fn comment(&mut self) {
         if self.byte() == Some(b'#') {
+            let start = self.pos;
             self.pos += self.rest().find('\n').unwrap_or(self.rest().len());
+            if self.keep_comments {
+                self.comments.push(CshAstComment {
+                    span: start..self.pos,
+                    text: self.source[start + 1..self.pos].to_owned(),
+                });
+            }
         }
     }
 
@@ -491,6 +503,7 @@ impl<'a> Cursor<'a> {
             let start = self.pos;
             let nodes = self.nodes.len();
             let documents = self.here_documents.len();
+            let comments = self.comments.len();
             let pending = self.pending_here_documents.clone();
             let depth = self.depth;
             match self.arithmetic_command() {
@@ -499,6 +512,7 @@ impl<'a> Cursor<'a> {
                     self.nodes.truncate(nodes);
                     self.spans.truncate(nodes);
                     self.here_documents.truncate(documents);
+                    self.comments.truncate(comments);
                     self.pending_here_documents = pending;
                     self.depth = depth;
                     self.pos = start;

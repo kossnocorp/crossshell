@@ -4,6 +4,28 @@
 owned `CshAst`; errors borrow the source and carry UTF-8 byte spans for Ariadne
 reporting through `CshErrorReport`.
 
+## Retaining comments
+
+Enable comment retention for source tooling or comment-preserving benchmarks:
+
+```rust
+use crossshell::{CshParser, CshParserOptions};
+
+let ast = CshParser::parse_with_options(
+    "echo hello # greeting\n",
+    CshParserOptions { keep_comments: true },
+).unwrap();
+assert_eq!(ast.comments[0].text, " greeting");
+assert_eq!(ast.comments[0].span, 11..21);
+```
+
+`CshAst::comments` contains owned comments from all nesting levels in source
+order. Text excludes the `#` and terminating newline; UTF-8 byte spans include
+the `#`. Whitespace, shebangs, empty comments, and trailing comments are retained.
+Comments are stored separately from executable expressions; source ranges allow
+tools to associate them with surrounding syntax. `CshParser::parse` uses default
+options and discards comments, like mvdan/sh without `KeepComments(true)`.
+
 ## Arena-backed AST
 
 Expression nodes are allocated in `CshAst::nodes`, a contiguous `Vec` arena.
